@@ -1,0 +1,18 @@
+#  SPDX-License-Identifier: LGPL-2.1+
+#
+#  Copyright (c) 2022 Valve.
+#  Authors: Vicki Pfau <vi@endrift.com>
+#  Authors: Guilherme G. Piccoli <gpiccoli@igalia.com>
+#
+[Unit]
+Description=SteamOS log submitter timer - retries sending logs hourly
+After=basic.target
+After=network-online.target
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+Persistent=true
+
+[Install]
+WantedBy=multi-user.target
