@@ -1,6 +1,17 @@
 from typing import Optional
 
-__all__ = ['base', 'pending', 'uploaded', 'check_network', 'get_appid', 'get_steam_account_id', 'trigger']
+__all__ = [
+    # Constants
+    'base',
+    'pending',
+    'uploaded',
+    # Utility functions
+    'check_network',
+    'get_appid',
+    'get_deck_serial',
+    'get_steam_account_id',
+    'trigger',
+]
 
 base = '/home/.steamos/offload/var/dump'
 pending = f'{base}/pending'
@@ -52,6 +63,17 @@ def get_appid(pid : int) -> Optional[int]:
 
         pid = ppid
     return appid
+
+
+def get_deck_serial() -> Optional[str]:
+    import subprocess
+    product_name = subprocess.run(['dmidecode', '-s', 'system-product-name'], capture_output=True)
+    if product_name.returncode != 0 or product_name.stdout.strip() != b'Jupiter':
+        return None
+    serial_number = subprocess.run(['dmidecode', '-s', 'system-serial-number'], capture_output=True)
+    if serial_number.returncode != 0:
+        return None
+    return serial_number.stdout.strip().decode()
 
 
 def get_steam_account_id() -> Optional[int]:
