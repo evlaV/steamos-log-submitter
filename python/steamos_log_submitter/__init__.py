@@ -1,14 +1,30 @@
-import os
-import re
-import subprocess
 from typing import Optional
 
-__all__ = ['base', 'pending', 'get_appid', 'get_steam_account_id', 'trigger']
+__all__ = ['base', 'pending', 'uploaded', 'check_network', 'get_appid', 'get_steam_account_id', 'trigger']
 
 base = '/home/.steamos/offload/var/dump'
 pending = f'{base}/pending'
+uploaded = f'{base}/uploaded'
+
+def check_network() -> bool:
+    import requests
+    import time
+
+    max_checks = 5
+    for _ in range(max_checks):
+        try:
+            r = requests.head('http://test.steampowered.com/204', allow_redirects=False, timeout=1)
+            if r.status_code == 204:
+                return True
+        except:
+            pass
+        time.sleep(4)
+
+    return False
+
 
 def get_appid(pid : int) -> Optional[int]:
+    import re
     appid = None
     stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
 
@@ -44,7 +60,7 @@ def get_steam_account_id() -> Optional[int]:
     share = xdg.xdg_data_home()
 
     try:
-        with open(os.path.join(share, 'Steam', 'config', 'loginusers.vdf')) as v:
+        with open(f'{share}/Steam/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
     except:
         return None
@@ -60,6 +76,7 @@ def get_steam_account_id() -> Optional[int]:
 
 
 def trigger():
+    import subprocess
     systemctl = subprocess.Popen(['/usr/bin/systemctl', 'show', 'steamos-log-submitter.timer'], stdout=subprocess.PIPE)
     for line in systemctl.stdout:
         if not line.startswith(b'ActiveState='):
