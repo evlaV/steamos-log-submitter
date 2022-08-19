@@ -1,8 +1,16 @@
+import os
+import pwd
+import re
+import requests
+import subprocess
+import time
+import vdf
 from typing import Optional
 
 __all__ = [
     # Constants
     'base',
+    'scripts',
     'pending',
     'uploaded',
     # Utility functions
@@ -10,17 +18,16 @@ __all__ = [
     'get_appid',
     'get_deck_serial',
     'get_steam_account_id',
+    'submit',
     'trigger',
 ]
 
-base = '/home/.steamos/offload/var/dump'
+base = '/home/.steamos/offload/var/steamos-log-submit'
+scripts = '/usr/lib/steamos-log-submitter/scripts.d'
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
 
 def check_network() -> bool:
-    import requests
-    import time
-
     max_checks = 5
     for _ in range(max_checks):
         try:
@@ -35,7 +42,6 @@ def check_network() -> bool:
 
 
 def get_appid(pid : int) -> Optional[int]:
-    import re
     appid = None
     stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
 
@@ -66,7 +72,6 @@ def get_appid(pid : int) -> Optional[int]:
 
 
 def get_deck_serial() -> Optional[str]:
-    import subprocess
     product_name = subprocess.run(['dmidecode', '-s', 'system-product-name'], capture_output=True)
     if product_name.returncode != 0 or product_name.stdout.strip() != b'Jupiter':
         return None
@@ -76,13 +81,11 @@ def get_deck_serial() -> Optional[str]:
     return serial_number.stdout.strip().decode()
 
 
-def get_steam_account_id() -> Optional[int]:
-    import xdg
-    import vdf
-    share = xdg.xdg_data_home()
+def get_steam_account_id(uid : int = 1000) -> Optional[int]:
+    home = pwd.getpwuid(uid).pw_dir
 
     try:
-        with open(f'{share}/Steam/config/loginusers.vdf') as v:
+        with open(f'{home}/.local/share/Steam/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
     except:
         return None
@@ -98,7 +101,6 @@ def get_steam_account_id() -> Optional[int]:
 
 
 def trigger():
-    import subprocess
     systemctl = subprocess.Popen(['/usr/bin/systemctl', 'show', 'steamos-log-submitter.timer'], stdout=subprocess.PIPE)
     for line in systemctl.stdout:
         if not line.startswith(b'ActiveState='):
@@ -112,5 +114,21 @@ def trigger():
         systemctl.wait(1)
     except:
         pass
+
+
+def submit():
+    for kind in os.listdir(pending):
+        logs = os.listdir(f'{pending}/{kind}')
+        if not logs:
+            continue
+        helper = f'{scripts}/{kind}'
+        for log in logs:
+            try:
+                submission = subprocess.run([helper, f'{pending}/{kind}/{log}'])
+            except:
+                # TODO: Log failure
+                continue
+            if submission.returncode == 0:
+                os.replace(f'{pending}/{kind}/{log}', f'{uploaded}/{kind}/{log}')
 
 # vim:ts=4:sw=4:et
