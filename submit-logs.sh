@@ -195,11 +195,12 @@ fi
 
 ### Step 1: network validation ###
 LOOP_CNT=0
-MAX_LOOP=99
-TEST_URL="steampowered.com"
+MAX_LOOP=5
+TEST_URL="http://test.steampowered.com/204"
 
 while [ ${LOOP_CNT} -lt ${MAX_LOOP} ]; do
-	if ping -i 0.5 -w 2 -c 2 "${TEST_URL}" 1>/dev/null 2>&1; then
+	RES="$(curl -s -m 2 -I ${TEST_URL} | head -n1 | cut -f2 -d\ )"
+	if [ "${RES}" = "204" ]; then
 		break
 	fi
 	LOOP_CNT=$((LOOP_CNT + 1))
