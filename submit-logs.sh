@@ -7,6 +7,7 @@
 #
 #  This is the SteamOS Log Submitter (SLS) infrastructure. It
 #  sends data from many log collecting tools to Valve servers.
+set -e
 
 
 #  Global settings

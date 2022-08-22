@@ -9,6 +9,7 @@
 #  submission machinery. This script performs some parsing on
 #  kdump/pstore collected data and fills some relevant request
 #  fields that are part of the agreed API with Valve's servers.
+set -e
 
 
 #  Helper function to print error outputs for this add-on.
