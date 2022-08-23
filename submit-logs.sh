@@ -22,8 +22,10 @@ FINISH_URL="https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v
 
 #  Global variables (used here but may be also used inside the
 #  add-on/scripts, for the log name).
+LOG_SUBMITTED=0
 STEAM_ACCOUNT=0
 STEAM_ID=0
+ADDON_NAME=""
 
 
 #  Helper function to print error outputs.
@@ -76,9 +78,9 @@ get_steam_account_id() {
 #  journal in case of errors - otherwise, finishes quietly.
 submit_log() {
 	#  Files used during the POST/PUT requests construction.
-	CURL_ERR="${SLS_FOLDER}/.curl_err-${ADDON_NAME}.${REQ_TIME}"
-	RESPONSE_FILE="${SLS_FOLDER}/.curl_response-${ADDON_NAME}.${REQ_TIME}"
-	CURL_PUT_HEADERS="${SLS_FOLDER}/.curl_put_headers-${ADDON_NAME}.${REQ_TIME}"
+	CURL_ERR="${SLS_FOLDER}/.curl_err-${ADDON_NAME}-${REQ_TIME}"
+	RESPONSE_FILE="${SLS_FOLDER}/.curl_response-${ADDON_NAME}-${REQ_TIME}"
+	CURL_PUT_HEADERS="${SLS_FOLDER}/.curl_put_headers-${ADDON_NAME}-${REQ_TIME}"
 
 	#  Status tracker for this log submission.
 	LOG_SUBMITTED=0
@@ -246,6 +248,10 @@ for script in "${SLS_SCRIPTS_DIR}"/*; do
 	if [ ! -f "$script" ]; then
 		continue
 	fi
+
+	#  Below variable is just used to name some temp files
+	#  during the log submission routine.
+	ADDON_NAME="$(basename "${script}")"
 
 	#  This is the main folder that will enable us to seek logs
 	#  to submit - it MUST be set by the script/add-on sourced above.
