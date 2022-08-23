@@ -241,6 +241,7 @@ fi
 #  writing some add-on that makes use of this log submission mechanism,
 #  it is a form of API that must be respected.
 
+shopt -s nullglob
 for script in "${SLS_SCRIPTS_DIR}"/*; do
 	if [ ! -f "$script" ]; then
 		continue
@@ -250,6 +251,8 @@ for script in "${SLS_SCRIPTS_DIR}"/*; do
 	#  to submit - it MUST be set by the script/add-on sourced above.
 	ADDON_BASE_FOLDER="" # contains the "pending" and "uploaded" folders.
 
+	#  The scripts do inherit the "nullglob" option, which is required
+	#  when looping in potentially empty directories.
 	. "${script}"
 
 	ADDON_PENDING_PATH="${ADDON_BASE_FOLDER}/pending/"
@@ -305,3 +308,4 @@ for script in "${SLS_SCRIPTS_DIR}"/*; do
 	##  TODO: work here the log prune mechanism, based in some ADDON_
 	##  variable that determines the maximum size of logs before pruning.
 done
+shopt -u nullglob
