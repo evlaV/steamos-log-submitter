@@ -298,6 +298,7 @@ for script in "${SLS_SCRIPTS_DIR}"/*; do
 		if [ ${LOG_SUBMITTED} -ne 0 ]; then
 			mkdir -p "${ADDON_UPLOADED_PATH}"
 			mv "${REQ_BLOB_PATH}" "${ADDON_UPLOADED_PATH}"
+			rm -f "${LOG_COMPANION}"
 		fi
 	done
 
