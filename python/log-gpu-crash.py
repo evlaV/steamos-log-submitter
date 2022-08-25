@@ -1,8 +1,6 @@
 #!/usr/bin/python
 import os
-import re
 import time
-from typing import Optional
 import steamos_log_submitter as sls
 
 os.makedirs(f'{sls.pending}/gpu-crash', mode=0o755, exist_ok=True)
@@ -17,7 +15,7 @@ with open(f'{sls.pending}/gpu-crash/{ts}.log', 'w') as f:
 			pid = int(val)
 		print(f'{key}={val}', file=f)
 	if pid:
-		appid = dump_wrangler.get_appid(pid)
+		appid = sls.get_appid(pid)
 		print(f'APPID={appid}', file=f)
 
 sls.trigger()
