@@ -71,14 +71,25 @@ def get_appid(pid : int) -> Optional[int]:
     return appid
 
 
-def get_deck_serial() -> Optional[str]:
-    product_name = subprocess.run(['dmidecode', '-s', 'system-product-name'], capture_output=True)
-    if product_name.returncode != 0 or product_name.stdout.strip() != b'Jupiter':
+def get_deck_serial(uid : int = 1000) -> Optional[str]:
+    home = pwd.getpwuid(uid).pw_dir
+
+    try:
+        with open(f'{home}/.local/share/Steam/config/config.vdf') as v:
+            config = vdf.load(v)
+    except:
         return None
-    serial_number = subprocess.run(['dmidecode', '-s', 'system-serial-number'], capture_output=True)
-    if serial_number.returncode != 0:
+    
+    if 'InstallConfigStore' not in config:
         return None
-    return serial_number.stdout.strip().decode()
+
+    if 'SteamDeckRegisteredSerialNumber' not in config['InstallConfigStore']:
+        return None
+
+    serial = config['InstallConfigStore']['SteamDeckRegisteredSerialNumber']
+    if type(serial) != str:
+        return None
+    return serial
 
 
 def get_steam_account_id(uid : int = 1000) -> Optional[int]:
