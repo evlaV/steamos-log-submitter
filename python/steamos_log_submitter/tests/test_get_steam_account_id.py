@@ -1,12 +1,6 @@
 import builtins
-import io
 import steamos_log_submitter as sls
-
-def open_shim(text):
-	def open_fake(*args):
-		return io.StringIO(text)
-	return open_fake
-
+from steamos_log_submitter.tests import open_shim
 
 def test_no_vdf(monkeypatch):
 	def raise_enoent(*args, **kwargs):
