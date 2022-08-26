@@ -1,11 +1,3 @@
-```
-#  SPDX-License-Identifier: LGPL-2.1+
-#
-#  Copyright (c) 2022 Valve.
-#
-#  Maintained by Guilherme G. Piccoli <gpiccoli@igalia.com>
-#
-#
 #  ###########################################################################
 #  ####################### Steamos Log Submitter (SLS) #######################
 #  ###########################################################################
@@ -81,5 +73,3 @@
 #
 #  Notice we heavily use 'jq' tool to parse the JSON response, so we assume
 #  this format is the response one and that it's not changing over time.
-#
-```

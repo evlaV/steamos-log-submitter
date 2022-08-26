@@ -9,6 +9,5 @@ all:
 install: all
 	install -D -m0644 systemd/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service
 	install -D -m0644 systemd/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer
-	install -D -m0644 README.md $(DESTDIR)$(libdir)/steamos-log-submitter/README
 	install -D -m0755 submit-logs.sh $(DESTDIR)$(libdir)/steamos-log-submitter/submit-logs.sh
 	install -D -m0755 kdump.sh $(DESTDIR)$(libdir)/steamos-log-submitter/scripts.d/kdump.sh
