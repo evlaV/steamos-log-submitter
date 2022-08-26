@@ -3,34 +3,34 @@ import steamos_log_submitter as sls
 from steamos_log_submitter.tests import open_shim
 
 def test_no_vdf(monkeypatch):
-	def raise_enoent(*args, **kwargs):
-		raise FileNotFoundError(args[0])
-	monkeypatch.setattr(builtins, "open", raise_enoent)
-	assert not sls.get_steam_account_id()
+    def raise_enoent(*args, **kwargs):
+        raise FileNotFoundError(args[0])
+    monkeypatch.setattr(builtins, "open", raise_enoent)
+    assert not sls.get_steam_account_id()
 
 
 def test_no_users(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
 
 
 def test_no_recent(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"0"
 	{
 		"MostRecent"		"0"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
 
 
 def test_no_recent2(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"0"
 	{
@@ -42,24 +42,24 @@ def test_no_recent2(monkeypatch):
 		"MostRecent"		"0"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
 
 
 def test_one(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"2"
 	{
 		"MostRecent"		"1"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() == 2
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() == 2
 
 
 def test_first_recent(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"2"
 	{
@@ -71,12 +71,12 @@ def test_first_recent(monkeypatch):
 		"MostRecent"		"0"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() == 2
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() == 2
 
 
 def test_second_recent(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"2"
 	{
@@ -88,34 +88,34 @@ def test_second_recent(monkeypatch):
 		"MostRecent"		"1"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() == 3
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() == 3
 
 
 def test_invalid_vdf(monkeypatch):
-	vdf = "not"
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    vdf = "not"
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
 
 
 def test_invalid_schema(monkeypatch):
-	vdf = """"liars"
+    vdf = """"liars"
 {
 	"2"
 	{
 		"MostRecent"		"1"
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
 
 
 def test_invalid_schema2(monkeypatch):
-	vdf = """"users"
+    vdf = """"users"
 {
 	"2"
 	{
 	}
 }"""
-	monkeypatch.setattr(builtins, "open", open_shim(vdf))
-	assert sls.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() is None
