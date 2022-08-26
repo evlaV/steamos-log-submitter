@@ -206,6 +206,7 @@ while [ ${LOOP_CNT} -lt ${MAX_LOOP} ]; do
 	if [ "${RES}" = "204" ]; then
 		break
 	fi
+	sleep 0.5
 	LOOP_CNT=$((LOOP_CNT + 1))
 done
 
