@@ -46,16 +46,22 @@ def get_appid(pid : int) -> Optional[int]:
     stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
 
     while pid > 1:
-        with open(f'/proc/{pid}/stat') as f:
-            stat = f.read()
+        try:
+            with open(f'/proc/{pid}/stat') as f:
+                stat = f.read()
+        except:
+            return None
 
         stat_match = stat_parse.match(stat)
         comm = stat_match.group(1)
         ppid = int(stat_match.group(2))
 
         if comm == 'reaper':
-            with open(f'/proc/{pid}/cmdline') as f:
-                cmdline = f.read()
+            try:
+                with open(f'/proc/{pid}/cmdline') as f:
+                    cmdline = f.read()
+            except:
+                return None
 
             cmdline = cmdline.split('\0')
             steam_launch = False
