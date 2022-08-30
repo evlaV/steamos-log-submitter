@@ -6,6 +6,7 @@ import subprocess
 import time
 import vdf
 from typing import Optional
+from .lockfile import Lockfile, LockHeldError
 
 __all__ = [
     # Constants
@@ -85,7 +86,7 @@ def get_deck_serial(uid : int = 1000) -> Optional[str]:
             config = vdf.load(v)
     except:
         return None
-    
+
     if 'InstallConfigStore' not in config:
         return None
 
@@ -138,14 +139,21 @@ def submit():
         logs = os.listdir(f'{pending}/{kind}')
         if not logs:
             continue
-        helper = f'{scripts}/{kind}'
-        for log in logs:
-            try:
-                submission = subprocess.run([helper, f'{pending}/{kind}/{log}'])
-            except:
-                # TODO: Log failure
-                continue
-            if submission.returncode == 0:
-                os.replace(f'{pending}/{kind}/{log}', f'{uploaded}/{kind}/{log}')
+
+        try:
+            with Lockfile(f'{pending}/{kind}/.lock'):
+                helper = f'{scripts}/{kind}'
+                for log in logs:
+                    if log.startswith('.'):
+                        continue
+                    try:
+                        submission = subprocess.run([helper, f'{pending}/{kind}/{log}'])
+                    except:
+                        # TODO: Log failure
+                        continue
+                    if submission.returncode == 0:
+                        os.replace(f'{pending}/{kind}/{log}', f'{uploaded}/{kind}/{log}')
+        except LockHeldError:
+            continue
 
 # vim:ts=4:sw=4:et
