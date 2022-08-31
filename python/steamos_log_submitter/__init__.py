@@ -1,3 +1,4 @@
+import logging
 import os
 import pwd
 import re
@@ -135,25 +136,25 @@ def trigger():
 
 
 def submit():
-    for kind in os.listdir(pending):
-        logs = os.listdir(f'{pending}/{kind}')
+    for category in os.listdir(pending):
+        logs = os.listdir(f'{pending}/{category}')
         if not logs:
             continue
 
         try:
-            with Lockfile(f'{pending}/{kind}/.lock'):
-                helper = f'{scripts}/{kind}'
+            with Lockfile(f'{pending}/{category}/.lock'):
+                helper = f'{scripts}/{category}'
                 for log in logs:
                     if log.startswith('.'):
                         continue
                     try:
-                        submission = subprocess.run([helper, f'{pending}/{kind}/{log}'])
-                    except:
-                        # TODO: Log failure
-                        continue
+                        submission = subprocess.run([helper, f'{pending}/{category}/{log}'])
+                    except (FileNotFoundError, PermissionError):
+                        break
                     if submission.returncode == 0:
-                        os.replace(f'{pending}/{kind}/{log}', f'{uploaded}/{kind}/{log}')
+                        os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
         except LockHeldError:
+            # Another process is currently working on this directory
             continue
 
 # vim:ts=4:sw=4:et
