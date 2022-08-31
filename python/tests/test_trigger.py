@@ -5,7 +5,7 @@ import steamos_log_submitter as sls
 def test_inactive_timer(monkeypatch):
     def show_inactive(command, **kwargs):
         if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'ActiveState=inactive\n'))
+            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=inactive\nOtherThing=\n'))
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_inactive)
@@ -18,7 +18,7 @@ def test_active_timer(monkeypatch):
         nonlocal attempt
         if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
             attempt = 1
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'ActiveState=active\n'))
+            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=active\nOtherThing=\n'))
         if command[1] == 'start' and attempt == 1:
             attempt = 2
             return

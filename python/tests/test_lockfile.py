@@ -47,6 +47,21 @@ def test_invalid_unlock(lockfile):
     assert False
 
 
+def test_double_lock(lockfile):
+    lock = Lockfile(lockfile)
+    assert lock
+    assert not lock.lockfile
+    assert not os.access(lock._path, os.F_OK)
+
+    lock.lock()
+    assert lock.lockfile
+    assert os.access(lock._path, os.F_OK)
+
+    lock.lock()
+    assert lock.lockfile
+    assert os.access(lock._path, os.F_OK)
+
+
 def test_invalid_unlock_deletion(lockfile):
     lock = Lockfile(lockfile)
     assert lock
@@ -74,6 +89,31 @@ def test_context(lockfile):
     with lock:
         assert lock.lockfile
         assert os.access(lock._path, os.F_OK)
+
+    assert not lock.lockfile
+    assert not os.access(lock._path, os.F_OK)
+
+
+def test_early_unlock(lockfile):
+    lock = Lockfile(lockfile)
+    assert lock
+    assert not lock.lockfile
+    assert not os.access(lock._path, os.F_OK)
+
+    hit = 0
+    try:
+        with lock:
+            assert lock.lockfile
+            assert os.access(lock._path, os.F_OK)
+
+            lock.unlock()
+            assert not lock.lockfile
+            assert not os.access(lock._path, os.F_OK)
+            hit += 1
+    except LockNotHeldError:
+        hit += 1
+
+    assert hit == 2
 
     assert not lock.lockfile
     assert not os.access(lock._path, os.F_OK)
@@ -195,8 +235,8 @@ def test_slow_lockinfo(lockfile, monkeypatch):
         real_read = f.read
         def read_fake(*args):
             nonlocal attempt
-            if attempt == 0:
-                attempt = 1
+            if attempt < 2:
+                attempt += 1
                 return None
             f.read = real_read
             return f.read()
