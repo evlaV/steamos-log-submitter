@@ -1,6 +1,6 @@
 import builtins
 import steamos_log_submitter as sls
-from steamos_log_submitter.tests import open_shim
+from . import open_shim
 
 def test_no_vdf(monkeypatch):
     def raise_enoent(*args, **kwargs):

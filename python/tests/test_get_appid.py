@@ -1,6 +1,6 @@
 import builtins
 import steamos_log_submitter as sls
-from steamos_log_submitter.tests import open_shim_cb
+from . import open_shim_cb
 
 def build_proc_chain(procs):
     def cb(fname):
