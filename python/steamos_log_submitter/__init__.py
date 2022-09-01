@@ -115,6 +115,8 @@ def get_steam_account_id(uid : int = 1000) -> Optional[int]:
     for userid, data in loginusers['users'].items():
         if data.get('MostRecent', '0') == '1':
             return int(userid)
+        if data.get('mostrecent', '0') == '1':
+            return int(userid)
 
     return None
 

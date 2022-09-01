@@ -58,6 +58,18 @@ def test_one(monkeypatch):
     assert sls.get_steam_account_id() == 2
 
 
+def test_lowercase(monkeypatch):
+    vdf = """"users"
+{
+	"2"
+	{
+		"mostrecent"		"1"
+	}
+}"""
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.get_steam_account_id() == 2
+
+
 def test_first_recent(monkeypatch):
     vdf = """"users"
 {
