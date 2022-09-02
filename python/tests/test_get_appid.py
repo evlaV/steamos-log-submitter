@@ -24,7 +24,7 @@ def test_dead_pid(monkeypatch):
     def cb(fname):
         return None
     monkeypatch.setattr(builtins, "open", open_shim_cb(cb))
-    assert sls.get_appid(2) is None
+    assert sls.util.get_appid(2) is None
 
 
 def test_no_reaper(monkeypatch):
@@ -32,7 +32,7 @@ def test_no_reaper(monkeypatch):
         2:  (1, ['tester'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(2) is None
+    assert sls.util.get_appid(2) is None
 
 
 def test_reaper(monkeypatch):
@@ -40,7 +40,7 @@ def test_reaper(monkeypatch):
         2:  (1, ['reaper', 'SteamLaunch', 'AppId=100'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(2) == 100
+    assert sls.util.get_appid(2) == 100
 
 
 def test_no_steamlaunch(monkeypatch):
@@ -48,7 +48,7 @@ def test_no_steamlaunch(monkeypatch):
         2:  (1, ['reaper', 'AppId=100'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(2) is None
+    assert sls.util.get_appid(2) is None
 
 
 def test_no_appid(monkeypatch):
@@ -56,7 +56,7 @@ def test_no_appid(monkeypatch):
         2:  (1, ['reaper', 'SteamLaunch'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(2) is None
+    assert sls.util.get_appid(2) is None
 
 
 def test_stop_parsing(monkeypatch):
@@ -64,7 +64,7 @@ def test_stop_parsing(monkeypatch):
         2:  (1, ['reaper', 'SteamLaunch', '--', 'AppId=100'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(2) is None
+    assert sls.util.get_appid(2) is None
 
 
 def test_parent(monkeypatch):
@@ -73,7 +73,7 @@ def test_parent(monkeypatch):
         3:  (2, ['tester'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(3) == 100
+    assert sls.util.get_appid(3) == 100
 
 
 def test_reaper_parent(monkeypatch):
@@ -82,7 +82,7 @@ def test_reaper_parent(monkeypatch):
         3:  (2, ['reaper'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(3) == 100
+    assert sls.util.get_appid(3) == 100
 
 
 def test_parent_parent(monkeypatch):
@@ -92,4 +92,4 @@ def test_parent_parent(monkeypatch):
         4:  (3, ['tester'])
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
-    assert sls.get_appid(4) == 100
+    assert sls.util.get_appid(4) == 100

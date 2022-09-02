@@ -6,7 +6,7 @@ def test_no_vdf(monkeypatch):
     def raise_enoent(*args, **kwargs):
         raise FileNotFoundError(args[0])
     monkeypatch.setattr(builtins, "open", raise_enoent)
-    assert not sls.get_deck_serial()
+    assert not sls.util.get_deck_serial()
 
 
 def test_no_serial(monkeypatch):
@@ -14,7 +14,7 @@ def test_no_serial(monkeypatch):
 {
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_deck_serial() is None
+    assert sls.util.get_deck_serial() is None
 
 
 def test_serial(monkeypatch):
@@ -23,13 +23,13 @@ def test_serial(monkeypatch):
 	"SteamDeckRegisteredSerialNumber"		"Test"
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_deck_serial() == "Test"
+    assert sls.util.get_deck_serial() == "Test"
 
 
 def test_invalid_vdf(monkeypatch):
     vdf = "not"
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_deck_serial() is None
+    assert sls.util.get_deck_serial() is None
 
 
 def test_invalid_schema(monkeypatch):
@@ -38,7 +38,7 @@ def test_invalid_schema(monkeypatch):
 	"SteamDeckRegisteredSerialNumber"		"Test"
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_deck_serial() is None
+    assert sls.util.get_deck_serial() is None
 
 
 def test_invalid_schema2(monkeypatch):
@@ -49,4 +49,4 @@ def test_invalid_schema2(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_deck_serial() is None
+    assert sls.util.get_deck_serial() is None
