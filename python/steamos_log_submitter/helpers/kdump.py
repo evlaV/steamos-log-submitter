@@ -1,0 +1,71 @@
+#!/usr/bin/python
+import os
+import sys
+import time
+from typing import Optional
+import steamos_log_submitter as sls
+from steamos_log_submitter.crash import upload as upload_crash
+
+kdump_base = '/home/.steamos/offload/var/kdump/'
+
+def get_summaries() -> tuple[str, str]:
+    crash_summary = []
+    call_trace = []
+    call_trace_grab = False
+    with open(f'{kdump_base}/.tmp/dmesg') as f:
+        # Extract only the lines between "Kernel panic -" and "Kernel Offset:" into the crash summary,
+        # and the subset of those lines after " Call Trace:" and until " RIP:" into the call trace log
+        for line in f:
+            if crash_summary or 'Kernel panic -' in line:
+                crash_summary.append(line)
+
+                if call_trace_grab:
+                    call_trace.append(line)
+                    if ' RIP:' in line:
+                        call_trace_grab = False
+                elif ' Call Trace:' in line:
+                    call_trace_grab = True
+
+                if 'Kernel Offset:' in line:
+                    break
+
+    crash_summary = '\n'.join(crash_summary)
+    call_trace = '\n'.join(call_trace)
+    return crash_summary, call_trace
+
+
+def get_build_id() -> Optional[str]:
+    with open('/etc/os-release') as f:
+        for line in f:
+            name, val = line.split('=', 1)
+            if name == 'BUILD_ID':
+                return val
+    return None
+
+
+def submit(fname : str) -> int:
+    name, ext = os.path.splitext(fname)
+    if ext != '.zip':
+       return 1
+    serial = sls.util.get_deck_serial() or 'null'
+    account = sls.util.get_steam_account_id()
+    new_name = f'steamos-{name}_{serial}-{account}.zip'
+
+    note, stack = get_summaries()
+
+    info = {
+        'crash_time': int(time.time()),
+        'stack': stack,
+        'note': note,
+    }
+    if not upload_crash(product='holo', build=get_build_id(), version=os.uname().release, info=info, dump=fname, filename=new_name):
+        return 1
+
+    return 0
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(submit(sys.argv[1]))
+    except:
+        sys.exit(1)
