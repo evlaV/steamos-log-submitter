@@ -6,7 +6,7 @@ def test_no_vdf(monkeypatch):
     def raise_enoent(*args, **kwargs):
         raise FileNotFoundError(args[0])
     monkeypatch.setattr(builtins, "open", raise_enoent)
-    assert not sls.get_steam_account_id()
+    assert not sls.util.get_steam_account_id()
 
 
 def test_no_users(monkeypatch):
@@ -14,7 +14,7 @@ def test_no_users(monkeypatch):
 {
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None
 
 
 def test_no_recent(monkeypatch):
@@ -26,7 +26,7 @@ def test_no_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None
 
 
 def test_no_recent2(monkeypatch):
@@ -43,7 +43,7 @@ def test_no_recent2(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None
 
 
 def test_one(monkeypatch):
@@ -55,7 +55,7 @@ def test_one(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() == 2
+    assert sls.util.get_steam_account_id() == 2
 
 
 def test_lowercase(monkeypatch):
@@ -67,7 +67,7 @@ def test_lowercase(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() == 2
+    assert sls.util.get_steam_account_id() == 2
 
 
 def test_first_recent(monkeypatch):
@@ -84,7 +84,7 @@ def test_first_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() == 2
+    assert sls.util.get_steam_account_id() == 2
 
 
 def test_second_recent(monkeypatch):
@@ -101,13 +101,13 @@ def test_second_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() == 3
+    assert sls.util.get_steam_account_id() == 3
 
 
 def test_invalid_vdf(monkeypatch):
     vdf = "not"
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None
 
 
 def test_invalid_schema(monkeypatch):
@@ -119,7 +119,7 @@ def test_invalid_schema(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None
 
 
 def test_invalid_schema2(monkeypatch):
@@ -130,4 +130,4 @@ def test_invalid_schema2(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.get_steam_account_id() is None
+    assert sls.util.get_steam_account_id() is None

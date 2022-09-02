@@ -15,7 +15,7 @@ with open(f'{sls.pending}/gpu-crash/{ts}.log', 'w') as f:
 			pid = int(val)
 		print(f'{key}={val}', file=f)
 	if pid:
-		appid = sls.get_appid(pid)
+		appid = sls.util.get_appid(pid)
 		print(f'APPID={appid}', file=f)
 
 sls.trigger()

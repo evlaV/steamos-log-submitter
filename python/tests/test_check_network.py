@@ -14,7 +14,7 @@ def test_204(monkeypatch):
 
     monkeypatch.setattr(requests, "head", ret_204)
     monkeypatch.setattr(time, "sleep", sleepless)
-    assert sls.check_network() == True
+    assert sls.util.check_network() == True
 
 
 def test_200(monkeypatch):
@@ -25,7 +25,7 @@ def test_200(monkeypatch):
 
     monkeypatch.setattr(requests, "head", ret_200)
     monkeypatch.setattr(time, "sleep", sleepless)
-    assert sls.check_network() == False
+    assert sls.util.check_network() == False
 
 
 def test_200_to_204(monkeypatch):
@@ -42,7 +42,7 @@ def test_200_to_204(monkeypatch):
 
     monkeypatch.setattr(requests, "head", ret_200_to_204)
     monkeypatch.setattr(time, "sleep", sleepless)
-    assert sls.check_network() == True
+    assert sls.util.check_network() == True
 
 
 def test_raise(monkeypatch):
@@ -51,7 +51,7 @@ def test_raise(monkeypatch):
 
     monkeypatch.setattr(requests, "head", ret_raise)
     monkeypatch.setattr(time, "sleep", sleepless)
-    assert sls.check_network() == False
+    assert sls.util.check_network() == False
 
 
 def test_raise_to_204(monkeypatch):
@@ -68,4 +68,4 @@ def test_raise_to_204(monkeypatch):
 
     monkeypatch.setattr(requests, "head", ret_raise_to_204)
     monkeypatch.setattr(time, "sleep", sleepless)
-    assert sls.check_network() == True
+    assert sls.util.check_network() == True
