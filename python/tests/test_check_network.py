@@ -1,19 +1,15 @@
 import requests
 import time
 import steamos_log_submitter as sls
+from . import fake_request
 
 def sleepless(*args, **kwargs):
     pass
 
 
 def test_204(monkeypatch):
-    def ret_204(*args, **kwargs):
-        r = requests.Response()
-        r.status_code = 204
-        return r
-
-    monkeypatch.setattr(requests, "head", ret_204)
-    monkeypatch.setattr(time, "sleep", sleepless)
+    monkeypatch.setattr(requests, 'head', fake_request(204))
+    monkeypatch.setattr(time, 'sleep', sleepless)
     assert sls.util.check_network() == True
 
 
@@ -23,8 +19,8 @@ def test_200(monkeypatch):
         r.status_code = 200
         return r
 
-    monkeypatch.setattr(requests, "head", ret_200)
-    monkeypatch.setattr(time, "sleep", sleepless)
+    monkeypatch.setattr(requests, 'head', fake_request(200))
+    monkeypatch.setattr(time, 'sleep', sleepless)
     assert sls.util.check_network() == False
 
 
