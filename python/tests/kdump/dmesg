@@ -1,0 +1,85 @@
+<6>[   64.076387] sysrq: Trigger a crash
+<0>[   64.076441] Kernel panic - not syncing: sysrq triggered crash
+<4>[   64.076473] CPU: 3 PID: 1152 Comm: bash Not tainted 6.0.0-rc3-gpiccoli #244
+<4>[   64.076512] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0105 03/21/2022
+<4>[   64.076545] Call Trace:
+<4>[   64.076561]  <TASK>
+<4>[   64.076577]  dump_stack_lvl+0x45/0x5e
+<4>[   64.076606]  panic+0x10c/0x299
+<4>[   64.076627]  ? _printk+0x58/0x73
+<4>[   64.076650]  sysrq_handle_crash+0x16/0x20
+<4>[   64.076677]  __handle_sysrq.cold+0x43/0x11a
+<4>[   64.076704]  write_sysrq_trigger+0x24/0x40
+<4>[   64.076727]  proc_reg_write+0x51/0x90
+<4>[   64.076749]  vfs_write+0xc6/0x3d0
+<4>[   64.076771]  ? handle_mm_fault+0xb2/0x2a0
+<4>[   64.076797]  ksys_write+0x5f/0xe0
+<4>[   64.076817]  do_syscall_64+0x3b/0x90
+<4>[   64.076838]  entry_SYSCALL_64_after_hwframe+0x63/0xcd
+<4>[   64.076866] RIP: 0033:0x7f6d971fa907
+<4>[   64.076887] Code: 0d 00 f7 d8 64 89 02 48 c7 c0 ff ff ff ff eb b7 0f 1f 00 f3 0f 1e fa 64 8b 04 25 18 00 00 00 85 c0 75 10 b8 01 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 51 c3 48 83 ec 28 48 89 54 24 18 48 89 74 24
+<4>[   64.076966] RSP: 002b:00007ffe6ed79618 EFLAGS: 00000246 ORIG_RAX: 0000000000000001
+<4>[   64.077001] RAX: ffffffffffffffda RBX: 0000000000000002 RCX: 00007f6d971fa907
+<4>[   64.077033] RDX: 0000000000000002 RSI: 0000559bdcdcbd90 RDI: 0000000000000001
+<4>[   64.077064] RBP: 0000559bdcdcbd90 R08: 000000000000000a R09: 00007f6d972904e0
+<4>[   64.077095] R10: 00007f6d972903e0 R11: 0000000000000246 R12: 0000000000000002
+<4>[   64.077126] R13: 00007f6d972cc520 R14: 0000000000000002 R15: 00007f6d972cc700
+<4>[   64.077162]  </TASK>
+<0>[   64.077333] Kernel Offset: 0x15600000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
+<4>[   64.077396] NMI backtrace for cpu 3
+<4>[   64.077414] CPU: 3 PID: 1152 Comm: bash Not tainted 6.0.0-rc3-gpiccoli #244
+<4>[   64.077449] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0105 03/21/2022
+<4>[   64.077478] Call Trace:
+<4>[   64.077492]  <TASK>
+<4>[   64.077505]  dump_stack_lvl+0x45/0x5e
+<4>[   64.077530]  nmi_cpu_backtrace.cold+0x30/0x76
+<4>[   64.077552]  ? lapic_can_unplug_cpu+0x80/0x80
+<4>[   64.077578]  nmi_trigger_cpumask_backtrace+0x10c/0x140
+<4>[   64.077607]  panic_print_sys_info.part.0+0x1c/0x64
+<4>[   64.077634]  panic+0x146/0x299
+<4>[   64.077651]  ? _printk+0x58/0x73
+<4>[   64.077670]  sysrq_handle_crash+0x16/0x20
+<4>[   64.077694]  __handle_sysrq.cold+0x43/0x11a
+<4>[   64.077719]  write_sysrq_trigger+0x24/0x40
+<4>[   64.077741]  proc_reg_write+0x51/0x90
+<4>[   64.077762]  vfs_write+0xc6/0x3d0
+<4>[   64.077784]  ? handle_mm_fault+0xb2/0x2a0
+<4>[   64.078659]  ksys_write+0x5f/0xe0
+<4>[   64.079345]  do_syscall_64+0x3b/0x90
+<4>[   64.080005]  entry_SYSCALL_64_after_hwframe+0x63/0xcd
+<4>[   64.080642] RIP: 0033:0x7f6d971fa907
+<4>[   64.081270] Code: 0d 00 f7 d8 64 89 02 48 c7 c0 ff ff ff ff eb b7 0f 1f 00 f3 0f 1e fa 64 8b 04 25 18 00 00 00 85 c0 75 10 b8 01 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 51 c3 48 83 ec 28 48 89 54 24 18 48 89 74 24
+<4>[   64.082597] RSP: 002b:00007ffe6ed79618 EFLAGS: 00000246 ORIG_RAX: 0000000000000001
+<4>[   64.083277] RAX: ffffffffffffffda RBX: 0000000000000002 RCX: 00007f6d971fa907
+<4>[   64.083955] RDX: 0000000000000002 RSI: 0000559bdcdcbd90 RDI: 0000000000000001
+<4>[   64.084641] RBP: 0000559bdcdcbd90 R08: 000000000000000a R09: 00007f6d972904e0
+<4>[   64.085327] R10: 00007f6d972903e0 R11: 0000000000000246 R12: 0000000000000002
+<4>[   64.086018] R13: 00007f6d972cc520 R14: 0000000000000002 R15: 00007f6d972cc700
+<4>[   64.086713]  </TASK>
+<6>[   64.087398] task:systemd         state:S stack:    0 pid:    1 ppid:     0 flags:0x00000000
+<6>[   64.088110] Call Trace:
+<6>[   64.088808]  <TASK>
+<6>[   64.089504]  __schedule+0x2f4/0xa40
+<6>[   64.090204]  ? sugov_update_single_freq+0x64/0x1a0
+<6>[   64.090912]  schedule+0x5d/0xd0
+<6>[   64.091612]  schedule_hrtimeout_range_clock+0xfc/0x110
+<6>[   64.092319]  ? preempt_count_add+0x70/0xa0
+<6>[   64.093024]  ? _raw_write_lock_irq+0x19/0x40
+<6>[   64.093696]  ? ep_done_scan+0xc9/0x110
+<6>[   64.094341]  ? _raw_spin_unlock_irqrestore+0x23/0x40
+<6>[   64.094983]  do_epoll_wait+0x62d/0x760
+<6>[   64.095617]  ? do_timerfd_settime+0x31f/0x530
+<6>[   64.096248]  ? ep_eventpoll_poll+0x10/0x10
+<6>[   64.096874]  __x64_sys_epoll_wait+0x5e/0x100
+<6>[   64.097500]  ? fpregs_assert_state_consistent+0x22/0x50
+<6>[   64.098133]  ? exit_to_user_mode_prepare+0x40/0x1e0
+<6>[   64.098761]  do_syscall_64+0x3b/0x90
+<6>[   64.099366]  entry_SYSCALL_64_after_hwframe+0x63/0xcd
+<6>[   64.099964] RIP: 0033:0x7f27f462792e
+<6>[   64.100551] RSP: 002b:00007ffeef1e5bf0 EFLAGS: 00000293 ORIG_RAX: 00000000000000e8
+<6>[   64.101150] RAX: ffffffffffffffda RBX: 000055a881ed0760 RCX: 00007f27f462792e
+<6>[   64.101747] RDX: 000000000000009c RSI: 000055a88207b550 RDI: 0000000000000004
+<6>[   64.102350] RBP: 000055a881ed08f0 R08: 0000000000000000 R09: 62e6f4eac6dbbfa3
+<6>[   64.102959] R10: 00000000ffffffff R11: 0000000000000293 R12: 00000000000002a8
+<6>[   64.103571] R13: 000055a881ed0760 R14: 000000000000009c R15: 0000000000000044
+<6>[   64.104185]  </TASK>

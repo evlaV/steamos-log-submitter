@@ -1,0 +1,27 @@
+<0>[   64.076441] Kernel panic - not syncing: sysrq triggered crash
+<4>[   64.076473] CPU: 3 PID: 1152 Comm: bash Not tainted 6.0.0-rc3-gpiccoli #244
+<4>[   64.076512] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0105 03/21/2022
+<4>[   64.076545] Call Trace:
+<4>[   64.076561]  <TASK>
+<4>[   64.076577]  dump_stack_lvl+0x45/0x5e
+<4>[   64.076606]  panic+0x10c/0x299
+<4>[   64.076627]  ? _printk+0x58/0x73
+<4>[   64.076650]  sysrq_handle_crash+0x16/0x20
+<4>[   64.076677]  __handle_sysrq.cold+0x43/0x11a
+<4>[   64.076704]  write_sysrq_trigger+0x24/0x40
+<4>[   64.076727]  proc_reg_write+0x51/0x90
+<4>[   64.076749]  vfs_write+0xc6/0x3d0
+<4>[   64.076771]  ? handle_mm_fault+0xb2/0x2a0
+<4>[   64.076797]  ksys_write+0x5f/0xe0
+<4>[   64.076817]  do_syscall_64+0x3b/0x90
+<4>[   64.076838]  entry_SYSCALL_64_after_hwframe+0x63/0xcd
+<4>[   64.076866] RIP: 0033:0x7f6d971fa907
+<4>[   64.076887] Code: 0d 00 f7 d8 64 89 02 48 c7 c0 ff ff ff ff eb b7 0f 1f 00 f3 0f 1e fa 64 8b 04 25 18 00 00 00 85 c0 75 10 b8 01 00 00 00 0f 05 <48> 3d 00 f0 ff ff 77 51 c3 48 83 ec 28 48 89 54 24 18 48 89 74 24
+<4>[   64.076966] RSP: 002b:00007ffe6ed79618 EFLAGS: 00000246 ORIG_RAX: 0000000000000001
+<4>[   64.077001] RAX: ffffffffffffffda RBX: 0000000000000002 RCX: 00007f6d971fa907
+<4>[   64.077033] RDX: 0000000000000002 RSI: 0000559bdcdcbd90 RDI: 0000000000000001
+<4>[   64.077064] RBP: 0000559bdcdcbd90 R08: 000000000000000a R09: 00007f6d972904e0
+<4>[   64.077095] R10: 00007f6d972903e0 R11: 0000000000000246 R12: 0000000000000002
+<4>[   64.077126] R13: 00007f6d972cc520 R14: 0000000000000002 R15: 00007f6d972cc700
+<4>[   64.077162]  </TASK>
+<0>[   64.077333] Kernel Offset: 0x15600000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
