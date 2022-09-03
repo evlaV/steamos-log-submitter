@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import glob
 import os
 import sys
 import time
@@ -12,7 +13,8 @@ def get_summaries() -> tuple[str, str]:
     crash_summary = []
     call_trace = []
     call_trace_grab = False
-    with open(f'{kdump_base}/.tmp/dmesg') as f:
+    dmesg = glob.glob(f'{kdump_base}/.tmp/dmesg*')
+    with open(dmesg[0]) as f:
         # Extract only the lines between "Kernel panic -" and "Kernel Offset:" into the crash summary,
         # and the subset of those lines after " Call Trace:" and until " RIP:" into the call trace log
         for line in f:
@@ -29,8 +31,8 @@ def get_summaries() -> tuple[str, str]:
                 if 'Kernel Offset:' in line:
                     break
 
-    crash_summary = '\n'.join(crash_summary)
-    call_trace = '\n'.join(call_trace)
+    crash_summary = ''.join(crash_summary)
+    call_trace = ''.join(call_trace)
     return crash_summary, call_trace
 
 
@@ -43,10 +45,10 @@ def get_build_id() -> Optional[str]:
     return None
 
 
-def submit(fname : str) -> int:
+def submit(fname : str) -> bool:
     name, ext = os.path.splitext(fname)
     if ext != '.zip':
-       return 1
+       return False
     serial = sls.util.get_deck_serial() or 'null'
     account = sls.util.get_steam_account_id()
     new_name = f'steamos-{name}_{serial}-{account}.zip'
@@ -59,13 +61,13 @@ def submit(fname : str) -> int:
         'note': note,
     }
     if not upload_crash(product='holo', build=get_build_id(), version=os.uname().release, info=info, dump=fname, filename=new_name):
-        return 1
+        return False
 
-    return 0
+    return True
 
 
 if __name__ == '__main__':
     try:
-        sys.exit(submit(sys.argv[1]))
+        sys.exit(0 if submit(sys.argv[1]) else 1)
     except:
         sys.exit(1)
