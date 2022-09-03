@@ -5,7 +5,7 @@ import steamos_log_submitter as sls
 start_url = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
 finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
 
-def upload(*, product, build=None, version, info, dump=None, filename=None) -> bool:
+def upload(product, *, build=None, version, info, dump=None, filename=None) -> bool:
     account = sls.util.get_steam_account_id()
 
     info = dict(info)
@@ -22,7 +22,7 @@ def upload(*, product, build=None, version, info, dump=None, filename=None) -> b
         info['dump_file_size'] = os.stat(dump).st_size
 
     start = requests.post(start_url, data=info)
-    if start.status // 100 != 2:
+    if start.status_code // 100 != 2:
         return False
 
     response = start.json()['response']
@@ -31,11 +31,11 @@ def upload(*, product, build=None, version, info, dump=None, filename=None) -> b
         filename = os.path.basename(dump)
 
     put = requests.put(response['url'], headers=headers, files={filename: open(dump, 'rb')})
-    if put.status // 100 != 2:
+    if put.status_code // 100 != 2:
         return False
 
     finish = requests.post(finish_url, data={'gid': response['gid']})
-    if finish.status // 100 != 2:
+    if finish.status_code // 100 != 2:
         return False
 
     return True

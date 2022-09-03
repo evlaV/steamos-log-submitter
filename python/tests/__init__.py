@@ -1,4 +1,5 @@
 import io
+import requests
 
 def open_shim(text):
     def open_fake(*args):
@@ -13,3 +14,11 @@ def open_shim_cb(cb):
             raise FileNotFoundError
         return io.StringIO(text)
     return open_fake
+
+
+def fake_request(status_code):
+    def ret(*args, **kwargs):
+        r = requests.Response()
+        r.status_code = status_code
+        return r
+    return ret
