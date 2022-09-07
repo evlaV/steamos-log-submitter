@@ -46,7 +46,7 @@ def get_build_id() -> Optional[str]:
 
 
 def submit(fname : str) -> bool:
-    name, ext = os.path.splitext(fname)
+    name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.zip':
        return False
     serial = sls.util.get_deck_serial() or 'null'
