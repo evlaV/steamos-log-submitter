@@ -66,8 +66,10 @@ def submit(fname : str) -> bool:
     return True
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     try:
         sys.exit(0 if submit(sys.argv[1]) else 1)
     except:
         sys.exit(1)
+
+# vim:ts=4:sw=4:et

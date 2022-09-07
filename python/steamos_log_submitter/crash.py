@@ -40,3 +40,5 @@ def upload(product, *, build=None, version, info, dump=None, filename=None) -> b
         return False
 
     return True
+
+# vim:ts=4:sw=4:et

@@ -31,3 +31,5 @@ def fake_response(body):
         r._content = body.encode()
         return r
     return ret
+
+# vim:ts=4:sw=4:et

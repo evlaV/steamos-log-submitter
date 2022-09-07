@@ -82,3 +82,5 @@ def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
     assert kdump.submit(f'{file_base}/empty.zip')
     assert attempt == 3
+
+# vim:ts=4:sw=4:et

@@ -63,3 +63,5 @@ def test_other_timer(monkeypatch):
     sls.trigger()
 
     assert hit
+
+# vim:ts=4:sw=4:et
