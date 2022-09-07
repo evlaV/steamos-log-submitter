@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import json
 import os
 import requests
 import sys
@@ -9,7 +10,23 @@ dsn = 'http://127.0.0.1:9000/api/1/minidump/?sentry_key=887d785705d9443cb8575004
 
 def submit(fname : str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
-    post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')})
+    if ext not in ('.md', '.dmp'):
+        return False
+    name_parts = name.split('-')
+
+    metadata = {}
+    try:
+        appid = int(name_parts[-1])
+        metadata['sentry[tags][appid]'] = appid
+    except ValueError:
+        # Invalid appid
+        pass
+
+    account = sls.util.get_steam_account_id()
+    if account is not None:
+        metadata['sentry[tags][steam_id]'] = account
+
+    post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
     return post.status_code == 200
 
