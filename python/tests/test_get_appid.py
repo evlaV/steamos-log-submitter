@@ -93,3 +93,5 @@ def test_parent_parent(monkeypatch):
     }
     monkeypatch.setattr(builtins, "open", build_proc_chain(procs))
     assert sls.util.get_appid(4) == 100
+
+# vim:ts=4:sw=4:et

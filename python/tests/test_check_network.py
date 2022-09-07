@@ -65,3 +65,5 @@ def test_raise_to_204(monkeypatch):
     monkeypatch.setattr(requests, "head", ret_raise_to_204)
     monkeypatch.setattr(time, "sleep", sleepless)
     assert sls.util.check_network() == True
+
+# vim:ts=4:sw=4:et

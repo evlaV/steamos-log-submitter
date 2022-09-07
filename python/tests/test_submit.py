@@ -119,3 +119,5 @@ def test_lock(tmpdir):
     assert not os.access(f'{sls.pending}/foo/log', os.F_OK)
     assert os.access(f'{sls.uploaded}/foo/log', os.F_OK)
     assert running == 2
+
+# vim:ts=4:sw=4:et

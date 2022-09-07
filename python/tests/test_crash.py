@@ -115,3 +115,5 @@ def test_no_filename(monkeypatch):
     monkeypatch.setattr(requests, 'put', respond)
     assert crash.upload('holo', version=0, info={}, dump=file)
     assert attempt == 3
+
+# vim:ts=4:sw=4:et

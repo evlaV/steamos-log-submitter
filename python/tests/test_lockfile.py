@@ -266,3 +266,5 @@ def test_slow_lockinfo(lockfile, monkeypatch):
         assert lock_a.lockfile
         assert not lock_b.lockfile
         assert os.access(lock_a._path, os.F_OK)
+
+# vim:ts=4:sw=4:et

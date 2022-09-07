@@ -69,3 +69,5 @@ class Lockfile:
         os.unlink(self._path)
         self.lockfile.close()
         self.lockfile = None
+
+# vim:ts=4:sw=4:et

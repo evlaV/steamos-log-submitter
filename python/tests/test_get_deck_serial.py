@@ -50,3 +50,5 @@ def test_invalid_schema2(monkeypatch):
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert sls.util.get_deck_serial() is None
+
+# vim:ts=4:sw=4:et
