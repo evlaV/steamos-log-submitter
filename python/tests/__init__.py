@@ -22,3 +22,12 @@ def fake_request(status_code):
         r.status_code = status_code
         return r
     return ret
+
+
+def fake_response(body):
+    def ret(*args, **kwargs):
+        r = requests.Response()
+        r.status_code = 200
+        r._content = body.encode()
+        return r
+    return ret

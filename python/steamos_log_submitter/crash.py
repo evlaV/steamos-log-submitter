@@ -27,12 +27,13 @@ def upload(product, *, build=None, version, info, dump=None, filename=None) -> b
 
     response = start.json()['response']
     headers = {pair.name: pair.value for pair in response['headers']['pairs']}
-    if not filename:
-        filename = os.path.basename(dump)
 
-    put = requests.put(response['url'], headers=headers, files={filename: open(dump, 'rb')})
-    if put.status_code // 100 != 2:
-        return False
+    if dump:
+        if not filename:
+            filename = os.path.basename(dump)
+        put = requests.put(response['url'], headers=headers, files={filename: open(dump, 'rb')})
+        if put.status_code // 100 != 2:
+            return False
 
     finish = requests.post(finish_url, data={'gid': response['gid']})
     if finish.status_code // 100 != 2:
