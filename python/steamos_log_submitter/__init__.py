@@ -47,7 +47,7 @@ def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
         def helper_fn(log) -> bool:
-            if not getattr(helper, 'submit'):
+            if not hasattr(helper, 'submit'):
                 raise HelperError
             return helper.submit(log)
     except ModuleNotFoundError:
