@@ -20,7 +20,7 @@ def get_appid(pid : int) -> Optional[int]:
         try:
             with open(f'/proc/{pid}/stat') as f:
                 stat = f.read()
-        except:
+        except IOError:
             return None
 
         stat_match = stat_parse.match(stat)
@@ -31,7 +31,7 @@ def get_appid(pid : int) -> Optional[int]:
             try:
                 with open(f'/proc/{pid}/cmdline') as f:
                     cmdline = f.read()
-            except:
+            except IOError:
                 return None
 
             cmdline = cmdline.split('\0')
@@ -54,7 +54,7 @@ def get_deck_serial(uid : int = 1000) -> Optional[str]:
     try:
         with open(f'{home}/.local/share/Steam/config/config.vdf') as v:
             config = vdf.load(v)
-    except:
+    except (IOError, SyntaxError):
         return None
 
     if 'InstallConfigStore' not in config:
@@ -75,7 +75,7 @@ def get_steam_account_id(uid : int = 1000) -> Optional[int]:
     try:
         with open(f'{home}/.local/share/Steam/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except:
+    except (IOError, SyntaxError):
         return None
 
     if 'users' not in loginusers:
