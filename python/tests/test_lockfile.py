@@ -200,6 +200,15 @@ def test_eperm_lock(lockfile):
         assert lock.lockfile
 
 
+def test_stale_lock(lockfile):
+    with open(lockfile, 'w') as f:
+        f.write(f'/proc/{os.getpid()}/fd/0')
+
+    lock = Lockfile(lockfile)
+    with lock:
+        assert lock.lockfile
+
+
 def test_disappearing_contention(lockfile, monkeypatch):
     attempt = 0
     real_open = open
@@ -236,6 +245,47 @@ def test_slow_lockinfo(lockfile, monkeypatch):
         def read_fake(*args):
             nonlocal attempt
             if attempt < 2:
+                attempt += 1
+                return None
+            f.read = real_read
+            return f.read()
+        f.read = read_fake
+        return f
+
+    monkeypatch.setattr(builtins, 'open', open_fake)
+
+    lock_a = Lockfile(lockfile)
+    lock_b = Lockfile(lockfile)
+
+    assert lock_a
+    assert lock_b
+    assert not lock_a.lockfile
+    assert not lock_b.lockfile
+
+    with lock_a:
+        assert lock_a.lockfile
+        assert not lock_b.lockfile
+        try:
+            with lock_b:
+                assert False
+        except LockHeldError:
+            pass
+        except:
+            assert False
+        assert lock_a.lockfile
+        assert not lock_b.lockfile
+        assert os.access(lock_a._path, os.F_OK)
+
+
+def test_very_slow_lockinfo(lockfile, monkeypatch):
+    attempt = 0
+    real_open = open
+    def open_fake(*args):
+        f = real_open(*args)
+        real_read = f.read
+        def read_fake(*args):
+            nonlocal attempt
+            if attempt < 4:
                 attempt += 1
                 return None
             f.read = real_read
