@@ -1,5 +1,7 @@
+import importlib
 import os
 import pytest
+import sys
 import tempfile
 import threading
 import time
@@ -17,6 +19,13 @@ def tmpdir(monkeypatch):
     monkeypatch.setattr(sls, 'pending', f'{d.name}/pending')
     monkeypatch.setattr(sls, 'uploaded', f'{d.name}/uploaded')
     monkeypatch.setattr(sls, 'scripts', f'{d.name}/scripts')
+
+    original_import_module = importlib.import_module
+    def import_module(name, package=None):
+        if name == 'steamos_log_submitter.helpers.test':
+            return sys.modules[__name__]
+        return original_import_module(name, package)
+    monkeypatch.setattr(importlib, 'import_module', import_module)
 
     yield d.name
 
@@ -67,6 +76,15 @@ def test_missing_script(tmpdir):
     assert not os.access(f'{sls.uploaded}/foo/log', os.F_OK)
 
 
+def test_broken_module(tmpdir):
+    setup_categories(tmpdir, {'test': None})
+    setup_logs(tmpdir, {'test/log': ''})
+    sls.submit()
+
+    assert os.access(f'{sls.pending}/test/log', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
+
+
 def test_success(tmpdir):
     setup_categories(tmpdir, {'foo': '#!/bin/sh\n exit 0\n'})
     setup_logs(tmpdir, {'foo/log': ''})
@@ -83,6 +101,36 @@ def test_failure(tmpdir):
 
     assert os.access(f'{sls.pending}/foo/log', os.F_OK)
     assert not os.access(f'{sls.uploaded}/foo/log', os.F_OK)
+
+
+def test_module_success(tmpdir, monkeypatch):
+    setup_categories(tmpdir, {'test': None})
+    setup_logs(tmpdir, {'test/log': ''})
+
+    def submit(fname):
+        return True
+
+    sys.modules[__name__].submit = submit
+    sls.submit()
+    del sys.modules[__name__].submit
+
+    assert not os.access(f'{sls.pending}/test/log', os.F_OK)
+    assert os.access(f'{sls.uploaded}/test/log', os.F_OK)
+
+
+def test_module_failure(tmpdir, monkeypatch):
+    setup_categories(tmpdir, {'test': None})
+    setup_logs(tmpdir, {'test/log': ''})
+
+    def submit(fname):
+        return False
+
+    sys.modules[__name__].submit = submit
+    sls.submit()
+    del sys.modules[__name__].submit
+
+    assert os.access(f'{sls.pending}/test/log', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
 
 
 def test_filename(tmpdir):
