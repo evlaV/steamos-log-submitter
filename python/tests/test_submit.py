@@ -2,6 +2,7 @@ import os
 import pytest
 import tempfile
 import threading
+import time
 import steamos_log_submitter as sls
 
 @pytest.fixture
@@ -97,13 +98,15 @@ def test_filename(tmpdir):
 
 
 def test_lock(tmpdir):
-    setup_categories(tmpdir, {'foo': '#!/bin/sh\nsleep 1\n'})
+    setup_categories(tmpdir, {'foo': '#!/bin/sh\nsleep 0.3\n'})
     setup_logs(tmpdir, {'foo/log': ''})
 
     running = 0
     def run():
         nonlocal running
-        assert running == 0 or os.access(f'{sls.pending}/foo/.lock', os.F_OK)
+        if running != 0:
+            time.sleep(0.05)
+            assert os.access(f'{sls.pending}/foo/.lock', os.F_OK)
         running += 1
         sls.submit()
 
