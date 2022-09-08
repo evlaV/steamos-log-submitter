@@ -45,7 +45,10 @@ class Lockfile:
                         break
                     time.sleep(0.01)
                 lockfile.close()
-                if lockinfo and lockinfo.startswith('/proc/'):
+                if lockinfo is None:
+                    # Couldn't get info about the lock...let's assume it's held
+                    raise LockHeldError
+                if lockinfo.startswith('/proc/'):
                     pathstat = os.stat(self._path)
                     try:
                         lockstat = os.stat(lockinfo.strip())
