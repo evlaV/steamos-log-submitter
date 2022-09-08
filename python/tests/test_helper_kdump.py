@@ -73,7 +73,6 @@ def test_submit_succeed(monkeypatch):
         'url': 'file:///',
         'gid': 111
     }})
-    file = __file__
     respond = fake_response(response, 'empty.zip')
     monkeypatch.setattr(requests, 'post', respond)
     monkeypatch.setattr(requests, 'put', respond)
