@@ -24,7 +24,8 @@ def test_get_build_id(monkeypatch):
     os_release = """NAME="SteamOS"
 PRETTY_NAME="SteamOS"
 ID=holo
-BUILD_ID=definitely fake"""
+BUILD_ID=definitely fake
+"""
     monkeypatch.setattr(builtins, 'open', open_shim(os_release))
     assert kdump.get_build_id() == 'definitely fake'
 
@@ -32,7 +33,8 @@ BUILD_ID=definitely fake"""
 def test_no_get_build_id(monkeypatch):
     os_release = """NAME="SteamOS"
 PRETTY_NAME="SteamOS"
-ID=holo"""
+ID=holo
+"""
     monkeypatch.setattr(builtins, 'open', open_shim(os_release))
     assert kdump.get_build_id() is None
 
