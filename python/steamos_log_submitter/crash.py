@@ -10,7 +10,7 @@ def upload(product, *, build=None, version, info, dump=None, filename=None) -> b
 
     info = dict(info)
     info.update({
-        'steam_id': account or 'null',
+        'steamid': account or 'null',
         'have_dump_file': 1 if dump else 0,
         'product': product,
         'build': build or 'null',
@@ -26,12 +26,12 @@ def upload(product, *, build=None, version, info, dump=None, filename=None) -> b
         return False
 
     response = start.json()['response']
-    headers = {pair.name: pair.value for pair in response['headers']['pairs']}
 
     if dump:
         if not filename:
             filename = os.path.basename(dump)
-        put = requests.put(response['url'], headers=headers, files={filename: open(dump, 'rb')})
+        headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}
+        put = requests.put(response['url'], headers=headers, data=open(dump, 'rb'))
         if put.status_code // 100 != 2:
             return False
 

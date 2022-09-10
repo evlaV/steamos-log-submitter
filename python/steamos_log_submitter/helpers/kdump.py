@@ -41,7 +41,7 @@ def get_build_id() -> Optional[str]:
         for line in f:
             name, val = line.split('=', 1)
             if name == 'BUILD_ID':
-                return val
+                return val.strip()
     return None
 
 
