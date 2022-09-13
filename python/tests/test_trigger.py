@@ -2,6 +2,9 @@ import io
 import subprocess
 import steamos_log_submitter as sls
 
+def do_not_hit():
+    assert False
+
 def test_inactive_timer(monkeypatch):
     hit = False
     def show_inactive(command, **kwargs):
@@ -12,6 +15,7 @@ def test_inactive_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_inactive)
+    monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 
     assert hit
@@ -24,12 +28,14 @@ def test_active_timer(monkeypatch):
         if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
             attempt = 1
             return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=active\nOtherThing=\n'))
-        if command[1] == 'start' and attempt == 1:
-            attempt = 2
-            return
         assert False
+    def do_hit():
+        nonlocal attempt
+        assert attempt == 1
+        attempt = 2
 
     monkeypatch.setattr(subprocess, 'Popen', show_active)
+    monkeypatch.setattr(sls, 'submit', do_hit)
     sls.trigger()
 
     assert attempt == 2
@@ -45,6 +51,7 @@ def test_broken_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_missing)
+    monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 
     assert hit
@@ -60,6 +67,7 @@ def test_other_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_other)
+    monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 
     assert hit

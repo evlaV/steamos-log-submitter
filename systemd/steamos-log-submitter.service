@@ -8,4 +8,4 @@ Description=SteamOS log submitter service - sends error logs to Valve
 
 [Service]
 Type=oneshot
-ExecStart=/usr/lib/steamos-log-submitter/submit-logs.sh
+ExecStart=/usr/bin/python -m steamos_log_submitter.run
