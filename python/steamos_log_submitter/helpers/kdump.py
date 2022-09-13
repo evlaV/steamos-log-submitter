@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# SPDX-License-Identifier: LGPL-2.1+
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import glob
 import os
 import sys
