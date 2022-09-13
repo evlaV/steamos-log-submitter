@@ -34,7 +34,7 @@ def trigger():
             continue
         # Do not trigger the submitter if the timer is disabled
         if line == b'ActiveState=active\n':
-            subprocess.Popen(['/usr/bin/systemctl', 'start', 'steamos-log-submitter.service'], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            submit()
         break
     systemctl.stdout.close()
     try:
