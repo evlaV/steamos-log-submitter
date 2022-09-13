@@ -6,6 +6,8 @@ systemdunitsdir := $(shell pkg-config --define-variable=prefix=$(prefix) --varia
 			  || echo $(libdir)/systemd/system/)
 udevdir := $(shell pkg-config --define-variable=prefix=$(prefix) --variable=udevdir udev 2>/dev/null \
 			  || echo $(libdir)/udev/)
+sysctldir := $(shell pkg-config --define-variable=prefix=$(prefix) --variable=sysctldir systemd 2>/dev/null \
+			  || echo $(libdir)/sysctl.d/)
 sysusersdir := $(shell pkg-config --define-variable=prefix=$(prefix) --variable=sysusersdir systemd 2>/dev/null \
 			  || echo $(libdir)/sysusers.d/)
 tmpfilesdir := $(shell pkg-config --define-variable=prefix=$(prefix) --variable=tmpfilesdir systemd 2>/dev/null \
@@ -18,3 +20,5 @@ install: all
 	install -D -m0644 udev/80-gpu-crash.rules $(DESTDIR)$(udevdir)/80-gpu-crash.rules
 	install -D -m0644 tmpfiles.d/steamos-log-submitter.conf $(DESTDIR)$(tmpfilesdir)/steamos-log-submitter.conf
 	install -D -m0644 sysusers.d/steamos-log-submitter.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf
+	install -D -m0644 sysctl.d/60-crash-hook.conf $(DESTDIR)$(sysctldir)/60-crash-hook.conf
+	install -D -m0755 python/crash-hook.py $(DESTDIR)$(libdir)/steamos-log-submitter/crash-hook.py
