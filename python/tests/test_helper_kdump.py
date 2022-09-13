@@ -46,7 +46,7 @@ def test_submit_bad_name():
 def test_submit_succeed(monkeypatch):
     attempt = 0
     def fake_response(body, filename):
-        def ret(url, data=None, files=None, *args, **kwargs):
+        def ret(url, data=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
@@ -56,7 +56,8 @@ def test_submit_succeed(monkeypatch):
                 return r
             if attempt == 2:
                 assert url == json.loads(body)['response']['url']
-                assert len(files) == 1 and 'steamos-empty_SERIAL-ACCOUNT.zip' in files
+                assert data is not None
+                assert data.read
                 r = requests.Response()
                 r.status_code = 204
                 return r
