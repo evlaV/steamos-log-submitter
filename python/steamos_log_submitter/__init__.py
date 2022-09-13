@@ -18,7 +18,7 @@ __all__ = [
     'util',
 ]
 
-base = '/home/.steamos/offload/var/steamos-log-submit'
+base = '/home/.steamos/offload/var/steamos-log-submitter'
 scripts = '/usr/lib/steamos-log-submitter/scripts.d'
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
