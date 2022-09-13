@@ -51,7 +51,6 @@ def submit(fname : str) -> bool:
        return False
     serial = sls.util.get_deck_serial() or 'null'
     account = sls.util.get_steam_account_id()
-    new_name = f'steamos-{name}_{serial}-{account}.zip'
 
     note, stack = get_summaries()
 
@@ -60,7 +59,7 @@ def submit(fname : str) -> bool:
         'stack': stack,
         'note': note,
     }
-    if not upload_crash(product='holo', build=get_build_id(), version=os.uname().release, info=info, dump=fname, filename=new_name):
+    if not upload_crash(product='holo', build=get_build_id(), version=os.uname().release, info=info, dump=fname):
         return False
 
     return True
