@@ -11,6 +11,10 @@ import steamos_log_submitter as sls
 dsn = 'http://127.0.0.1:9000/api/1/minidump/?sentry_key=887d785705d9443cb85750046df1b451'
 
 
+def collect() -> bool:
+    return False
+
+
 def submit(fname : str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext not in ('.md', '.dmp'):

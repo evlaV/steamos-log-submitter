@@ -47,22 +47,41 @@ def trigger():
         pass
 
 
+class Helper:
+    def __init__(self, category):
+        self.category = category
+        self._helper = f'{scripts}/{category}'
+
+    def submit(self, log):
+        try:
+            submission = subprocess.run([self._helper, log])
+        except (FileNotFoundError, PermissionError) as e:
+            raise HelperError from e
+        return submission.returncode == 0
+
+    def collect(self):
+        return False
+
+
 def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
-        def helper_fn(log) -> bool:
-            if not hasattr(helper, 'submit'):
-                raise HelperError
-            return helper.submit(log)
+        if not hasattr(helper, 'submit'):
+            raise HelperError
     except ModuleNotFoundError:
-        helper = f'{scripts}/{category}'
-        def helper_fn(log) -> bool:
-            try:
-                submission = subprocess.run([helper, log])
-            except (FileNotFoundError, PermissionError) as exc:
-                raise HelperError from exc
-            return submission.returncode == 0
-    return helper_fn
+        return Helper(category)
+    return helper
+
+
+def collect():
+    for category in os.listdir(pending):
+        try:
+            with Lockfile(f'{pending}/{category}/.lock'):
+                helper = create_helper(category)
+                helper.collect()
+        except LockHeldError:
+            # Another process is currently working on this directory
+            continue
 
 
 def submit():
@@ -73,15 +92,15 @@ def submit():
 
         try:
             with Lockfile(f'{pending}/{category}/.lock'):
-                helper = create_helper(category)
-                for log in logs:
-                    if log.startswith('.'):
-                        continue
-                    try:
-                        if helper(f'{pending}/{category}/{log}'):
+                try:
+                    helper = create_helper(category)
+                    for log in logs:
+                        if log.startswith('.'):
+                            continue
+                        if helper.submit(f'{pending}/{category}/{log}'):
                             os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
-                    except HelperError:
-                        break
+                except HelperError:
+                    continue
         except LockHeldError:
             # Another process is currently working on this directory
             continue
