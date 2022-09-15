@@ -38,6 +38,10 @@ def fake_response(body):
     return ret
 
 
+def unreachable(*args, **kwargs):
+    assert False
+
+
 @pytest.fixture
 def patch_module():
     class FakeModule:

@@ -5,6 +5,7 @@ import os
 import requests
 import steamos_log_submitter.helpers.kdump as kdump
 import steamos_log_submitter.util as util
+import steamos_log_submitter as sls
 from . import open_shim
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
@@ -84,5 +85,33 @@ def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
     assert kdump.submit(f'{file_base}/empty.zip')
     assert attempt == 3
+
+
+def test_collect_none(monkeypatch):
+    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
+    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
+    monkeypatch.setattr(glob, 'glob', lambda x: [])
+    assert not kdump.collect()
+
+
+def test_collect_empty(monkeypatch):
+    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
+    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
+    monkeypatch.setattr(glob, 'glob', lambda x: ['blank.zip'])
+    monkeypatch.setattr(os, 'stat', lambda x: os.stat_result([0,0,0,0,0,0,0,0,0,0]))
+    assert not kdump.collect()
+
+
+def test_collect_rename(monkeypatch):
+    def rename(src, dest):
+        assert src == 'blank.zip'
+        assert dest == f'{sls.pending}/kdump/steamos-blank_SERIAL-ACCOUNT.zip'
+
+    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
+    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
+    monkeypatch.setattr(glob, 'glob', lambda x: ['blank.zip'])
+    monkeypatch.setattr(os, 'stat', lambda x: os.stat_result([0,0,0,0,0,0,1,0,0,0]))
+    monkeypatch.setattr(os, 'rename', rename)
+    assert kdump.collect()
 
 # vim:ts=4:sw=4:et

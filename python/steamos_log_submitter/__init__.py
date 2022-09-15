@@ -85,6 +85,9 @@ def collect():
 
 
 def submit():
+    if not util.check_network():
+        return
+
     for category in os.listdir(pending):
         logs = os.listdir(f'{pending}/{category}')
         if not logs:

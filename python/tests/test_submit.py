@@ -1,8 +1,14 @@
 import os
+import pytest
 import threading
 import time
 import steamos_log_submitter as sls
-from . import helper_directory, patch_module, setup_categories
+from . import helper_directory, patch_module, setup_categories, unreachable
+
+@pytest.fixture
+def online(monkeypatch):
+    monkeypatch.setattr(sls.util, 'check_network', lambda: True)
+
 
 def setup_logs(helper_directory, logs):
     for fname, text in logs.items():
@@ -11,16 +17,22 @@ def setup_logs(helper_directory, logs):
                 f.write(text)
 
 
-def test_submit_no_categories(helper_directory):
+def test_offline(monkeypatch):
+    monkeypatch.setattr(sls.util, 'check_network', lambda: False)
+    monkeypatch.setattr(os, 'listdir', unreachable)
     sls.submit()
 
 
-def test_submit_empty(helper_directory):
+def test_submit_no_categories(helper_directory, online):
+    sls.submit()
+
+
+def test_submit_empty(helper_directory, online):
     setup_categories({'foo': None, 'bar': None, 'baz': None})
     sls.submit()
 
 
-def test_submit_skip_dot(helper_directory):
+def test_submit_skip_dot(helper_directory, online):
     setup_categories({'foo': None})
     setup_logs(helper_directory, {'foo/.skip': ''})
     sls.submit()
@@ -29,7 +41,7 @@ def test_submit_skip_dot(helper_directory):
     assert not os.access(f'{sls.uploaded}/foo/.skip', os.F_OK)
 
 
-def test_missing_script(helper_directory):
+def test_missing_script(helper_directory, online):
     setup_categories({'foo': None})
     setup_logs(helper_directory, {'foo/log': ''})
     sls.submit()
@@ -38,7 +50,7 @@ def test_missing_script(helper_directory):
     assert not os.access(f'{sls.uploaded}/foo/log', os.F_OK)
 
 
-def test_broken_module(helper_directory):
+def test_broken_module(helper_directory, online):
     setup_categories({'test': None})
     setup_logs(helper_directory, {'test/log': ''})
     sls.submit()
@@ -47,7 +59,7 @@ def test_broken_module(helper_directory):
     assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
 
 
-def test_success(helper_directory):
+def test_success(helper_directory, online):
     setup_categories({'foo': '#!/bin/sh\n exit 0\n'})
     setup_logs(helper_directory, {'foo/log': ''})
     sls.submit()
@@ -56,7 +68,7 @@ def test_success(helper_directory):
     assert os.access(f'{sls.uploaded}/foo/log', os.F_OK)
 
 
-def test_failure(helper_directory):
+def test_failure(helper_directory, online):
     setup_categories({'foo': '#!/bin/sh\n exit 1\n'})
     setup_logs(helper_directory, {'foo/log': ''})
     sls.submit()
@@ -65,7 +77,7 @@ def test_failure(helper_directory):
     assert not os.access(f'{sls.uploaded}/foo/log', os.F_OK)
 
 
-def test_module_success(helper_directory, monkeypatch, patch_module):
+def test_module_success(helper_directory, monkeypatch, online, patch_module):
     setup_categories({'test': None})
     setup_logs(helper_directory, {'test/log': ''})
 
@@ -83,7 +95,7 @@ def test_module_success(helper_directory, monkeypatch, patch_module):
     assert attempt
 
 
-def test_module_failure(helper_directory, monkeypatch, patch_module):
+def test_module_failure(helper_directory, monkeypatch, online, patch_module):
     setup_categories({'test': None})
     setup_logs(helper_directory, {'test/log': ''})
 
@@ -101,7 +113,7 @@ def test_module_failure(helper_directory, monkeypatch, patch_module):
     assert attempt
 
 
-def test_filename(helper_directory):
+def test_filename(helper_directory, online):
     setup_categories({'foo': f'#!/bin/sh\ntest "$1" == "{sls.pending}/foo/log"\nexit $?\n'})
     setup_logs(helper_directory, {'foo/log': '', 'foo/fail': ''})
     sls.submit()
@@ -113,7 +125,7 @@ def test_filename(helper_directory):
     assert not os.access(f'{sls.uploaded}/foo/fail', os.F_OK)
 
 
-def test_lock(helper_directory):
+def test_lock(helper_directory, online):
     setup_categories({'foo': '#!/bin/sh\nsleep 0.3\n'})
     setup_logs(helper_directory, {'foo/log': ''})
 

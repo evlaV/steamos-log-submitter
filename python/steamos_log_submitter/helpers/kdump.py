@@ -55,6 +55,7 @@ def collect() -> bool:
     serial = sls.util.get_deck_serial() or 'null'
     account = sls.util.get_steam_account_id()
     logs = glob.glob(f'{logs_dir}/*.zip')
+    processed = 0
     for log in logs:
         stat = os.stat(f'{logs_dir}/{log}')
         if stat.st_size == 0:
@@ -62,7 +63,8 @@ def collect() -> bool:
         name = os.path.basename(log)[:-4]
         new_name = f'steamos-{name}_{serial}-{account}.zip'
         os.rename(log, f'{sls.pending}/kdump/{new_name}')
-    return any(logs)
+        processed += 1
+    return processed > 0
 
 
 def submit(fname : str) -> bool:
