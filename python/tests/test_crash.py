@@ -1,5 +1,4 @@
 import json
-import os
 import requests
 import steamos_log_submitter.crash as crash
 from . import fake_request
