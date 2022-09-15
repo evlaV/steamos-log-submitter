@@ -12,12 +12,14 @@ import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
 kdump_base = '/home/.steamos/offload/var/kdump/'
+tmp_dir = f'{kdump_base}/.tmp'
+logs_dir = f'{kdump_base}/logs'
 
 def get_summaries() -> tuple[str, str]:
     crash_summary = []
     call_trace = []
     call_trace_grab = False
-    dmesg = glob.glob(f'{kdump_base}/.tmp/dmesg*')
+    dmesg = glob.glob(f'{tmp_dir}/dmesg*')
     with open(dmesg[0]) as f:
         # Extract only the lines between "Kernel panic -" and "Kernel Offset:" into the crash summary,
         # and the subset of those lines after " Call Trace:" and until " RIP:" into the call trace log
@@ -49,12 +51,24 @@ def get_build_id() -> Optional[str]:
     return None
 
 
+def collect() -> bool:
+    serial = sls.util.get_deck_serial() or 'null'
+    account = sls.util.get_steam_account_id()
+    logs = glob.glob(f'{logs_dir}/*.zip')
+    for log in logs:
+        stat = os.stat(f'{logs_dir}/{log}')
+        if stat.st_size == 0:
+            continue
+        name = os.path.basename(log)[:-4]
+        new_name = f'steamos-{name}_{serial}-{account}.zip'
+        os.rename(log, f'{sls.pending}/kdump/{new_name}')
+    return any(logs)
+
+
 def submit(fname : str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.zip':
        return False
-    serial = sls.util.get_deck_serial() or 'null'
-    account = sls.util.get_steam_account_id()
 
     note, stack = get_summaries()
 
