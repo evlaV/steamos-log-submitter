@@ -1,5 +1,10 @@
+import importlib
 import io
+import os
+import pytest
 import requests
+import tempfile
+import steamos_log_submitter as sls
 
 def open_shim(text):
     def open_fake(*args):
@@ -31,5 +36,47 @@ def fake_response(body):
         r._content = body.encode()
         return r
     return ret
+
+
+@pytest.fixture
+def patch_module():
+    class FakeModule:
+        pass
+    return FakeModule()
+
+
+@pytest.fixture
+def helper_directory(monkeypatch, patch_module):
+    d = tempfile.TemporaryDirectory(prefix='sls-')
+    pending = f'{d.name}/pending'
+    uploaded = f'{d.name}/uploaded'
+    scripts = f'{d.name}/scripts'
+    os.mkdir(pending)
+    os.mkdir(uploaded)
+    os.mkdir(scripts)
+    monkeypatch.setattr(sls, 'pending', f'{d.name}/pending')
+    monkeypatch.setattr(sls, 'uploaded', f'{d.name}/uploaded')
+    monkeypatch.setattr(sls, 'scripts', f'{d.name}/scripts')
+
+    original_import_module = importlib.import_module
+    def import_module(name, package=None):
+        if name == 'steamos_log_submitter.helpers.test':
+            return patch_module
+        return original_import_module(name, package)
+    monkeypatch.setattr(importlib, 'import_module', import_module)
+
+    yield d.name
+
+    del d
+
+
+def setup_categories(categories):
+    for category, script in categories.items():
+        os.mkdir(f'{sls.pending}/{category}')
+        os.mkdir(f'{sls.uploaded}/{category}')
+        if script is not None:
+            with open(f'{sls.scripts}/{category}', 'w') as f:
+                f.write(script)
+                os.fchmod(f.fileno(), 0o744)
 
 # vim:ts=4:sw=4:et
