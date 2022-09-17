@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import shutil
 import subprocess
 import sys
 import steamos_log_submitter as sls
@@ -10,7 +11,8 @@ import steamos_log_submitter as sls
 P, e, u, g, s, t, c, h = sys.argv[1:]
 
 appid = sls.util.get_appid(int(P))
-breakpad = subprocess.Popen(['/usr/lib/core_handler', P, f'{sls.pending}/minidump/{e}-{P}-{appid}.dmp'], stdin=subprocess.PIPE)
+minidump = f'{sls.pending}/minidump/{e}-{P}-{appid}.dmp'
+breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump, stdin=subprocess.PIPE)
 systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
 
 while True:
@@ -44,6 +46,7 @@ try:
 except:
     pass
 
+shutil.chown(minidump, user='steamos-log-submitter')
 sls.trigger()
 
 # vim:ts=4:sw=4:et
