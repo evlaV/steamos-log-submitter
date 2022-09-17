@@ -1,4 +1,8 @@
 #!/usr/bin/python
+# SPDX-License-Identifier: LGPL-2.1+
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import subprocess
 import sys
 import steamos_log_submitter as sls
@@ -23,21 +27,23 @@ while True:
         pass
 
 try:
-	breakpad.stdin.close()
+    breakpad.stdin.close()
 except:
-	pass
+    pass
 try:
     breakpad.wait(5)
 except:
     pass
 
 try:
-	systemd.stdin.close()
+    systemd.stdin.close()
 except:
-	pass
+    pass
 try:
     systemd.wait(5)
 except:
     pass
 
 sls.trigger()
+
+# vim:ts=4:sw=4:et
