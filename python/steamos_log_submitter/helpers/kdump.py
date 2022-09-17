@@ -4,6 +4,7 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import glob
+import logging
 import os
 import sys
 import time
@@ -62,8 +63,10 @@ def collect() -> bool:
             continue
         name = os.path.basename(log)[:-4]
         new_name = f'steamos-{name}_{serial}-{account}.zip'
+        logging.info(f'Moving kdump log from {log} to {sls.pending}/kdump/{new_name}')
         os.rename(log, f'{sls.pending}/kdump/{new_name}')
         processed += 1
+    logging.info(f'{processed} kdump logs collected')
     return processed > 0
 
 
