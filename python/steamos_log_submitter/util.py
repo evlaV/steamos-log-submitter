@@ -94,6 +94,27 @@ def get_steam_account_id(uid : int = 1000) -> Optional[int]:
     return None
 
 
+def get_steam_account_name(uid : int = 1000) -> Optional[str]:
+    home = pwd.getpwuid(uid).pw_dir
+
+    try:
+        with open(f'{home}/.local/share/Steam/config/loginusers.vdf') as v:
+            loginusers = vdf.load(v)
+    except (IOError, SyntaxError):
+        return None
+
+    if 'users' not in loginusers:
+        return None
+
+    for data in loginusers['users'].values():
+        if data.get('MostRecent', '0') == '1':
+            return data.get('AccountName')
+        if data.get('mostrecent', '0') == '1':
+            return data.get('AccountName')
+
+    return None
+
+
 def check_network() -> bool:
     max_checks = 5
     for _ in range(max_checks):
