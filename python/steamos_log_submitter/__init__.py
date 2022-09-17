@@ -67,30 +67,43 @@ def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
         if not hasattr(helper, 'submit'):
-            raise HelperError
+            raise HelperError('Helper module does not contain submit function')
     except ModuleNotFoundError:
         return Helper(category)
     return helper
 
 
 def collect():
+    logging.info('Starting log collection')
     for category in os.listdir(pending):
+        logging.info(f'Collecting logs for {category}')
         try:
             with Lockfile(f'{pending}/{category}/.lock'):
                 helper = create_helper(category)
                 helper.collect()
         except LockHeldError:
             # Another process is currently working on this directory
+            logging.warning(f'Lock already held trying to collect logs for {category}')
             continue
+    logging.info('Finished log collection')
 
 
 def submit():
+    logging.info('Starting log submission')
     if not util.check_network():
+        logging.info('Network is offline, bailing out')
         return
 
     for category in os.listdir(pending):
-        logs = os.listdir(f'{pending}/{category}')
+        logging.info('Submitting logs for {category}')
+        try:
+            logs = os.listdir(f'{pending}/{category}')
+        except IOError as e:
+            logging.error(f'Encountered error listing logs for {category}', exc_info=e)
+            continue
+
         if not logs:
+            logging.info('No logs found, skipping')
             continue
 
         try:
@@ -100,12 +113,19 @@ def submit():
                     for log in logs:
                         if log.startswith('.'):
                             continue
+                        logging.debug(f'Found log {category}/{log}')
                         if helper.submit(f'{pending}/{category}/{log}'):
+                            logging.debug(f'Succeeded in submitting {category}/{log}')
                             os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
-                except HelperError:
+                        else:
+                            logging.warning(f'Failed to submit log {category}/{log}')
+                except HelperError as e:
+                    logging.error('Encountered error with helper', exc_info=e)
                     continue
         except LockHeldError:
             # Another process is currently working on this directory
+            logging.warning(f'Lock already held trying to submit logs for {category}')
             continue
+    logging.info('Finished log submission')
 
 # vim:ts=4:sw=4:et
