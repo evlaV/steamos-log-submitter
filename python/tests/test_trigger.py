@@ -15,6 +15,7 @@ def test_inactive_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_inactive)
+    monkeypatch.setattr(sls, 'collect', do_not_hit)
     monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 
@@ -31,14 +32,15 @@ def test_active_timer(monkeypatch):
         assert False
     def do_hit():
         nonlocal attempt
-        assert attempt == 1
-        attempt = 2
+        assert attempt > 0
+        attempt += 1
 
     monkeypatch.setattr(subprocess, 'Popen', show_active)
+    monkeypatch.setattr(sls, 'collect', do_hit)
     monkeypatch.setattr(sls, 'submit', do_hit)
     sls.trigger()
 
-    assert attempt == 2
+    assert attempt == 3
 
 
 def test_broken_timer(monkeypatch):
@@ -51,6 +53,7 @@ def test_broken_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_missing)
+    monkeypatch.setattr(sls, 'collect', do_not_hit)
     monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 
@@ -67,6 +70,7 @@ def test_other_timer(monkeypatch):
         assert False
 
     monkeypatch.setattr(subprocess, 'Popen', show_other)
+    monkeypatch.setattr(sls, 'collect', do_not_hit)
     monkeypatch.setattr(sls, 'submit', do_not_hit)
     sls.trigger()
 

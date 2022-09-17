@@ -38,6 +38,7 @@ def trigger():
             continue
         # Do not trigger the submitter if the timer is disabled
         if line == b'ActiveState=active\n':
+            collect()
             submit()
         break
     systemctl.stdout.close()
