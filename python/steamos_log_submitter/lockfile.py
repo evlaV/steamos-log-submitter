@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import logging
 import os
 import time
 
@@ -27,13 +28,16 @@ class Lockfile:
         return not exc_type
 
     def lock(self):
+        logging.debug(f'Attempting to get lock on {self._path}')
         if self.lockfile:
+            logging.debug(f'Lock on {self._path} already held, bailing out')
             return
         while not self.lockfile:
             try:
                 self.lockfile = open(self._path, 'x')
             except FileExistsError:
                 # The lock exists...let's figure out if it's stale
+                logging.debug(f'Lockfile {self._path} already exists, testing staleness')
                 try:
                     lockfile = open(self._path, 'r')
                 except FileNotFoundError:
@@ -51,6 +55,7 @@ class Lockfile:
                 lockfile.close()
                 if lockinfo is None:
                     # Couldn't get info about the lock...let's assume it's held
+                    logging.warning(f'Failed to read lockfile {self._path}, assuming held')
                     raise LockHeldError
                 if lockinfo.startswith('/proc/'):
                     pathstat = os.stat(self._path)
@@ -58,23 +63,26 @@ class Lockfile:
                         lockstat = os.stat(lockinfo.strip())
                         if (lockstat.st_ino, lockstat.st_dev) == (pathstat.st_ino, pathstat.st_dev):
                             # The lock is currently held
-                            raise LockHeldError
+                            raise LockHeldError(f'Lock on {self._path} is already held')
                     except (FileNotFoundError, PermissionError):
                         pass
                 # The lock is stale, clean it up
+                logging.debug(f'Lockfile {self._path} appears to be stale, taking it')
                 self.lockfile = open(self._path, 'w')
 
         # Store the /proc info on this lock in the file for easy lookup
         self.lockfile.write(f'/proc/{os.getpid()}/fd/{self.lockfile.fileno()}')
         self.lockfile.flush()
+        logging.debug(f'Lock on {self._path} obtained')
 
 
     def unlock(self):
         if not self.lockfile:
-            raise LockNotHeldError
+            raise LockNotHeldError(f'Lock on {self._path} not held')
         # The lock must be deleted before closing to avoid race conditoins
         os.unlink(self._path)
         self.lockfile.close()
         self.lockfile = None
+        logging.debug(f'Lock on {self._path} released')
 
 # vim:ts=4:sw=4:et
