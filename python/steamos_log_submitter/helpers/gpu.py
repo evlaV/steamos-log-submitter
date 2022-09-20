@@ -1,0 +1,43 @@
+#!/usr/bin/python
+# SPDX-License-Identifier: LGPL-2.1+
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
+import logging
+import os
+import sys
+import time
+from typing import Optional
+import steamos_log_submitter as sls
+from steamos_log_submitter.crash import upload as upload_crash
+
+def collect() -> bool:
+    return False
+
+
+def submit(fname : str) -> bool:
+    name, ext = os.path.splitext(os.path.basename(fname))
+    if ext != '.log':
+       return False
+
+    with open(fname) as f:
+        note = f.read()
+
+    info = {
+        'crash_time': int(time.time()),
+        'stack': '',
+        'note': note,
+    }
+    if not upload_crash(product='holo-gpu', build=sls.util.get_build_id(), version=os.uname().release, info=info):
+        return False
+
+    return True
+
+
+if __name__ == '__main__':  # pragma: no cover
+    try:
+        sys.exit(0 if submit(sys.argv[1]) else 1)
+    except:
+        sys.exit(1)
+
+# vim:ts=4:sw=4:et
