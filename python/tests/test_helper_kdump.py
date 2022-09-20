@@ -3,6 +3,7 @@ import glob
 import json
 import os
 import requests
+import steamos_log_submitter.crash as crash
 import steamos_log_submitter.helpers.kdump as kdump
 import steamos_log_submitter.util as util
 import steamos_log_submitter as sls
@@ -85,6 +86,14 @@ def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
     assert kdump.submit(f'{file_base}/empty.zip')
     assert attempt == 3
+
+
+def test_submit_fail(monkeypatch):
+    monkeypatch.setattr(glob, 'glob', lambda x: [f'{file_base}/dmesg'])
+    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
+    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
+    monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
+    assert not kdump.submit(f'{file_base}/empty.zip')
 
 
 def test_collect_none(monkeypatch):
