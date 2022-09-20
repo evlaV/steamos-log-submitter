@@ -52,6 +52,15 @@ def get_appid(pid : int) -> Optional[int]:
     return appid
 
 
+def get_build_id() -> Optional[str]:
+    with open('/etc/os-release') as f:
+        for line in f:
+            name, val = line.split('=', 1)
+            if name == 'BUILD_ID':
+                return val.strip()
+    return None
+
+
 def get_deck_serial(uid : int = 1000) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 

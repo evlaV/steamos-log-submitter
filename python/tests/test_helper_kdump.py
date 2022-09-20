@@ -22,25 +22,6 @@ def test_dmesg_parse(monkeypatch):
     assert stack == stack_expected
 
 
-def test_get_build_id(monkeypatch):
-    os_release = """NAME="SteamOS"
-PRETTY_NAME="SteamOS"
-ID=holo
-BUILD_ID=definitely fake
-"""
-    monkeypatch.setattr(builtins, 'open', open_shim(os_release))
-    assert kdump.get_build_id() == 'definitely fake'
-
-
-def test_no_get_build_id(monkeypatch):
-    os_release = """NAME="SteamOS"
-PRETTY_NAME="SteamOS"
-ID=holo
-"""
-    monkeypatch.setattr(builtins, 'open', open_shim(os_release))
-    assert kdump.get_build_id() is None
-
-
 def test_submit_bad_name():
     assert not kdump.submit('not-a-zip.txt')
 

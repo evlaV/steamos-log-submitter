@@ -43,15 +43,6 @@ def get_summaries() -> tuple[str, str]:
     return crash_summary, call_trace
 
 
-def get_build_id() -> Optional[str]:
-    with open('/etc/os-release') as f:
-        for line in f:
-            name, val = line.split('=', 1)
-            if name == 'BUILD_ID':
-                return val.strip()
-    return None
-
-
 def collect() -> bool:
     serial = sls.util.get_deck_serial() or 'null'
     account = sls.util.get_steam_account_id()
@@ -82,7 +73,7 @@ def submit(fname : str) -> bool:
         'stack': stack,
         'note': note,
     }
-    if not upload_crash(product='holo', build=get_build_id(), version=os.uname().release, info=info, dump=fname):
+    if not upload_crash(product='holo', build=sls.util.get_build_id(), version=os.uname().release, info=info, dump=fname):
         return False
 
     return True
