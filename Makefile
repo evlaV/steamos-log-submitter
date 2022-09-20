@@ -17,8 +17,8 @@ all:
 install: all
 	install -D -m0644 systemd/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service
 	install -D -m0644 systemd/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer
+	install -D -m0644 systemd/tmpfiles.conf $(DESTDIR)$(tmpfilesdir)/steamos-log-submitter.conf
+	install -D -m0644 systemd/sysusers.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf
+	install -D -m0644 systemd/crash-hook.sysctl $(DESTDIR)$(sysctldir)/60-crash-hook.conf
 	install -D -m0644 udev/80-gpu-crash.rules $(DESTDIR)$(udevdir)/80-gpu-crash.rules
-	install -D -m0644 tmpfiles.d/steamos-log-submitter.conf $(DESTDIR)$(tmpfilesdir)/steamos-log-submitter.conf
-	install -D -m0644 sysusers.d/steamos-log-submitter.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf
-	install -D -m0644 sysctl.d/60-crash-hook.conf $(DESTDIR)$(sysctldir)/60-crash-hook.conf
-	install -D -m0755 python/crash-hook.py $(DESTDIR)$(libdir)/steamos-log-submitter/crash-hook.py
+	install -D -m0755 crash-hook.py $(DESTDIR)$(libdir)/steamos-log-submitter/crash-hook.py
