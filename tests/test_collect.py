@@ -43,3 +43,5 @@ def test_lock(helper_directory, monkeypatch, patch_module):
     sls.collect()
 
     assert attempt
+
+# vim:ts=4:sw=4:et

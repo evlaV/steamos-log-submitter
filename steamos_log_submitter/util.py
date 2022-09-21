@@ -55,6 +55,8 @@ def get_appid(pid : int) -> Optional[int]:
 def get_build_id() -> Optional[str]:
     with open('/etc/os-release') as f:
         for line in f:
+            if '=' not in line:
+                continue
             name, val = line.split('=', 1)
             if name == 'BUILD_ID':
                 return val.strip()
