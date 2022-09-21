@@ -21,6 +21,7 @@ with open(f'{sls.pending}/gpu/{ts}.log', 'w') as f:
     if pid:
         appid = sls.util.get_appid(pid)
         print(f'APPID={appid}', file=f)
+    print(f'TIMESTAMP={ts}', file=f)
 
 sls.trigger()
 

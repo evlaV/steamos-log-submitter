@@ -20,11 +20,19 @@ def submit(fname : str) -> bool:
     if ext != '.log':
        return False
 
-    with open(fname) as f:
-        note = f.read()
+    try:
+        with open(fname) as f:
+            note = f.read()
+    except IOError:
+        return False
+
+    for line in note.split('\n'):
+        if not line.startswith('TIMESTAMP='):
+            continue
+        timestamp = int(line.split('=')[1])
 
     info = {
-        'crash_time': int(time.time()),
+        'crash_time': timestamp // 1_000_000_000,
         'stack': '',
         'note': note,
     }
