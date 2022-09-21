@@ -5,9 +5,8 @@
 import configparser
 import logging
 
-CONFIG_PATH = '/etc/steamos-log-submitter.cfg'
-
-CONFIG = configparser.ConfigParser(default_section='sls', interpolation=None)
+base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
+user_config_path = '/etc/steamos-log-submitter.cfg'
 
 class ConfigSection:
     def __init__(self, *, data={}, defaults={}):
@@ -28,7 +27,7 @@ class ConfigSection:
             return default
 
 
-def get_config(mod, defaults=None):
+def get_config(mod, defaults=None) -> ConfigSection:
     if mod == 'steamos_log_submitter':
         return ConfigSection(data=CONFIG['sls'], defaults=defaults)
     if not mod.startswith('steamos_log_submitter.'):
@@ -39,10 +38,22 @@ def get_config(mod, defaults=None):
         return ConfigSection(defaults=defaults)
 
 
-try:  # pragma: no cover
-    with open(CONFIG_PATH) as f:
-        CONFIG.read_file(f, source=CONFIG_PATH)
-except FileNotFoundError:  # pragma: no cover
-    logging.warning('No config file found')
+def reload_config():  # pragma: no cover
+    global CONFIG
+    CONFIG = configparser.ConfigParser(default_section='sls', interpolation=None)
+
+    try:
+        with open(base_config_path) as f:
+            CONFIG.read_file(f, source=base_config_path)
+    except FileNotFoundError:
+        logging.warning('No config file found')
+
+    try:
+        with open(user_config_path) as f:
+            CONFIG.read_file(f, source=user_config_path)
+    except FileNotFoundError:
+        pass
+
+reload_config()
 
 # vim:ts=4:sw=4:et
