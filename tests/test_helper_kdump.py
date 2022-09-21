@@ -1,23 +1,18 @@
-import builtins
-import glob
 import json
 import os
 import requests
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.helpers.kdump as kdump
-import steamos_log_submitter.util as util
-import steamos_log_submitter as sls
-from . import open_shim
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
 
-def test_dmesg_parse(monkeypatch):
+def test_dmesg_parse():
     with open(f'{file_base}/crash') as f:
         crash_expected = f.read()
     with open(f'{file_base}/stack') as f:
         stack_expected = f.read()
-    monkeypatch.setattr(glob, 'glob', lambda x: [f'{file_base}/dmesg'])
-    crash, stack = kdump.get_summaries()
+    with open(f'{file_base}/dmesg') as f:
+        crash, stack = kdump.get_summaries(f)
     assert crash == crash_expected
     assert stack == stack_expected
 
@@ -28,7 +23,7 @@ def test_submit_bad_name():
 
 def test_submit_succeed(monkeypatch):
     attempt = 0
-    def fake_response(body, filename):
+    def fake_response(body):
         def ret(url, data=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
@@ -59,49 +54,24 @@ def test_submit_succeed(monkeypatch):
         'url': 'file:///',
         'gid': 111
     }})
-    respond = fake_response(response, 'empty.zip')
+    respond = fake_response(response)
     monkeypatch.setattr(requests, 'post', respond)
     monkeypatch.setattr(requests, 'put', respond)
-    monkeypatch.setattr(glob, 'glob', lambda x: [f'{file_base}/dmesg'])
-    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
-    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
-    assert kdump.submit(f'{file_base}/empty.zip')
+    assert kdump.submit(f'{file_base}/dmesg.zip')
     assert attempt == 3
 
 
-def test_submit_fail(monkeypatch):
-    monkeypatch.setattr(glob, 'glob', lambda x: [f'{file_base}/dmesg'])
-    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
-    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
+def test_submit_empty(monkeypatch):
     monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
     assert not kdump.submit(f'{file_base}/empty.zip')
 
 
-def test_collect_none(monkeypatch):
-    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
-    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
-    monkeypatch.setattr(glob, 'glob', lambda x: [])
+def test_submit_bad_zip(monkeypatch):
+    monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
+    assert not kdump.submit(f'{file_base}/bad.zip')
+
+
+def test_collect_none():
     assert not kdump.collect()
-
-
-def test_collect_empty(monkeypatch):
-    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
-    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
-    monkeypatch.setattr(glob, 'glob', lambda x: ['blank.zip'])
-    monkeypatch.setattr(os, 'stat', lambda x: os.stat_result([0,0,0,0,0,0,0,0,0,0]))
-    assert not kdump.collect()
-
-
-def test_collect_rename(monkeypatch):
-    def rename(src, dest):
-        assert src == 'blank.zip'
-        assert dest == f'{sls.pending}/kdump/steamos-blank_SERIAL-ACCOUNT.zip'
-
-    monkeypatch.setattr(util, 'get_deck_serial', lambda: 'SERIAL')
-    monkeypatch.setattr(util, 'get_steam_account_id', lambda: 'ACCOUNT')
-    monkeypatch.setattr(glob, 'glob', lambda x: ['blank.zip'])
-    monkeypatch.setattr(os, 'stat', lambda x: os.stat_result([0,0,0,0,0,0,1,0,0,0]))
-    monkeypatch.setattr(os, 'rename', rename)
-    assert kdump.collect()
 
 # vim:ts=4:sw=4:et
