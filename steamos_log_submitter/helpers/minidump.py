@@ -8,8 +8,8 @@ import requests
 import sys
 import steamos_log_submitter as sls
 
-dsn = 'http://127.0.0.1:9000/api/1/minidump/?sentry_key=887d785705d9443cb85750046df1b451'
-
+config = sls.get_config(__name__)
+dsn = config.get('dsn')
 
 def collect() -> bool:  # pragma: no cover
     return False

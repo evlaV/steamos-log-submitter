@@ -7,6 +7,7 @@ import logging
 import os
 import subprocess
 from .lockfile import Lockfile, LockHeldError
+from steamos_log_submitter.config import get_config
 import steamos_log_submitter.util as util
 
 __all__ = [
@@ -18,12 +19,18 @@ __all__ = [
     # Utility functions
     'submit',
     'trigger',
+    'get_config',
     # Submodules
     'util',
 ]
 
-base = '/home/.steamos/offload/var/steamos-log-submitter'
-scripts = '/usr/lib/steamos-log-submitter/scripts.d'
+base_config = get_config(__name__, defaults={
+    'base': '/home/.steamos/offload/var/steamos-log-submitter',
+    'scripts': '/usr/lib/steamos-log-submitter/scripts.d',
+})
+
+base = base_config['base']
+scripts = base_config['scripts']
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
 
