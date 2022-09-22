@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # SPDX-License-Identifier: LGPL-2.1+
 #
 # Copyright (c) 2022 Valve Software
@@ -40,13 +39,5 @@ def submit(fname : str) -> bool:
     post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
     return post.status_code == 200
-
-
-if __name__ == '__main__':  # pragma: no cover
-    try:
-        sys.exit(0 if submit(sys.argv[1]) else 1)
-    except Exception as e:
-        print(e)
-        sys.exit(1)
 
 # vim:ts=4:sw=4:et
