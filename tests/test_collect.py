@@ -6,7 +6,7 @@ def submit(log):
 
 
 def test_module(helper_directory, monkeypatch, patch_module):
-    setup_categories({'test': None})
+    setup_categories(['test'])
 
     attempt = 0
     def collect():
@@ -22,7 +22,7 @@ def test_module(helper_directory, monkeypatch, patch_module):
 
 
 def test_lock(helper_directory, monkeypatch, patch_module):
-    setup_categories({'test': None})
+    setup_categories(['test'])
 
     attempt = 0
     def collect():

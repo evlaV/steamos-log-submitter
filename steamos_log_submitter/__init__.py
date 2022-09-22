@@ -13,7 +13,6 @@ import steamos_log_submitter.util as util
 __all__ = [
     # Constants
     'base',
-    'scripts',
     'pending',
     'uploaded',
     # Utility functions
@@ -27,11 +26,9 @@ __all__ = [
 base_config = get_config(__name__, defaults={
     'enable': 'off',
     'base': '/home/.steamos/offload/var/steamos-log-submitter',
-    'scripts': '/usr/lib/steamos-log-submitter/scripts.d',
 })
 
 base = base_config['base']
-scripts = base_config['scripts']
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
 
@@ -46,29 +43,13 @@ def trigger():
         submit()
 
 
-class Helper:
-    def __init__(self, category):
-        self.category = category
-        self._helper = f'{scripts}/{category}'
-
-    def submit(self, log):
-        try:
-            submission = subprocess.run([self._helper, log])
-        except (FileNotFoundError, PermissionError) as e:
-            raise HelperError from e
-        return submission.returncode == 0
-
-    def collect(self):
-        return False
-
-
 def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
         if not hasattr(helper, 'submit'):
             raise HelperError('Helper module does not contain submit function')
-    except ModuleNotFoundError:
-        return Helper(category)
+    except ModuleNotFoundError as e:
+        raise HelperError from e
     return helper
 
 

@@ -54,13 +54,10 @@ def helper_directory(monkeypatch, patch_module):
     d = tempfile.TemporaryDirectory(prefix='sls-')
     pending = f'{d.name}/pending'
     uploaded = f'{d.name}/uploaded'
-    scripts = f'{d.name}/scripts'
     os.mkdir(pending)
     os.mkdir(uploaded)
-    os.mkdir(scripts)
     monkeypatch.setattr(sls, 'pending', f'{d.name}/pending')
     monkeypatch.setattr(sls, 'uploaded', f'{d.name}/uploaded')
-    monkeypatch.setattr(sls, 'scripts', f'{d.name}/scripts')
 
     original_import_module = importlib.import_module
     def import_module(name, package=None):
@@ -75,12 +72,8 @@ def helper_directory(monkeypatch, patch_module):
 
 
 def setup_categories(categories):
-    for category, script in categories.items():
+    for category in categories:
         os.mkdir(f'{sls.pending}/{category}')
         os.mkdir(f'{sls.uploaded}/{category}')
-        if script is not None:
-            with open(f'{sls.scripts}/{category}', 'w') as f:
-                f.write(script)
-                os.fchmod(f.fileno(), 0o744)
 
 # vim:ts=4:sw=4:et
