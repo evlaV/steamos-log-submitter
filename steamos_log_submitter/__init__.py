@@ -25,6 +25,7 @@ __all__ = [
 ]
 
 base_config = get_config(__name__, defaults={
+    'enable': 'off',
     'base': '/home/.steamos/offload/var/steamos-log-submitter',
     'scripts': '/usr/lib/steamos-log-submitter/scripts.d',
 })
@@ -39,21 +40,10 @@ class HelperError(RuntimeError):
 
 
 def trigger():
-    systemctl = subprocess.Popen(['/usr/bin/systemctl', 'show', 'steamos-log-submitter.timer'], stdout=subprocess.PIPE)
-    for line in systemctl.stdout:
-        if not line.startswith(b'ActiveState='):
-            continue
-        # Do not trigger the submitter if the timer is disabled
-        if line == b'ActiveState=active\n':
-            logging.info('Routine collection/submission triggered')
-            collect()
-            submit()
-        break
-    systemctl.stdout.close()
-    try:
-        systemctl.wait(1)
-    except:
-        pass
+    if base_config['enable'] == 'on':
+        logging.info('Routine collection/submission triggered')
+        collect()
+        submit()
 
 
 class Helper:

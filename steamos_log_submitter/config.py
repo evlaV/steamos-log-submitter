@@ -4,9 +4,12 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
 import logging
+import pwd
 
+uid = 1000
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
-user_config_path = '/etc/steamos-log-submitter.cfg'
+user_home = pwd.getpwuid(uid).pw_dir
+user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
 local_config_path = '/home/.steamos/offload/var/steamos-log-submitter/local.cfg'
 
 local_config = configparser.ConfigParser(interpolation=None)

@@ -1,79 +1,49 @@
-import io
-import subprocess
+import configparser
 import steamos_log_submitter as sls
+import steamos_log_submitter.config as config
+from . import unreachable
 
-def do_not_hit():
-    assert False
+def setup_conf(monkeypatch, enable=None):
+    testconf = configparser.ConfigParser()
+    monkeypatch.setattr(config, 'config', testconf)
+    localconf = configparser.ConfigParser()
 
-def test_inactive_timer(monkeypatch):
-    hit = False
-    def show_inactive(command, **kwargs):
-        nonlocal hit
-        if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
-            hit = True
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=inactive\nOtherThing=\n'))
-        assert False
+    if enable is not None:
+        localconf.add_section('sls')
+        localconf.set('sls', 'enable', enable)
+    monkeypatch.setattr(config, 'local_config', localconf)
 
-    monkeypatch.setattr(subprocess, 'Popen', show_inactive)
-    monkeypatch.setattr(sls, 'collect', do_not_hit)
-    monkeypatch.setattr(sls, 'submit', do_not_hit)
+def test_config_missing(monkeypatch):
+    setup_conf(monkeypatch)
+    monkeypatch.setattr(sls, 'collect', unreachable)
+    monkeypatch.setattr(sls, 'submit', unreachable)
     sls.trigger()
 
-    assert hit
+
+def test_config_off(monkeypatch):
+    setup_conf(monkeypatch, 'off')
+    monkeypatch.setattr(sls, 'collect', unreachable)
+    monkeypatch.setattr(sls, 'submit', unreachable)
+    sls.trigger()
 
 
-def test_active_timer(monkeypatch):
-    attempt = 0
-    def show_active(command, **kwargs):
-        nonlocal attempt
-        if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
-            attempt = 1
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=active\nOtherThing=\n'))
-        assert False
+def test_config_invalid(monkeypatch):
+    setup_conf(monkeypatch, 'foo')
+    monkeypatch.setattr(sls, 'collect', unreachable)
+    monkeypatch.setattr(sls, 'submit', unreachable)
+    sls.trigger()
+
+
+def test_config_on(monkeypatch):
+    hit = 0
     def do_hit():
-        nonlocal attempt
-        assert attempt > 0
-        attempt += 1
-
-    monkeypatch.setattr(subprocess, 'Popen', show_active)
+        nonlocal hit
+        hit += 1
+    setup_conf(monkeypatch, 'on')
     monkeypatch.setattr(sls, 'collect', do_hit)
     monkeypatch.setattr(sls, 'submit', do_hit)
     sls.trigger()
+    assert hit == 2
 
-    assert attempt == 3
-
-
-def test_broken_timer(monkeypatch):
-    hit = False
-    def show_missing(command, **kwargs):
-        nonlocal hit
-        if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
-            hit = True
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nOtherThing=\n'))
-        assert False
-
-    monkeypatch.setattr(subprocess, 'Popen', show_missing)
-    monkeypatch.setattr(sls, 'collect', do_not_hit)
-    monkeypatch.setattr(sls, 'submit', do_not_hit)
-    sls.trigger()
-
-    assert hit
-
-
-def test_other_timer(monkeypatch):
-    hit = False
-    def show_other(command, **kwargs):
-        nonlocal hit
-        if command[1] == 'show' and kwargs.get('stdout', subprocess.DEVNULL) == subprocess.PIPE:
-            hit = True
-            return subprocess.CompletedProcess(command, 0, stdout=io.BytesIO(b'Thing=\nActiveState=other\nOtherThing=\n'))
-        assert False
-
-    monkeypatch.setattr(subprocess, 'Popen', show_other)
-    monkeypatch.setattr(sls, 'collect', do_not_hit)
-    monkeypatch.setattr(sls, 'submit', do_not_hit)
-    sls.trigger()
-
-    assert hit
 
 # vim:ts=4:sw=4:et
