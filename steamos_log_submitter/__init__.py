@@ -56,6 +56,9 @@ def create_helper(category):
 def collect():
     logging.info('Starting log collection')
     for category in os.listdir(pending):
+        cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
+        if cat_config.get('enable', 'on') != 'on' or cat_config.get('collect', 'on') != 'on':
+            continue
         logging.info(f'Collecting logs for {category}')
         try:
             with Lockfile(f'{pending}/{category}/.lock'):
@@ -75,6 +78,9 @@ def submit():
         return
 
     for category in os.listdir(pending):
+        cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
+        if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
+            continue
         logging.info('Submitting logs for {category}')
         try:
             logs = os.listdir(f'{pending}/{category}')

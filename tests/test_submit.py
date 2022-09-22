@@ -1,8 +1,10 @@
+import configparser
 import os
 import pytest
 import threading
 import time
 import steamos_log_submitter as sls
+import steamos_log_submitter.config as config
 from . import helper_directory, patch_module, setup_categories, unreachable
 
 @pytest.fixture
@@ -20,6 +22,30 @@ def setup_logs(helper_directory, logs):
 def test_offline(monkeypatch):
     monkeypatch.setattr(sls.util, 'check_network', lambda: False)
     monkeypatch.setattr(os, 'listdir', unreachable)
+    sls.submit()
+
+
+def test_disable_all(helper_directory, monkeypatch, patch_module):
+    testconf = configparser.ConfigParser()
+    testconf.add_section('helpers.test')
+    testconf.set('helpers.test', 'enable', 'off')
+    monkeypatch.setattr(config, 'config', testconf)
+
+    setup_categories(['test'])
+
+    patch_module.submit = unreachable
+    sls.submit()
+
+
+def test_disable_submit(helper_directory, monkeypatch, patch_module):
+    testconf = configparser.ConfigParser()
+    testconf.add_section('helpers.test')
+    testconf.set('helpers.test', 'submit', 'off')
+    monkeypatch.setattr(config, 'config', testconf)
+
+    setup_categories(['test'])
+
+    patch_module.submit = unreachable
     sls.submit()
 
 
