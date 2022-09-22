@@ -67,7 +67,7 @@ def get_deck_serial(uid : int = 1000) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
-        with open(f'{home}/.local/share/Steam/config/config.vdf') as v:
+        with open(f'{home}/.steam/root/config/config.vdf') as v:
             config = vdf.load(v)
     except (IOError, SyntaxError):
         return None
@@ -88,7 +88,7 @@ def get_steam_account_id(uid : int = 1000) -> Optional[int]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
-        with open(f'{home}/.local/share/Steam/config/loginusers.vdf') as v:
+        with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
     except (IOError, SyntaxError):
         return None
@@ -109,7 +109,7 @@ def get_steam_account_name(uid : int = 1000) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
-        with open(f'{home}/.local/share/Steam/config/loginusers.vdf') as v:
+        with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
     except (IOError, SyntaxError):
         return None
