@@ -10,9 +10,9 @@ uid = 1000
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
 user_home = pwd.getpwuid(uid).pw_dir
 user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
-local_config_path = '/home/.steamos/offload/var/steamos-log-submitter/local.cfg'
 
-local_config = configparser.ConfigParser(interpolation=None)
+local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation)
+local_config_path = None
 
 
 class ConfigSection:
@@ -51,7 +51,8 @@ def get_config(mod, defaults=None) -> ConfigSection:
 
 def reload_config():  # pragma: no cover
     global config
-    config = configparser.ConfigParser(interpolation=None)
+    global local_config_path
+    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation)
 
     try:
         with open(base_config_path) as f:
@@ -65,14 +66,21 @@ def reload_config():  # pragma: no cover
     except FileNotFoundError:
         pass
 
-    try:
-        with open(local_config_path) as f:
-            local_config.read_file(f, source=local_config_path)
-    except FileNotFoundError:
-        pass
+    if config.has_section('sls'):
+        local_config_path = config.get('sls', 'local-config')
+        if local_config_path is not None:
+            try:
+                with open(local_config_path) as f:
+                    local_config.read_file(f, source=local_config_path)
+            except FileNotFoundError:
+                pass
+    else:
+        local_config_path = None
 
 
 def write_config():
+    if local_config_path is None:
+        raise FileNotFoundError
     with open(local_config_path, 'w') as f:
         local_config.write(f)
 

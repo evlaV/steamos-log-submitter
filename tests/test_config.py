@@ -92,6 +92,7 @@ def test_write_setting(monkeypatch):
 
     testconf = configparser.ConfigParser(delimiters='=')
     monkeypatch.setattr(config, 'local_config', testconf)
+    monkeypatch.setattr(config, 'local_config_path', 'cfg')
     section = config.ConfigSection('test')
 
     monkeypatch.setattr(builtins, 'open', fake_open(first))

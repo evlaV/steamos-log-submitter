@@ -24,7 +24,7 @@ __all__ = [
 
 base_config = get_config(__name__, defaults={
     'enable': 'off',
-    'base': '/home/.steamos/offload/var/steamos-log-submitter',
+    'base': '/var/lib/steamos-log-submitter',
 })
 
 base = base_config['base']
