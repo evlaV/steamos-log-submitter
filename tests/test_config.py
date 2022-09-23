@@ -1,7 +1,10 @@
 import builtins
 import configparser
 import io
+import os
 import steamos_log_submitter.config as config
+
+file_base = f'{os.path.dirname(__file__)}/config'
 
 
 def test_section_get_no_val_no_default(monkeypatch):
@@ -122,5 +125,80 @@ def test_get_config_no_section(monkeypatch):
     section = config.get_config('steamos_log_submitter.foo')
     assert section
     assert not testconf.has_section('foo')
+
+
+def test_reload_config_no_base(monkeypatch):
+    fake_path = 'fake_path'
+    hit = False
+
+    def bad_open(path, *args, **kwargs):
+        nonlocal hit
+        if path == fake_path:
+            hit = True
+        raise FileNotFoundError
+
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', fake_path)
+    monkeypatch.setattr(builtins, 'open', bad_open)
+
+    config.reload_config()
+    assert hit
+    assert not config.config.has_section('sls')
+
+
+def test_reload_config_base(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base.cfg')
+    monkeypatch.setattr(config, 'user_config_path', '/does/not/exist')
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'base')
+    assert config.config.get('sls', 'base') == '/fake'
+
+
+def test_reload_config_user(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', '/does/not/exist')
+    monkeypatch.setattr(config, 'user_config_path', f'{file_base}/user.cfg')
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'extra')
+    assert config.config.get('sls', 'extra') == 'yes'
+
+
+def test_reload_config_local(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config_path', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-local.cfg')
+    monkeypatch.setattr(config, 'user_config_path', '/does/not/exist')
+    monkeypatch.chdir(file_base)
+
+    config.reload_config()
+
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'base')
+    assert config.config.get('sls', 'base') == '/fake'
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == 'local.cfg'
+    assert config.local_config_path == 'local.cfg'
+
+    assert not config.config.has_option('sls', 'local')
+    assert config.local_config.has_section('sls')
+    assert config.local_config.has_option('sls', 'local')
+    assert config.local_config.get('sls', 'local') == 'yes'
+
+
+def test_reload_config_interpolation(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/interpolation.cfg')
+    monkeypatch.setattr(config, 'user_config_path', '/does/not/exist')
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'base')
+    assert config.config.get('sls', 'base') == '/fake'
+    assert config.config.get('sls', 'subdir') == '/fake/dir'
 
 # vim:ts=4:sw=4:et

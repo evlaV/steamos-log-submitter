@@ -11,7 +11,7 @@ base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
 user_home = pwd.getpwuid(uid).pw_dir
 user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
 
-local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation)
+local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
 
 
@@ -49,10 +49,10 @@ def get_config(mod, defaults=None) -> ConfigSection:
     return ConfigSection(mod.split('.', 1)[1], defaults=defaults)
 
 
-def reload_config():  # pragma: no cover
+def reload_config():
     global config
     global local_config_path
-    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation)
+    config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 
     try:
         with open(base_config_path) as f:
@@ -66,7 +66,7 @@ def reload_config():  # pragma: no cover
     except FileNotFoundError:
         pass
 
-    if config.has_section('sls'):
+    if config.has_section('sls') and config.has_option('sls', 'local-config'):
         local_config_path = config.get('sls', 'local-config')
         if local_config_path is not None:
             try:
