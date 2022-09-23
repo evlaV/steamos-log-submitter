@@ -26,7 +26,7 @@ def test_offline(monkeypatch):
     sls.submit()
 
 
-def test_disable_all(helper_directory, monkeypatch, patch_module):
+def test_disable_all(helper_directory, monkeypatch, online, patch_module):
     testconf = configparser.ConfigParser()
     testconf.add_section('helpers.test')
     testconf.set('helpers.test', 'enable', 'off')
@@ -38,7 +38,7 @@ def test_disable_all(helper_directory, monkeypatch, patch_module):
     sls.submit()
 
 
-def test_disable_submit(helper_directory, monkeypatch, patch_module):
+def test_disable_submit(helper_directory, monkeypatch, online, patch_module):
     testconf = configparser.ConfigParser()
     testconf.add_section('helpers.test')
     testconf.set('helpers.test', 'submit', 'off')
