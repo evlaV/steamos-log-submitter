@@ -2,6 +2,7 @@ import builtins
 import steamos_log_submitter as sls
 from . import open_shim_cb
 
+
 def build_proc_chain(procs):
     def cb(fname):
         if not fname.startswith('/proc/'):
@@ -12,7 +13,7 @@ def build_proc_chain(procs):
             return None
         ppid, cmdline = procs[pid]
         if fname == 'stat':
-            return  f'{pid} ({cmdline[0]}) S {ppid} 0'
+            return f'{pid} ({cmdline[0]}) S {ppid} 0'
         if fname == 'cmdline':
             return '\0'.join(cmdline)
         if fname == 'comm':

@@ -5,6 +5,7 @@ from .crash import FakeResponse
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
 
+
 def test_dmesg_parse():
     with open(f'{file_base}/crash') as f:
         crash_expected = f.read()

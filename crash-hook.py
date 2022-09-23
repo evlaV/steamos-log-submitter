@@ -12,7 +12,7 @@ P, e, u, g, s, t, c, h = sys.argv[1:]
 
 appid = sls.util.get_appid(int(P))
 minidump = f'{sls.pending}/minidump/{e}-{P}-{appid}.dmp'
-breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump, stdin=subprocess.PIPE)
+breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump], stdin=subprocess.PIPE)
 systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
 
 while True:

@@ -6,6 +6,7 @@ import requests
 import tempfile
 import steamos_log_submitter as sls
 
+
 def open_shim(text):
     def open_fake(*args):
         return io.StringIO(text)
@@ -60,6 +61,7 @@ def helper_directory(monkeypatch, patch_module):
     monkeypatch.setattr(sls, 'uploaded', f'{d.name}/uploaded')
 
     original_import_module = importlib.import_module
+
     def import_module(name, package=None):
         if name == 'steamos_log_submitter.helpers.test':
             return patch_module

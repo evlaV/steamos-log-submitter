@@ -3,12 +3,13 @@ import configparser
 import io
 import steamos_log_submitter.config as config
 
+
 def test_section_get_no_val_no_default(monkeypatch):
     testconf = configparser.ConfigParser()
     monkeypatch.setattr(config, 'config', testconf)
     section = config.ConfigSection('test')
     try:
-        foo = section['nothing']
+        section['nothing']
         assert False
     except KeyError:
         pass
@@ -63,7 +64,7 @@ def test_local_setting(monkeypatch):
     monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
     section = config.ConfigSection('test')
     try:
-        foo = section['nothing']
+        section['nothing']
         assert False
     except KeyError:
         pass
@@ -108,7 +109,7 @@ nothing = 1
 
 def test_get_config_out_of_scope():
     try:
-        section = config.get_config('builtins')
+        config.get_config('builtins')
         assert False
     except KeyError:
         pass

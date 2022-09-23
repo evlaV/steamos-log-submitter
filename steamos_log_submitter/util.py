@@ -16,7 +16,8 @@ __all__ = [
     'get_steam_account_id',
 ]
 
-def get_appid(pid : int) -> Optional[int]:
+
+def get_appid(pid: int) -> Optional[int]:
     appid = None
     stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
 
@@ -63,7 +64,7 @@ def get_build_id() -> Optional[str]:
     return None
 
 
-def get_deck_serial(uid : int = 1000) -> Optional[str]:
+def get_deck_serial(uid: int = 1000) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
@@ -84,7 +85,7 @@ def get_deck_serial(uid : int = 1000) -> Optional[str]:
     return serial
 
 
-def get_steam_account_id(uid : int = 1000) -> Optional[int]:
+def get_steam_account_id(uid: int = 1000) -> Optional[int]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
@@ -105,7 +106,7 @@ def get_steam_account_id(uid : int = 1000) -> Optional[int]:
     return None
 
 
-def get_steam_account_name(uid : int = 1000) -> Optional[str]:
+def get_steam_account_name(uid: int = 1000) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:

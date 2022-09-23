@@ -3,6 +3,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from . import helper_directory, patch_module, setup_categories, unreachable
 
+
 def submit(log):
     return True
 
@@ -35,8 +36,8 @@ def test_disable_collect(helper_directory, monkeypatch, patch_module):
 
 def test_module(helper_directory, monkeypatch, patch_module):
     setup_categories(['test'])
-
     attempt = 0
+
     def collect():
         nonlocal attempt
         attempt = 1
@@ -51,8 +52,8 @@ def test_module(helper_directory, monkeypatch, patch_module):
 
 def test_lock(helper_directory, monkeypatch, patch_module):
     setup_categories(['test'])
-
     attempt = 0
+
     def collect():
         nonlocal attempt
         attempt = 1

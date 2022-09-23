@@ -2,6 +2,7 @@ import builtins
 import steamos_log_submitter as sls
 from . import open_shim
 
+
 def test_no_vdf(monkeypatch):
     def raise_enoent(*args, **kwargs):
         raise FileNotFoundError(args[0])

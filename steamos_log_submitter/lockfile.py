@@ -6,6 +6,7 @@ import logging
 import os
 import time
 
+
 class LockHeldError(RuntimeError):
     pass
 
@@ -15,7 +16,7 @@ class LockNotHeldError(RuntimeError):
 
 
 class Lockfile:
-    def __init__(self, path : str):
+    def __init__(self, path: str):
         self._path = path
         self.lockfile = None
 
@@ -74,7 +75,6 @@ class Lockfile:
         self.lockfile.write(f'/proc/{os.getpid()}/fd/{self.lockfile.fileno()}')
         self.lockfile.flush()
         logging.debug(f'Lock on {self._path} obtained')
-
 
     def unlock(self):
         if not self.lockfile:

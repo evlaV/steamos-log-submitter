@@ -1,6 +1,7 @@
 import json
 import requests
 
+
 class FakeResponse:
     def __init__(self):
         self.attempt = 0
@@ -14,6 +15,7 @@ class FakeResponse:
             'gid': 111
         }
         self.attempt = 0
+
         def ret(url, data=None, *args, **kwargs):
             self.attempt += 1
             if self.attempt == 1:
@@ -38,3 +40,4 @@ class FakeResponse:
         monkeypatch.setattr(requests, 'post', ret)
         monkeypatch.setattr(requests, 'put', ret)
 
+# vim:ts=4:sw=4:et

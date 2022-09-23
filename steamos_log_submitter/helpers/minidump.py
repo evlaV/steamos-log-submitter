@@ -4,17 +4,17 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
 import requests
-import sys
 import steamos_log_submitter as sls
 
 config = sls.get_config(__name__)
 dsn = config.get('dsn')
 
+
 def collect() -> bool:  # pragma: no cover
     return False
 
 
-def submit(fname : str) -> bool:
+def submit(fname: str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext not in ('.md', '.dmp'):
         return False

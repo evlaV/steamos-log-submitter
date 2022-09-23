@@ -5,14 +5,14 @@
 import io
 import logging
 import os
-import sys
 import time
 import zipfile
 from typing import TextIO
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
-def get_summaries(dmesg : TextIO) -> tuple[str, str]:
+
+def get_summaries(dmesg: TextIO) -> tuple[str, str]:
     crash_summary = []
     call_trace = []
     call_trace_grab = False
@@ -42,10 +42,10 @@ def collect() -> bool:
     return False
 
 
-def submit(fname : str) -> bool:
+def submit(fname: str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.zip':
-       return False
+        return False
 
     note, stack = None, None
     try:

@@ -2,6 +2,7 @@ import builtins
 import steamos_log_submitter.util as util
 from . import open_shim
 
+
 def test_get_build_id(monkeypatch):
     os_release = """NAME="SteamOS"
 PRETTY_NAME="SteamOS"

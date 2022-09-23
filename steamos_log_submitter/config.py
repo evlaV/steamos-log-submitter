@@ -14,6 +14,7 @@ local_config_path = '/home/.steamos/offload/var/steamos-log-submitter/local.cfg'
 
 local_config = configparser.ConfigParser(interpolation=None)
 
+
 class ConfigSection:
     def __init__(self, name, *, defaults={}):
         self.name = name

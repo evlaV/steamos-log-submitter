@@ -7,6 +7,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from . import helper_directory, patch_module, setup_categories, unreachable
 
+
 @pytest.fixture
 def online(monkeypatch):
     monkeypatch.setattr(sls.util, 'check_network', lambda: True)
@@ -88,8 +89,8 @@ def test_broken_module(helper_directory, online):
 def test_success(helper_directory, online, patch_module):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-
     attempt = 0
+
     def submit(fname):
         nonlocal attempt
         attempt = 1
@@ -106,8 +107,8 @@ def test_success(helper_directory, online, patch_module):
 def test_failure(helper_directory, online, patch_module):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-
     attempt = 0
+
     def submit(fname):
         nonlocal attempt
         attempt = 1
@@ -147,8 +148,8 @@ def test_lock(helper_directory, online, patch_module):
         return True
 
     patch_module.submit = submit
-
     running = 0
+
     def run():
         nonlocal running
         if running != 0:

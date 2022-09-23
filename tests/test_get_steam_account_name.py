@@ -2,6 +2,7 @@ import builtins
 import steamos_log_submitter as sls
 from . import open_shim
 
+
 def test_no_vdf(monkeypatch):
     def raise_enoent(*args, **kwargs):
         raise FileNotFoundError(args[0])
@@ -144,4 +145,3 @@ def test_invalid_schema2(monkeypatch):
     assert sls.util.get_steam_account_name() is None
 
 # vim:ts=4:sw=4:et
-

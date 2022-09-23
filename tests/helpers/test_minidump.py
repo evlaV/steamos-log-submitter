@@ -4,6 +4,7 @@ import steamos_log_submitter.helpers.minidump as helper
 import steamos_log_submitter.util as util
 from .. import open_shim
 
+
 def test_submit_bad_name():
     assert not helper.submit('not-a-dmp.txt')
 

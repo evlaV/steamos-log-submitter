@@ -5,7 +5,6 @@
 import importlib
 import logging
 import os
-import subprocess
 from .lockfile import Lockfile, LockHeldError
 from steamos_log_submitter.config import get_config
 import steamos_log_submitter.util as util
@@ -31,6 +30,7 @@ base_config = get_config(__name__, defaults={
 base = base_config['base']
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
+
 
 class HelperError(RuntimeError):
     pass

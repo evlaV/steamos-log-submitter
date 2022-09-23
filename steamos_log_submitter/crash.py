@@ -10,6 +10,7 @@ import steamos_log_submitter as sls
 start_url = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
 finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
 
+
 def upload(product, *, build=None, version, info, dump=None) -> bool:
     logging.info(f'Uploading crash log for {product} (build: {build}, version: {version}')
     account = sls.util.get_steam_account_id()

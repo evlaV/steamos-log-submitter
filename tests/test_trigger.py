@@ -3,6 +3,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from . import unreachable
 
+
 def setup_conf(monkeypatch, enable=None):
     testconf = configparser.ConfigParser()
     monkeypatch.setattr(config, 'config', testconf)
@@ -12,6 +13,7 @@ def setup_conf(monkeypatch, enable=None):
         localconf.add_section('sls')
         localconf.set('sls', 'enable', enable)
     monkeypatch.setattr(config, 'local_config', localconf)
+
 
 def test_config_missing(monkeypatch):
     setup_conf(monkeypatch)
@@ -36,9 +38,11 @@ def test_config_invalid(monkeypatch):
 
 def test_config_on(monkeypatch):
     hit = 0
+
     def do_hit():
         nonlocal hit
         hit += 1
+
     setup_conf(monkeypatch, 'on')
     monkeypatch.setattr(sls, 'collect', do_hit)
     monkeypatch.setattr(sls, 'submit', do_hit)

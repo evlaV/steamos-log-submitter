@@ -3,6 +3,7 @@ import os
 import pytest
 from steamos_log_submitter.lockfile import Lockfile, LockHeldError, LockNotHeldError
 
+
 @pytest.fixture(scope='function')
 def lockfile():
     try:
@@ -212,6 +213,7 @@ def test_stale_lock(lockfile):
 def test_disappearing_contention(lockfile, monkeypatch):
     attempt = 0
     real_open = open
+
     def open_fake(fname, mode):
         nonlocal attempt
         if mode == 'x' and attempt == 0:
@@ -239,9 +241,11 @@ def test_disappearing_contention(lockfile, monkeypatch):
 def test_slow_lockinfo(lockfile, monkeypatch):
     attempt = 0
     real_open = open
+
     def open_fake(*args):
         f = real_open(*args)
         real_read = f.read
+
         def read_fake(*args):
             nonlocal attempt
             if attempt < 2:
@@ -280,9 +284,11 @@ def test_slow_lockinfo(lockfile, monkeypatch):
 def test_very_slow_lockinfo(lockfile, monkeypatch):
     attempt = 0
     real_open = open
+
     def open_fake(*args):
         f = real_open(*args)
         real_read = f.read
+
         def read_fake(*args):
             nonlocal attempt
             if attempt < 4:
