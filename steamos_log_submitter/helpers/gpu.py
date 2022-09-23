@@ -4,20 +4,18 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import logging
 import os
-import sys
-import time
-from typing import Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
+
 
 def collect() -> bool:
     return False
 
 
-def submit(fname : str) -> bool:
+def submit(fname: str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.log':
-       return False
+        return False
 
     try:
         with open(fname) as f:
