@@ -72,7 +72,6 @@ def collect() -> bool:
     }
     os.makedirs(f'{sls.base}/data', exist_ok=True)
     known = {}
-    print(devices)
     try:
         with open(f'{sls.base}/data/peripherals.json') as f:
             known = json.load(f)
@@ -83,7 +82,7 @@ def collect() -> bool:
 
     for section in devices.keys():
         # Use a set to easily deduplicate identical dicts
-        devs = set(json.dumps(collections.OrderedDict(dev)) for dev in devices[section])
+        devs = set(json.dumps(collections.OrderedDict(sorted(dev.items()))) for dev in devices[section])
         if section in known:
             for dev in known[section]:
                 devs.add(json.dumps(dev))
@@ -95,11 +94,12 @@ def collect() -> bool:
     now = time.time()
     timestamp = config.get('timestamp')
     new_file = False
-    if timestamp:
+    if timestamp is not None:
         timestamp = float(timestamp)
         if now - timestamp >= config.get('interval', 60 * 60 * 24 * 7):
             # If last submitted over a week ago, submit now
             os.rename(f'{sls.base}/data/peripherals.json', f'{sls.pending}/peripherals/{now:.0f}.json')
+            new_file = True
 
     if not timestamp or new_file:
         config['timestamp'] = now
@@ -108,7 +108,7 @@ def collect() -> bool:
     return new_file
 
 
-def submit() -> bool:
+def submit() -> bool:  # pragma: no cover
     return False
 
 # vim:ts=4:sw=4:et

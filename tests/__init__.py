@@ -1,3 +1,4 @@
+import configparser
 import importlib
 import io
 import os
@@ -77,5 +78,14 @@ def setup_categories(categories):
     for category in categories:
         os.mkdir(f'{sls.pending}/{category}')
         os.mkdir(f'{sls.uploaded}/{category}')
+
+
+@pytest.fixture
+def mock_config(monkeypatch):
+    testconf = configparser.ConfigParser()
+    monkeypatch.setattr(sls.config, 'config', testconf)
+    monkeypatch.setattr(sls.config, 'local_config', testconf)
+    monkeypatch.setattr(sls.config, 'write_config', lambda: None)
+    return testconf
 
 # vim:ts=4:sw=4:et

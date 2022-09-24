@@ -32,7 +32,7 @@ class ConfigSection:
     def __setitem__(self, name, value):
         if not local_config.has_section(self.name):
             local_config.add_section(self.name)
-        local_config.set(self.name, name, value)
+        local_config.set(self.name, name, str(value))
 
     def get(self, name, default=None):
         try:

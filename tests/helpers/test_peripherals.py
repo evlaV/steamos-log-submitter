@@ -1,6 +1,10 @@
+import collections
+import json
 import os
+import time
+import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
-from .. import unreachable
+from .. import unreachable, helper_directory, mock_config, patch_module
 
 
 def make_usb_devs(monkeypatch, devs):
@@ -148,5 +152,76 @@ def test_collect_monitors_edid(monkeypatch):
     assert type(devices) == list
     assert len(devices) == 1
     assert devices[0]['edid'] == '41414141'
+
+
+def test_collect(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+
+    assert not helper.collect()
+    with open(f'{helper_directory}/data/peripherals.json') as f:
+        output = json.load(f)
+    assert output == {'usb': [], 'monitors': []}
+
+
+def test_collect_no_timestamp(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(time, 'time', lambda: 1000)
+
+    assert not mock_config.has_section('helpers.peripherals')
+    assert not helper.collect()
+    assert mock_config.has_section('helpers.peripherals')
+    assert mock_config.has_option('helpers.peripherals', 'timestamp')
+    assert mock_config.get('helpers.peripherals', 'timestamp') == '1000'
+
+
+def test_collect_small_interval(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(time, 'time', lambda: 1000)
+
+    mock_config.add_section('helpers.peripherals')
+    mock_config.set('helpers.peripherals', 'timestamp', '999')
+    assert not helper.collect()
+    assert mock_config.has_section('helpers.peripherals')
+    assert mock_config.has_option('helpers.peripherals', 'timestamp')
+    assert mock_config.get('helpers.peripherals', 'timestamp') == '999'
+    assert not os.access(f'{helper_directory}/pending/1000.json', os.F_OK)
+
+
+def test_collect_large_interval(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    os.mkdir(f'{helper_directory}/pending/peripherals')
+
+    mock_config.add_section('helpers.peripherals')
+    mock_config.set('helpers.peripherals', 'timestamp', '1')
+    assert helper.collect()
+    assert os.access(f'{helper_directory}/pending/peripherals/1000000.json', os.F_OK)
+    assert mock_config.get('helpers.peripherals', 'timestamp') == '1000000'
+
+
+def test_collect_dedup(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    os.mkdir(f'{helper_directory}/data')
+
+    with open(f'{helper_directory}/data/peripherals.json', 'w') as f:
+        json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
+
+    assert not helper.collect()
+
+    with open(f'{helper_directory}/data/peripherals.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['usb']) == 1
+    assert list(cache['usb'][0].keys()) == ['pid', 'vid']
 
 # vim:ts=4:sw=4:et

@@ -6,6 +6,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from . import helper_directory, patch_module, setup_categories, unreachable
+from . import mock_config as testconf
 
 
 @pytest.fixture
@@ -26,11 +27,9 @@ def test_offline(monkeypatch):
     sls.submit()
 
 
-def test_disable_all(helper_directory, monkeypatch, online, patch_module):
-    testconf = configparser.ConfigParser()
+def test_disable_all(helper_directory, monkeypatch, online, patch_module, testconf):
     testconf.add_section('helpers.test')
     testconf.set('helpers.test', 'enable', 'off')
-    monkeypatch.setattr(config, 'config', testconf)
 
     setup_categories(['test'])
 
@@ -38,11 +37,9 @@ def test_disable_all(helper_directory, monkeypatch, online, patch_module):
     sls.submit()
 
 
-def test_disable_submit(helper_directory, monkeypatch, online, patch_module):
-    testconf = configparser.ConfigParser()
+def test_disable_submit(helper_directory, monkeypatch, online, patch_module, testconf):
     testconf.add_section('helpers.test')
     testconf.set('helpers.test', 'submit', 'off')
-    monkeypatch.setattr(config, 'config', testconf)
 
     setup_categories(['test'])
 
