@@ -1,4 +1,6 @@
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter	0750	steamos-log-submitter	root	-	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending 	0750	steamos-log-submitter	root	-	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded	0750	steamos-log-submitter	root	-	-
 # Clean up submissions after 2 weeks, or 1 week if it's already been uploaded
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/gpu        	0750	steamos-log-submitter	root	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/kdump      	0750	steamos-log-submitter	root	14d	-
