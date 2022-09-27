@@ -16,7 +16,7 @@ tmpfilesdir := $(shell pkg-config --define-variable=prefix=$(prefix) --variable=
 			  || echo $(libdir)/udev/)
 
 infiles := \
-	base.cfg \
+	systemd/steamos-log-submitter.mount \
 	systemd/sysusers.conf \
 	systemd/tmpfiles.conf
 
@@ -31,6 +31,7 @@ clean:
 		$< > $@
 
 install: all $(infiles)
+	install -D -m0644 systemd/steamos-log-submitter.mount $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.mount
 	install -D -m0644 systemd/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service
 	install -D -m0644 systemd/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer
 	install -D -m0644 systemd/sysusers.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf
