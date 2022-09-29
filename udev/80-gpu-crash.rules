@@ -4,6 +4,5 @@ ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", RUN+="/usr/li
 # If the GPU crash is caused by a specific process, kill the PID
 ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", ENV{PID}!="0", RUN+="/sbin/kill -9 %E{PID}"
 
-# Kill sddm and gamescope if the GPU crashes
-ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", RUN+="/sbin/killall -9 sddm sddm-session gamescope gamescope-helper"
-
+# Kill sddm and gamescope if the GPU crashes and VRAM is lost
+ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", ENV{FLAGS}=="1", RUN+="/sbin/killall -9 sddm sddm-session gamescope gamescope-helper"
