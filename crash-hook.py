@@ -23,29 +23,29 @@ try:
             break
         try:
             breakpad.stdin.write(buffer)
-        except:
+        except Exception:
             pass
         try:
             systemd.stdin.write(buffer)
-        except:
+        except Exception:
             pass
 
     try:
         breakpad.stdin.close()
-    except:
+    except Exception:
         pass
     try:
         breakpad.wait(5)
-    except:
+    except Exception:
         pass
 
     try:
         systemd.stdin.close()
-    except:
+    except Exception:
         pass
     try:
         systemd.wait(5)
-    except:
+    except Exception:
         pass
 
     shutil.chown(minidump, user='steamos-log-submitter')

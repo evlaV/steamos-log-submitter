@@ -134,7 +134,7 @@ def check_network() -> bool:
             r = requests.head('http://test.steampowered.com/204', allow_redirects=False, timeout=1)
             if r.status_code == 204:
                 return True
-        except:
+        except Exception:
             pass
         time.sleep(4)
 

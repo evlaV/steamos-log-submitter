@@ -167,7 +167,7 @@ def test_contended_open(lockfile):
                 assert False
         except LockHeldError:
             pass
-        except:
+        except Exception:
             assert False
         assert lock_a.lockfile
         assert not lock_b.lockfile
@@ -274,7 +274,7 @@ def test_slow_lockinfo(lockfile, monkeypatch):
                 assert False
         except LockHeldError:
             pass
-        except:
+        except Exception:
             assert False
         assert lock_a.lockfile
         assert not lock_b.lockfile
@@ -317,7 +317,7 @@ def test_very_slow_lockinfo(lockfile, monkeypatch):
                 assert False
         except LockHeldError:
             pass
-        except:
+        except Exception:
             assert False
         assert lock_a.lockfile
         assert not lock_b.lockfile
