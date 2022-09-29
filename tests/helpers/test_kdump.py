@@ -2,6 +2,7 @@ import os
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.helpers.kdump as kdump
 from .crash import FakeResponse
+from .. import fake_pwuid
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
 

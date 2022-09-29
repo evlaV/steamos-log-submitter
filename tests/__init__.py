@@ -2,6 +2,7 @@ import configparser
 import importlib
 import io
 import os
+import pwd
 import pytest
 import requests
 import tempfile
@@ -87,5 +88,12 @@ def mock_config(monkeypatch):
     monkeypatch.setattr(sls.config, 'local_config', testconf)
     monkeypatch.setattr(sls.config, 'write_config', lambda: None)
     return testconf
+
+
+@pytest.fixture(autouse=True)
+def fake_pwuid(monkeypatch):
+    def getpwuid(uid):
+        return pwd.struct_passwd(['', '', uid, uid, '', '', ''])
+    monkeypatch.setattr(pwd, 'getpwuid', getpwuid)
 
 # vim:ts=4:sw=4:et

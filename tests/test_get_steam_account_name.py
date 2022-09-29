@@ -1,6 +1,6 @@
 import builtins
 import steamos_log_submitter as sls
-from . import open_shim
+from . import open_shim, fake_pwuid
 
 
 def test_no_vdf(monkeypatch):
