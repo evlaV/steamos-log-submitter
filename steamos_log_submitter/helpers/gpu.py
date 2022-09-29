@@ -4,6 +4,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import logging
 import os
+import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
@@ -23,10 +24,17 @@ def submit(fname: str) -> bool:
     except IOError:
         return False
 
+    timestamp = None
     for line in note.split('\n'):
         if not line.startswith('TIMESTAMP='):
             continue
-        timestamp = int(line.split('=')[1])
+        try:
+            timestamp = int(line.split('=')[1])
+        except ValueError:
+            break
+
+    if not timestamp:
+        timestamp = time.time_ns()
 
     info = {
         'crash_time': timestamp // 1_000_000_000,

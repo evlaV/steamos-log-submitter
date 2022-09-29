@@ -66,9 +66,6 @@ def submit(fname: str) -> bool:
         'stack': stack,
         'note': note,
     }
-    if not upload_crash(product='holo', build=sls.util.get_build_id(), version=os.uname().release, info=info, dump=fname):
-        return False
-
-    return True
+    return upload_crash(product='holo', build=sls.util.get_build_id(), version=os.uname().release, info=info, dump=fname)
 
 # vim:ts=4:sw=4:et
