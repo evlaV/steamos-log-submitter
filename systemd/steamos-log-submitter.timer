@@ -8,6 +8,7 @@
 Description=SteamOS log submitter timer - retries sending logs hourly
 After=basic.target
 After=network-online.target
+Requires=var-lib-steamos\x2dlog\x2dsubmitter.mount
 
 [Timer]
 OnBootSec=5min

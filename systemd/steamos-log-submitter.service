@@ -5,6 +5,7 @@
 #
 [Unit]
 Description=SteamOS log submitter service - sends error logs to Valve
+Requires=var-lib-steamos\x2dlog\x2dsubmitter.mount
 
 [Service]
 Type=oneshot
