@@ -41,9 +41,6 @@ def submit(fname: str) -> bool:
         'stack': '',
         'note': note,
     }
-    if not upload_crash(product='holo-gpu', build=sls.util.get_build_id(), version=os.uname().release, info=info):
-        return False
-
-    return True
+    return upload_crash(product='holo-gpu', build=sls.util.get_build_id(), version=os.uname().release, info=info)
 
 # vim:ts=4:sw=4:et
