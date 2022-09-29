@@ -2,12 +2,14 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+from .lockfile import Lockfile, LockHeldError
+from steamos_log_submitter.config import get_config
+from steamos_log_submitter.logging import reconfigure_logging
+import steamos_log_submitter.util as util
+
 import importlib
 import logging
 import os
-from .lockfile import Lockfile, LockHeldError
-from steamos_log_submitter.config import get_config
-import steamos_log_submitter.util as util
 
 __all__ = [
     # Constants
@@ -31,16 +33,25 @@ base = base_config['base']
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
 
+reconfigure_logging()
+
 
 class HelperError(RuntimeError):
     pass
 
 
 def trigger():
+    print(logging)
     if base_config['enable'] == 'on':
         logging.info('Routine collection/submission triggered')
-        collect()
-        submit()
+        try:
+            collect()
+        except Exception as e:
+            logging.critical('Unhandled exception while collecting logs', exc_info=e)
+        try:
+            submit()
+        except Exception as e:
+            logging.critical('Unhandled exception while submitting logs', exc_info=e)
 
 
 def create_helper(category):
