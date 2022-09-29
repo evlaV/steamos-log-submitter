@@ -6,10 +6,8 @@ import configparser
 import logging
 import pwd
 
-uid = 1000
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
-user_home = pwd.getpwuid(uid).pw_dir
-user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
+user_config_path = None
 
 local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
@@ -60,11 +58,23 @@ def reload_config():
     except FileNotFoundError:
         logging.warning('No config file found')
 
-    try:
-        with open(user_config_path) as f:
-            config.read_file(f, source=user_config_path)
-    except FileNotFoundError:
-        pass
+    user_config_path = None
+    if config.has_section('sls'):
+        if config.has_option('sls', 'user-config'):
+            user_config_path = config.get('sls', 'user-config')
+        elif config.has_option('sls', 'uid'):
+            try:
+                uid = config.get('sls', 'uid')
+                user_home = pwd.getpwuid(uid).pw_dir
+                user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
+            except KeyError:
+                logging.error(f'Configured uid {uid} does not exist')
+    if user_config_path:
+        try:
+            with open(user_config_path) as f:
+                config.read_file(f, source=user_config_path)
+        except FileNotFoundError:
+            pass
 
     if config.has_section('sls') and config.has_option('sls', 'local-config'):
         local_config_path = config.get('sls', 'local-config')
