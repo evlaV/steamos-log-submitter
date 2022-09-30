@@ -7,6 +7,7 @@ import re
 import requests
 import time
 import vdf
+import steamos_log_submitter.config as config
 from typing import Optional
 
 __all__ = [
@@ -15,6 +16,8 @@ __all__ = [
     'get_deck_serial',
     'get_steam_account_id',
 ]
+
+default_uid = int(config.get_config('steamos_log_submitter').get('uid', '1000'))
 
 
 def get_appid(pid: int) -> Optional[int]:
@@ -64,7 +67,7 @@ def get_build_id() -> Optional[str]:
     return None
 
 
-def get_deck_serial(uid: int = 1000) -> Optional[str]:
+def get_deck_serial(uid: int = default_uid) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
@@ -85,7 +88,7 @@ def get_deck_serial(uid: int = 1000) -> Optional[str]:
     return serial
 
 
-def get_steam_account_id(uid: int = 1000) -> Optional[int]:
+def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
@@ -106,7 +109,7 @@ def get_steam_account_id(uid: int = 1000) -> Optional[int]:
     return None
 
 
-def get_steam_account_name(uid: int = 1000) -> Optional[str]:
+def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
     home = pwd.getpwuid(uid).pw_dir
 
     try:
