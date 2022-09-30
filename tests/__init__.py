@@ -50,6 +50,12 @@ def unreachable(*args, **kwargs):
     assert False
 
 
+def always_raise(exc):
+    def ret(*args, **kwargs):
+        raise exc
+    return ret
+
+
 @pytest.fixture
 def patch_module():
     class FakeModule:
@@ -100,5 +106,23 @@ def fake_pwuid(monkeypatch):
     def getpwuid(uid):
         return pwd.struct_passwd(['', '', uid, uid, '', f'/home/{uid}', ''])
     monkeypatch.setattr(pwd, 'getpwuid', getpwuid)
+
+
+class HitCounter:
+    def __init__(self, ret=None, exc=None):
+        self.hits = 0
+        self.ret = ret
+        self.exc = exc
+
+    def __call__(self, *args, **kwargs):
+        self.hits += 1
+        if self.exc:
+            raise self.exc
+        return self.ret
+
+
+@pytest.fixture
+def count_hits():
+    return HitCounter()
 
 # vim:ts=4:sw=4:et

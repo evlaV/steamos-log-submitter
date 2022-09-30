@@ -1,7 +1,7 @@
 import configparser
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from . import helper_directory, patch_module, setup_categories, unreachable
+from . import count_hits, helper_directory, patch_module, setup_categories, unreachable
 
 
 def submit(log):
@@ -34,43 +34,31 @@ def test_disable_collect(helper_directory, monkeypatch, patch_module):
     sls.collect()
 
 
-def test_module(helper_directory, monkeypatch, patch_module):
+def test_module(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
-    attempt = 0
-
-    def collect():
-        nonlocal attempt
-        attempt = 1
-        return False
 
     patch_module.submit = submit
-    patch_module.collect = collect
+    patch_module.collect = count_hits
     sls.collect()
 
-    assert attempt
+    assert count_hits.hits
 
 
-def test_lock(helper_directory, monkeypatch, patch_module):
+def test_lock(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
-    attempt = 0
-
-    def collect():
-        nonlocal attempt
-        attempt = 1
-        return False
 
     patch_module.submit = submit
-    patch_module.collect = collect
+    patch_module.collect = count_hits
 
     lock = sls.lockfile.Lockfile(f'{sls.pending}/test/.lock')
     lock.lock()
     sls.collect()
+
+    assert not count_hits.hits
+
     lock.unlock()
-
-    assert not attempt
-
     sls.collect()
 
-    assert attempt
+    assert count_hits.hits
 
 # vim:ts=4:sw=4:et

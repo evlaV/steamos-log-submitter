@@ -2,8 +2,9 @@ import builtins
 import configparser
 import io
 import os
+import pwd
 import steamos_log_submitter.config as config
-from . import fake_pwuid
+from . import always_raise, fake_pwuid
 
 file_base = f'{os.path.dirname(__file__)}/config'
 
@@ -194,8 +195,66 @@ def test_reload_config_uid(monkeypatch):
     assert config.config.get('sls', 'extra') == 'yes'
 
 
+def test_reload_config_bad_uid(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', 'base-uid.cfg')
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(KeyError))
+    monkeypatch.chdir(file_base)
+
+    real_open = open
+
+    def open_uid(fname):
+        assert fname == 'base-uid.cfg'
+        return real_open(fname)
+    monkeypatch.setattr(builtins, 'open', open_uid)
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'uid')
+    assert config.config.get('sls', 'uid') == '1000'
+
+    assert not config.config.has_option('sls', 'extra')
+
+
+def test_reload_config_uid_user(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', 'base-uid-user.cfg')
+    monkeypatch.chdir(file_base)
+
+    real_open = open
+
+    def open_uid(fname):
+        if fname == 'base-uid-user.cfg':
+            return real_open(fname)
+        assert fname == 'user.cfg'
+        return real_open('user.cfg')
+    monkeypatch.setattr(builtins, 'open', open_uid)
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'uid')
+    assert config.config.get('sls', 'uid') == '1000'
+    assert config.config.get('sls', 'user-config') == 'user.cfg'
+
+    assert config.config.has_option('sls', 'extra')
+    assert config.config.get('sls', 'extra') == 'yes'
+
+
+def test_reload_config_user_missing(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-user.cfg')
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == 'user.cfg'
+
+    assert not config.config.has_option('sls', 'extra')
+
+
 def test_reload_config_local(monkeypatch):
     monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
     monkeypatch.setattr(config, 'local_config_path', None)
     monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-local.cfg')
     monkeypatch.chdir(file_base)
@@ -211,6 +270,23 @@ def test_reload_config_local(monkeypatch):
     assert config.local_config.has_section('sls')
     assert config.local_config.has_option('sls', 'local')
     assert config.local_config.get('sls', 'local') == 'yes'
+
+
+def test_reload_config_local_missing(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
+    monkeypatch.setattr(config, 'local_config_path', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-local.cfg')
+
+    config.reload_config()
+
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == 'local.cfg'
+    assert config.local_config_path == 'local.cfg'
+
+    assert not config.config.has_option('sls', 'local')
+    assert not config.local_config.has_section('sls')
 
 
 def test_reload_config_interpolation(monkeypatch):
