@@ -22,7 +22,7 @@ def test_submit_metadata(monkeypatch):
     monkeypatch.setattr(util, 'get_steam_account_id', lambda: 123)
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(requests, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim('MDMP'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake-0-456.dmp')
 
@@ -40,6 +40,6 @@ def test_no_metadata(monkeypatch):
     monkeypatch.setattr(util, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim('MDMP'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake.dmp')

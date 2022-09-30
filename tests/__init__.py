@@ -10,8 +10,13 @@ import steamos_log_submitter as sls
 
 
 def open_shim(text):
-    def open_fake(*args):
-        return io.StringIO(text)
+    def open_fake(fname, mode='r'):
+        if text is None:
+            raise FileNotFoundError
+        if 'b' in mode:
+            return io.BytesIO(text)
+        else:
+            return io.StringIO(text)
     return open_fake
 
 

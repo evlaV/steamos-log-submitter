@@ -1,10 +1,11 @@
+import builtins
 import collections
 import json
 import os
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
-from .. import unreachable, helper_directory, mock_config, patch_module
+from .. import unreachable, helper_directory, mock_config, patch_module, open_shim
 
 
 def make_usb_devs(monkeypatch, devs):
@@ -223,5 +224,20 @@ def test_collect_dedup(monkeypatch, helper_directory, mock_config):
 
     assert len(cache['usb']) == 1
     assert list(cache['usb'][0].keys()) == ['pid', 'vid']
+
+
+def test_read_file_text(monkeypatch):
+    monkeypatch.setattr(builtins, 'open', open_shim('text'))
+    assert helper.read_file('') == 'text'
+
+
+def test_read_file_binary(monkeypatch):
+    monkeypatch.setattr(builtins, 'open', open_shim(b'bytes'))
+    assert helper.read_file('', binary=True) == b'bytes'
+
+
+def test_read_file_none(monkeypatch):
+    monkeypatch.setattr(builtins, 'open', open_shim(None))
+    assert helper.read_file('') is None
 
 # vim:ts=4:sw=4:et
