@@ -12,3 +12,12 @@ run_pytest:
     - pacman -Sy --noconfirm python-pip python-pytest
     - pip install .[test]
     - pytest
+
+lint:
+  stage: test
+  tags:
+    - docker
+    - linux
+  script:
+    - pacman -Sy --noconfirm flake8
+    - flake8
