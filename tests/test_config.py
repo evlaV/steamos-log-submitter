@@ -3,6 +3,7 @@ import configparser
 import io
 import os
 import steamos_log_submitter.config as config
+from . import fake_pwuid
 
 file_base = f'{os.path.dirname(__file__)}/config'
 
@@ -165,6 +166,29 @@ def test_reload_config_user(monkeypatch):
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'user-config')
     assert config.config.get('sls', 'user-config') == 'user.cfg'
+
+    assert config.config.has_option('sls', 'extra')
+    assert config.config.get('sls', 'extra') == 'yes'
+
+
+def test_reload_config_uid(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', 'base-uid.cfg')
+    monkeypatch.chdir(file_base)
+
+    real_open = open
+
+    def open_uid(fname):
+        if fname == 'base-uid.cfg':
+            return real_open(fname)
+        assert fname == '/home/1000/.steam/root/config/steamos-log-submitter.cfg'
+        return real_open('user.cfg')
+    monkeypatch.setattr(builtins, 'open', open_uid)
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'uid')
+    assert config.config.get('sls', 'uid') == '1000'
 
     assert config.config.has_option('sls', 'extra')
     assert config.config.get('sls', 'extra') == 'yes'

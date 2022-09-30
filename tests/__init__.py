@@ -93,7 +93,7 @@ def mock_config(monkeypatch):
 @pytest.fixture(autouse=True)
 def fake_pwuid(monkeypatch):
     def getpwuid(uid):
-        return pwd.struct_passwd(['', '', uid, uid, '', '', ''])
+        return pwd.struct_passwd(['', '', uid, uid, '', f'/home/{uid}', ''])
     monkeypatch.setattr(pwd, 'getpwuid', getpwuid)
 
 # vim:ts=4:sw=4:et
