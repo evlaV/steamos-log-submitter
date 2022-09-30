@@ -8,6 +8,8 @@ import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
+logger = logging.getLogger(__name__)
+
 
 def collect() -> bool:
     return False

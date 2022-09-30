@@ -18,7 +18,8 @@ def reconfigure_logging():
     kwargs = {
         'encoding': 'utf-8',
         'level': level,
-        'format': '%(asctime)s %(levelname)s %(name)s: %(message)s'
+        'format': '%(asctime)s %(levelname)s %(name)s: %(message)s',
+        'force': True
     }
 
     path = config.get('path')

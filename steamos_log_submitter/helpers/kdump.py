@@ -11,6 +11,8 @@ from typing import TextIO
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
+logger = logging.getLogger(__name__)
+
 
 def get_summaries(dmesg: TextIO) -> tuple[str, str]:
     crash_summary = []

@@ -10,9 +10,11 @@ import steamos_log_submitter as sls
 start_url = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
 finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
 
+logger = logging.getLogger(__name__)
+
 
 def upload(product, *, build=None, version, info, dump=None) -> bool:
-    logging.info(f'Uploading crash log for {product} (build: {build}, version: {version}')
+    logger.info(f'Uploading crash log for {product} (build: {build}, version: {version}')
     account = sls.util.get_steam_account_id()
 
     info = dict(info)
@@ -27,10 +29,10 @@ def upload(product, *, build=None, version, info, dump=None) -> bool:
     })
     if dump:
         info['dump_file_size'] = os.stat(dump).st_size
-    logging.debug(f'Crash log info dict:\n{info}')
+    logger.debug(f'Crash log info dict:\n{info}')
 
     start = requests.post(start_url, data=info)
-    logging.debug(f'Crash log StartCrashUpload returned {start.status_code}')
+    logger.debug(f'Crash log StartCrashUpload returned {start.status_code}')
     if start.status_code // 100 != 2:
         return False
 
@@ -39,12 +41,12 @@ def upload(product, *, build=None, version, info, dump=None) -> bool:
     if dump:
         headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}
         put = requests.put(response['url'], headers=headers, data=open(dump, 'rb'))
-        logging.debug(f'Crash log bucket PUT returned {put.status_code}')
+        logger.debug(f'Crash log bucket PUT returned {put.status_code}')
         if put.status_code // 100 != 2:
             return False
 
     finish = requests.post(finish_url, data={'gid': response['gid']})
-    logging.debug(f'Crash log FinishCrashUpload returned {finish.status_code}')
+    logger.debug(f'Crash log FinishCrashUpload returned {finish.status_code}')
     if finish.status_code // 100 != 2:
         return False
 

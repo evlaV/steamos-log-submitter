@@ -12,6 +12,7 @@ from typing import Optional
 import steamos_log_submitter as sls
 
 config = sls.get_config(__name__)
+logger = logging.getLogger(__name__)
 
 
 def read_file(path, binary=False) -> Optional[str]:
@@ -78,7 +79,7 @@ def collect() -> bool:
     except FileNotFoundError:
         pass
     except json.decoder.JSONDecodeError:
-        logging.warning('Parsing error loading cache file')
+        logger.warning('Parsing error loading cache file')
 
     for section in devices.keys():
         # Use a set to easily deduplicate identical dicts

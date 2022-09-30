@@ -9,6 +9,8 @@ import subprocess
 import sys
 import steamos_log_submitter as sls
 
+logger = logging.getLogger(__name__)
+
 try:
     P, e, u, g, s, t, c, h = sys.argv[1:]
 
@@ -51,6 +53,6 @@ try:
     shutil.chown(minidump, user='steamos-log-submitter')
     sls.trigger()
 except Exception as e:
-    logging.critical('Unhandled exception', exc_info=e)
+    logger.critical('Unhandled exception', exc_info=e)
 
 # vim:ts=4:sw=4:et

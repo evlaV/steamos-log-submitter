@@ -35,23 +35,24 @@ uploaded = f'{base}/uploaded'
 
 reconfigure_logging()
 
+logger = logging.getLogger(__name__)
+
 
 class HelperError(RuntimeError):
     pass
 
 
 def trigger():
-    print(logging)
     if base_config['enable'] == 'on':
-        logging.info('Routine collection/submission triggered')
+        logger.info('Routine collection/submission triggered')
         try:
             collect()
         except Exception as e:
-            logging.critical('Unhandled exception while collecting logs', exc_info=e)
+            logger.critical('Unhandled exception while collecting logs', exc_info=e)
         try:
             submit()
         except Exception as e:
-            logging.critical('Unhandled exception while submitting logs', exc_info=e)
+            logger.critical('Unhandled exception while submitting logs', exc_info=e)
 
 
 def create_helper(category):
@@ -65,42 +66,42 @@ def create_helper(category):
 
 
 def collect():
-    logging.info('Starting log collection')
+    logger.info('Starting log collection')
     for category in os.listdir(pending):
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('collect', 'on') != 'on':
             continue
-        logging.info(f'Collecting logs for {category}')
+        logger.info(f'Collecting logs for {category}')
         try:
             with Lockfile(f'{pending}/{category}/.lock'):
                 helper = create_helper(category)
                 helper.collect()
         except LockHeldError:
             # Another process is currently working on this directory
-            logging.warning(f'Lock already held trying to collect logs for {category}')
+            logger.warning(f'Lock already held trying to collect logs for {category}')
             continue
-    logging.info('Finished log collection')
+    logger.info('Finished log collection')
 
 
 def submit():
-    logging.info('Starting log submission')
+    logger.info('Starting log submission')
     if not util.check_network():
-        logging.info('Network is offline, bailing out')
+        logger.info('Network is offline, bailing out')
         return
 
     for category in os.listdir(pending):
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
             continue
-        logging.info('Submitting logs for {category}')
+        logger.info('Submitting logs for {category}')
         try:
             logs = os.listdir(f'{pending}/{category}')
         except IOError as e:
-            logging.error(f'Encountered error listing logs for {category}', exc_info=e)
+            logger.error(f'Encountered error listing logs for {category}', exc_info=e)
             continue
 
         if not logs:
-            logging.info('No logs found, skipping')
+            logger.info('No logs found, skipping')
             continue
 
         try:
@@ -110,19 +111,19 @@ def submit():
                     for log in logs:
                         if log.startswith('.'):
                             continue
-                        logging.debug(f'Found log {category}/{log}')
+                        logger.debug(f'Found log {category}/{log}')
                         if helper.submit(f'{pending}/{category}/{log}'):
-                            logging.debug(f'Succeeded in submitting {category}/{log}')
+                            logger.debug(f'Succeeded in submitting {category}/{log}')
                             os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
                         else:
-                            logging.warning(f'Failed to submit log {category}/{log}')
+                            logger.warning(f'Failed to submit log {category}/{log}')
                 except HelperError as e:
-                    logging.error('Encountered error with helper', exc_info=e)
+                    logger.error('Encountered error with helper', exc_info=e)
                     continue
         except LockHeldError:
             # Another process is currently working on this directory
-            logging.warning(f'Lock already held trying to submit logs for {category}')
+            logger.warning(f'Lock already held trying to submit logs for {category}')
             continue
-    logging.info('Finished log submission')
+    logger.info('Finished log submission')
 
 # vim:ts=4:sw=4:et

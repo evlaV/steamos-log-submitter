@@ -12,6 +12,8 @@ user_config_path = None
 local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
 
+logger = logging.getLogger(__name__)
+
 
 class ConfigSection:
     def __init__(self, name, *, defaults={}):
@@ -56,7 +58,7 @@ def reload_config():
         with open(base_config_path) as f:
             config.read_file(f, source=base_config_path)
     except FileNotFoundError:
-        logging.warning('No config file found')
+        logger.warning('No config file found')
 
     user_config_path = None
     if config.has_section('sls'):
