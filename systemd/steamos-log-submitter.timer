@@ -3,7 +3,7 @@
 #  Copyright (c) 2022 Valve Software
 #  Authors: Vicki Pfau <vi@endrift.com>
 #  Authors: Guilherme G. Piccoli <gpiccoli@igalia.com>
-#
+
 [Unit]
 Description=SteamOS log submitter timer - retries sending logs hourly
 After=basic.target

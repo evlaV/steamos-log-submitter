@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
@@ -44,5 +45,3 @@ def submit(fname: str) -> bool:
         'note': note,
     }
     return upload_crash(product='holo-gpu', build=sls.util.get_build_id(), version=os.uname().release, info=info)
-
-# vim:ts=4:sw=4:et

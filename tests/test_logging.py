@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
 import logging
 import os
@@ -58,5 +63,3 @@ def test_log_level_invalid(mock_config):
 
     assert 'WARNING' in log
     assert 'INFO' not in log
-
-# vim:ts=4:sw=4:et

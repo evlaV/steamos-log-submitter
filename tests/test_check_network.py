@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import requests
 import time
 import steamos_log_submitter as sls
@@ -68,5 +73,3 @@ def test_raise_to_204(monkeypatch):
     monkeypatch.setattr(requests, "head", ret_raise_to_204)
     monkeypatch.setattr(time, "sleep", sleepless)
     assert sls.util.check_network() is True
-
-# vim:ts=4:sw=4:et

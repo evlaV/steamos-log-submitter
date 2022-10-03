@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
@@ -64,6 +69,3 @@ def test_config_unhandled_submit(monkeypatch, count_hits):
     monkeypatch.setattr(sls, 'submit', unreachable)
     sls.trigger()
     assert count_hits.hits == 1
-
-
-# vim:ts=4:sw=4:et

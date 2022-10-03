@@ -1,3 +1,8 @@
+#  SPDX-License-Identifier: LGPL-2.1-or-later
+#
+#  Copyright (c) 2022 Valve Software
+#  Author: Vicki Pfau <vi@endrift.com>
+
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter	0750	steamos-log-submitter	root	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending 	0750	steamos-log-submitter	root	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded	0750	steamos-log-submitter	root	-	-

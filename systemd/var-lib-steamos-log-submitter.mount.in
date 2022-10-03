@@ -1,7 +1,7 @@
 #  SPDX-License-Identifier: LGPL-2.1-or-later
 #
 #  Copyright (c) 2022 Valve Software
-#  Authors: Vicki Pfau <vi@endrift.com>
+#  Author: Vicki Pfau <vi@endrift.com>
 
 [Unit]
 Description=SteamOS Offload - /var/lib/steamos-log-submitter

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
@@ -54,5 +55,3 @@ try:
     sls.trigger()
 except Exception as e:
     logger.critical('Unhandled exception', exc_info=e)
-
-# vim:ts=4:sw=4:et

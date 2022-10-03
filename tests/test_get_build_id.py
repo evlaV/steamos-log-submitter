@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import steamos_log_submitter.util as util
 from . import open_shim
@@ -31,5 +36,3 @@ BUILD_ID=definitely fake
 """
     monkeypatch.setattr(builtins, 'open', open_shim(os_release))
     assert util.get_build_id() == 'definitely fake'
-
-# vim:ts=4:sw=4:et

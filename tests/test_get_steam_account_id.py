@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import steamos_log_submitter as sls
 from . import open_shim, fake_pwuid
@@ -132,5 +137,3 @@ def test_invalid_schema2(monkeypatch):
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert sls.util.get_steam_account_id() is None
-
-# vim:ts=4:sw=4:et

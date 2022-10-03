@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import requests
 import steamos_log_submitter.crash as crash
@@ -124,5 +129,3 @@ def test_file(monkeypatch):
     monkeypatch.setattr(requests, 'put', respond)
     assert crash.upload('holo', version=0, info={}, dump=file)
     assert attempt == 3
-
-# vim:ts=4:sw=4:et
