@@ -95,7 +95,7 @@ def list_bluetooth() -> list[dict]:
             ]:
                 try:
                     dev_dict[name.lower()] = convert(dev_bluez[name])
-                except KeyError as e:
+                except KeyError:
                     pass
             dev_dict['adapter'] = adapter.split('/')[-1]
             devices.append(dev_dict)

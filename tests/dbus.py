@@ -6,8 +6,6 @@
 import dbus
 import xml.etree.ElementTree as et
 import pytest
-import steamos_log_submitter as sls
-import steamos_log_submitter.dbus
 
 
 class MockDBusBus:
@@ -31,7 +29,7 @@ class MockDBusBus:
     def add_object(self, bus_name, object_path, obj):
         assert object_path[0] == '/'
         split = object_path.rsplit('/', 1)
-        
+
         self.add_bus(bus_name)
         bus = self.buses[bus_name]
         bus['path'][object_path] = obj
