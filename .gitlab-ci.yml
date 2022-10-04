@@ -9,7 +9,7 @@ run_pytest:
     - docker
     - linux
   script:
-    - pacman -Sy --noconfirm python-pip python-pytest
+    - pacman -Sy --noconfirm dbus-python python-pip python-pytest
     - pip install .[test]
     - pytest
 
