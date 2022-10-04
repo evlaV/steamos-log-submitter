@@ -74,10 +74,6 @@ def list_bluetooth() -> list[dict]:
     adapters = bluez.list_children()
     devices = []
     for adapter in adapters:
-        hci = {
-            'adapter': adapter.split('/')[-1],
-            'devices': []
-        }
         adapter_object = DBusObject(bus, adapter)
         known = adapter_object.list_children()
         for dev in known:
@@ -99,10 +95,10 @@ def list_bluetooth() -> list[dict]:
             ]:
                 try:
                     dev_dict[name.lower()] = convert(dev_bluez[name])
-                except KeyError:
+                except KeyError as e:
                     pass
-            hci['devices'].append(dev_dict)
-        devices.append(hci)
+            dev_dict['adapter'] = adapter.split('/')[-1]
+            devices.append(dev_dict)
 
     return devices
 

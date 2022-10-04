@@ -6,15 +6,13 @@
 import dbus
 import xml.etree.ElementTree as et
 
-system_bus = dbus.SystemBus()
-
 
 class DBusObject:
-    def __init__(self, bus_name, object_path, bus=system_bus):
-        self.bus = bus
+    def __init__(self, bus_name, object_path, bus=None):
+        self.bus = bus or dbus.SystemBus()
         self.bus_name = bus_name
         self.object_path = object_path
-        self.object = bus.get_object(bus_name, object_path)
+        self.object = self.bus.get_object(bus_name, object_path)
 
     def properties(self, iface):
         return DBusProperties(self.object, iface)

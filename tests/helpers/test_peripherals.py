@@ -11,6 +11,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
 from .. import unreachable, helper_directory, mock_config, patch_module, open_shim
+from ..dbus import mock_dbus, MockDBusInterface, MockDBusObject
 
 
 def make_usb_devs(monkeypatch, devs):
@@ -112,6 +113,44 @@ def test_collect_usb_all(monkeypatch):
         'manufacturer': 'Black Mesa',
         'product': 'Hazardous Environment Suit'
     }
+
+
+def test_collect_bluetooth_no_adapters(monkeypatch, mock_dbus):
+    bus = 'org.bluez'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/bluez', mock_dbus)
+
+    devices = helper.list_bluetooth()
+    assert type(devices) == list
+    assert not len(devices)
+
+
+def test_collect_bluetooth_empty_adapter(monkeypatch, mock_dbus):
+    bus = 'org.bluez'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/bluez', mock_dbus)
+    MockDBusObject(bus, '/org/bluez/hci0', mock_dbus)
+
+    devices = helper.list_bluetooth()
+    assert type(devices) == list
+    assert not len(devices)
+
+
+def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
+    bus = 'org.bluez'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/bluez', mock_dbus)
+    MockDBusObject(bus, '/org/bluez/hci0', mock_dbus)
+    dev = MockDBusObject(bus, '/org/bluez/hci0/dev_01_02_03_04_05', mock_dbus)
+    dev.properties['org.bluez.Device1'] = {
+        'Address': '01:02:03:04:05',
+        'Name': 'Crowbar'
+    }
+
+    devices = helper.list_bluetooth()
+    assert type(devices) == list
+    assert len(devices) == 1
+    assert devices[0] == {'address': '01:02:03:04:05', 'name': 'Crowbar', 'adapter': 'hci0'}
 
 
 def test_collect_monitors_none(monkeypatch):
@@ -269,6 +308,26 @@ def test_collect_append(monkeypatch, helper_directory, mock_config):
 
     assert len(cache['usb']) == 1
     assert len(cache['monitors']) == 1
+
+
+def test_collect_append2(monkeypatch, helper_directory, mock_config):
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    os.mkdir(f'{helper_directory}/data')
+
+    with open(f'{helper_directory}/data/peripherals.json', 'w') as f:
+        json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
+
+    assert not helper.collect()
+
+    with open(f'{helper_directory}/data/peripherals.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['usb']) == 2
+    assert {'vid': '1234', 'pid': '5678'} in cache['usb']
+    assert {'vid': '5678', 'pid': '1234'} in cache['usb']
 
 
 def test_read_file_text(monkeypatch):
