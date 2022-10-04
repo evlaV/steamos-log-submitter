@@ -163,17 +163,19 @@ def test_collect_monitors_edid(monkeypatch):
 def test_collect(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
 
     assert not helper.collect()
     with open(f'{helper_directory}/data/peripherals.json') as f:
         output = json.load(f)
-    assert output == {'usb': [], 'monitors': []}
+    assert output == {'usb': [], 'bluetooth': [], 'monitors': []}
 
 
 def test_collect_malformed(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     os.mkdir(f'{helper_directory}/data')
 
@@ -183,12 +185,13 @@ def test_collect_malformed(monkeypatch, helper_directory, mock_config):
     assert not helper.collect()
     with open(f'{helper_directory}/data/peripherals.json') as f:
         output = json.load(f)
-    assert output == {'usb': [], 'monitors': []}
+    assert output == {'usb': [], 'bluetooth': [], 'monitors': []}
 
 
 def test_collect_no_timestamp(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
@@ -202,6 +205,7 @@ def test_collect_no_timestamp(monkeypatch, helper_directory, mock_config):
 def test_collect_small_interval(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
@@ -217,6 +221,7 @@ def test_collect_small_interval(monkeypatch, helper_directory, mock_config):
 def test_collect_large_interval(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     monkeypatch.setattr(time, 'time', lambda: 1000000)
     os.mkdir(f'{helper_directory}/pending/peripherals')
@@ -231,6 +236,7 @@ def test_collect_large_interval(monkeypatch, helper_directory, mock_config):
 def test_collect_dedup(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     os.mkdir(f'{helper_directory}/data')
 
@@ -249,6 +255,7 @@ def test_collect_dedup(monkeypatch, helper_directory, mock_config):
 def test_collect_append(monkeypatch, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
     monkeypatch.setattr(helper, 'list_monitors', lambda: [])
     os.mkdir(f'{helper_directory}/data')
 

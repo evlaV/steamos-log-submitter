@@ -11,6 +11,7 @@ import time
 import os
 from typing import Optional
 import steamos_log_submitter as sls
+from steamos_log_submitter.dbus import DBusObject
 
 config = sls.get_config(__name__)
 logger = logging.getLogger(__name__)
@@ -67,9 +68,49 @@ def list_monitors() -> list[dict]:
     return devices
 
 
+def list_bluetooth() -> list[dict]:
+    bus = 'org.bluez'
+    bluez = DBusObject(bus, '/org/bluez')
+    adapters = bluez.list_children()
+    devices = []
+    for adapter in adapters:
+        hci = {
+            'adapter': adapter.split('/')[-1],
+            'devices': []
+        }
+        adapter_object = DBusObject(bus, adapter)
+        known = adapter_object.list_children()
+        for dev in known:
+            dev_object = DBusObject(bus, dev)
+            dev_dict = {}
+            dev_bluez = dev_object.properties('org.bluez.Device1')
+            for name, convert in [
+                ('Address', str),
+                ('Alias', str),
+                ('Blocked', bool),
+                ('Bonded', bool),
+                ('Class', hex),
+                ('Connected', bool),
+                ('Icon', str),
+                ('Modalias', str),
+                ('Name', str),
+                ('Paired', bool),
+                ('Trusted', bool)
+            ]:
+                try:
+                    dev_dict[name.lower()] = convert(dev_bluez[name])
+                except KeyError:
+                    pass
+            hci['devices'].append(dev_dict)
+        devices.append(hci)
+
+    return devices
+
+
 def collect() -> bool:
     devices = {
         'usb': list_usb(),
+        'bluetooth': list_bluetooth(),
         'monitors': list_monitors(),
     }
     os.makedirs(f'{sls.base}/data', exist_ok=True)
