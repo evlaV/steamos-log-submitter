@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import collections
 import configparser
 import os
 import pytest
@@ -121,7 +122,7 @@ def test_failure(helper_directory, online, patch_module, count_hits):
 
 def test_filename(helper_directory, online, patch_module):
     setup_categories(['test'])
-    setup_logs(helper_directory, {'test/log': '', 'test/fail': ''})
+    setup_logs(helper_directory, collections.OrderedDict([('test/fail', ''), ('test/log', '')]))
 
     def submit(fname):
         return fname == f'{sls.pending}/test/log'
@@ -167,3 +168,21 @@ def test_lock(helper_directory, online, patch_module):
     assert not os.access(f'{sls.pending}/test/log', os.F_OK)
     assert os.access(f'{sls.uploaded}/test/log', os.F_OK)
     assert running == 2
+
+
+def test_error_continue(helper_directory, monkeypatch, patch_module, count_hits):
+    real_listdir = os.listdir
+
+    def fail_count(*args, **kwargs):
+        count_hits()
+        if count_hits.hits == 2:
+            raise FileNotFoundError
+        return real_listdir(*args, **kwargs)
+
+    setup_categories(['test', 'test2'])
+    monkeypatch.setattr(os, 'listdir', fail_count)
+
+    patch_module.submit = lambda _: True
+    sls.submit()
+
+    assert count_hits.hits == 3

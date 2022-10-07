@@ -81,6 +81,9 @@ def collect():
             # Another process is currently working on this directory
             logger.warning(f'Lock already held trying to collect logs for {category}')
             continue
+        except Exception as e:
+            logger.error(f'Encountered error collecting logs for {category}', exc_info=e)
+            continue
     logger.info('Finished log collection')
 
 
@@ -118,8 +121,8 @@ def submit():
                             os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
                         else:
                             logger.warning(f'Failed to submit log {category}/{log}')
-                except HelperError as e:
-                    logger.error('Encountered error with helper', exc_info=e)
+                except Exception as e:
+                    logger.error(f'Encountered error submitting logs for {category}', exc_info=e)
                     continue
         except LockHeldError:
             # Another process is currently working on this directory

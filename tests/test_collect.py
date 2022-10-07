@@ -65,3 +65,18 @@ def test_lock(helper_directory, monkeypatch, patch_module, count_hits):
     sls.collect()
 
     assert count_hits.hits
+
+
+def test_error_continue(helper_directory, monkeypatch, patch_module, count_hits):
+    def fail_count(*args, **kwargs):
+        count_hits()
+        assert count_hits.hits != 1
+        return False
+
+    setup_categories(['test', 'test2'])
+
+    patch_module.submit = submit
+    patch_module.collect = fail_count
+    sls.collect()
+
+    assert count_hits.hits == 2
