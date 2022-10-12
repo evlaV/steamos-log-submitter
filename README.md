@@ -67,6 +67,8 @@ The following helpers are included with SLS:
 * **gpu**†: submits traces from GPU crashes.
 * **peripherals**†: collects and submits information about which peripherals
   are used on the device.
+* **systemd**†: submits logs from SteamOS-related systemd units that are
+  failing to run.
 
 † These helpers are not yet fully functional and won't submit anything or are
 disabled.
