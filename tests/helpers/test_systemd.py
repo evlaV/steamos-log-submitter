@@ -74,6 +74,53 @@ def test_collect_append(monkeypatch, mock_dbus, mock_config, count_hits, helper_
     assert log == ['old', 'log']
 
 
+def test_collect_corrupted(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+    monkeypatch.setattr(helper, 'read_journal', count_hits)
+    count_hits.ret = ['log'], 'cursor'
+    os.mkdir(f'{sls.pending}/systemd')
+
+    with open(f'{sls.pending}/systemd/unit_2eservice.json.gz', 'w') as f:
+        f.write('definitely not json!')
+    assert helper.collect()
+    assert count_hits.hits == 1
+    assert mock_config.has_section('helpers.systemd')
+    assert mock_config.has_option('helpers.systemd', 'unit_2eservice.cursor')
+    assert mock_config.get('helpers.systemd', 'unit_2eservice.cursor') == 'cursor'
+    with gzip.open(f'{sls.pending}/systemd/unit_2eservice.json.gz', 'rt') as f:
+        log = json.load(f)
+    assert log == ['log']
+
+
+def test_collect_read_error(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+    monkeypatch.setattr(helper, 'read_journal', count_hits)
+    count_hits.ret = ['log'], 'cursor'
+    os.mkdir(f'{sls.pending}/systemd')
+
+    with gzip.open(f'{sls.pending}/systemd/unit_2eservice.json.gz', 'wt') as f:
+        json.dump(['old'], f)
+    os.chmod(f'{sls.pending}/systemd/unit_2eservice.json.gz', 0o200)
+    assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
+    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.R_OK)
+    assert not helper.collect()
+    assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
+    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.R_OK)
+
+
+def test_collect_write_error(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+    monkeypatch.setattr(helper, 'read_journal', count_hits)
+    count_hits.ret = ['log'], 'cursor'
+    os.mkdir(f'{sls.pending}/systemd')
+
+    with gzip.open(f'{sls.pending}/systemd/unit_2eservice.json.gz', 'wt') as f:
+        json.dump(['old'], f)
+    os.chmod(f'{sls.pending}/systemd/unit_2eservice.json.gz', 0o400)
+    assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
+    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.W_OK)
+    assert not helper.collect()
+    assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
+    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.W_OK)
+
+
 def test_journal_error(monkeypatch, mock_dbus, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', lambda *args: (None, None))
     monkeypatch.setattr(gzip, 'open', unreachable)
