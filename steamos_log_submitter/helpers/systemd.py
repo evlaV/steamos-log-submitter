@@ -7,9 +7,12 @@ import dbus
 import gzip
 import json
 import logging
+import os
 import subprocess
+import time
 from typing import Optional
 import steamos_log_submitter as sls
+from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
 
 config = sls.get_config(__name__)
@@ -24,7 +27,6 @@ units = [
     'steamos-create-homedir.service',
     'steamos-devkit-service.service',
     'steamos-finish-oobe-migration.service',
-    'steamos-glx-backend.service',
     'steamos-glx-backend.service',
     'steamos-install-grub.service',
     'steamos-install-steamcl.service',
@@ -128,5 +130,14 @@ def collect() -> bool:
     return updated
 
 
-def submit() -> bool:  # pragma: no cover
-    return False
+def submit(fname: str) -> bool:
+    name, ext = os.path.splitext(os.path.basename(fname))
+    if ext != '.json.gz':
+        return False
+
+    info = {
+        'crash_time': int(time.time()),
+        'stack': '',
+        'note': '',
+    }
+    return upload_crash(product='systemd', info=info, dump=fname)

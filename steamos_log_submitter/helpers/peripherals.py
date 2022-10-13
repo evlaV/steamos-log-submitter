@@ -11,6 +11,7 @@ import time
 import os
 from typing import Optional
 import steamos_log_submitter as sls
+from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
 
 config = sls.get_config(__name__)
@@ -147,5 +148,14 @@ def collect() -> bool:
     return new_file
 
 
-def submit() -> bool:  # pragma: no cover
-    return False
+def submit(fname: str) -> bool:
+    name, ext = os.path.splitext(os.path.basename(fname))
+    if ext != '.json':
+        return False
+
+    info = {
+        'crash_time': int(time.time()),
+        'stack': '',
+        'note': '',
+    }
+    return upload_crash(product='peripherals', info=info, dump=fname)

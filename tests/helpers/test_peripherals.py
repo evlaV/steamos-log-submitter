@@ -343,3 +343,7 @@ def test_read_file_binary(monkeypatch):
 def test_read_file_none(monkeypatch):
     monkeypatch.setattr(builtins, 'open', open_shim(None))
     assert helper.read_file('') is None
+
+
+def test_submit_bad_name():
+    assert not helper.submit('not-a-log.bin')

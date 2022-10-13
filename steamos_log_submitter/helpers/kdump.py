@@ -9,7 +9,6 @@ import os
 import time
 import zipfile
 from typing import TextIO
-import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
 logger = logging.getLogger(__name__)
@@ -69,4 +68,4 @@ def submit(fname: str) -> bool:
         'stack': stack,
         'note': note,
     }
-    return upload_crash(product='holo', build=sls.util.get_build_id(), version=os.uname().release, info=info, dump=fname)
+    return upload_crash(product='holo', info=info, dump=fname)

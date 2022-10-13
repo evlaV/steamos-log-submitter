@@ -14,7 +14,7 @@ finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload
 logger = logging.getLogger(__name__)
 
 
-def upload(product, *, build=None, version, info, dump=None) -> bool:
+def upload(product, *, build=None, version=None, info, dump=None) -> bool:
     logger.info(f'Uploading crash log for {product} (build: {build}, version: {version}')
     account = sls.util.get_steam_account_id()
 
@@ -23,8 +23,8 @@ def upload(product, *, build=None, version, info, dump=None) -> bool:
         'steamid': account or 'null',
         'have_dump_file': 1 if dump else 0,
         'product': product,
-        'build': build or 'null',
-        'version': version,
+        'build': build or sls.util.get_build_id(),
+        'version': version or os.uname().release,
         'platform': 'linux',
         'format': 'json'
     })

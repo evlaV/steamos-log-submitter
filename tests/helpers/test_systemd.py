@@ -100,7 +100,8 @@ def test_collect_read_error(monkeypatch, mock_dbus, mock_config, count_hits, hel
         json.dump(['old'], f)
     os.chmod(f'{sls.pending}/systemd/unit_2eservice.json.gz', 0o200)
     assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
-    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.R_OK)
+    if os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.R_OK):
+        pytest.skip('File is readable, are we running as root?')
     assert not helper.collect()
     assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
     assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.R_OK)
@@ -115,7 +116,8 @@ def test_collect_write_error(monkeypatch, mock_dbus, mock_config, count_hits, he
         json.dump(['old'], f)
     os.chmod(f'{sls.pending}/systemd/unit_2eservice.json.gz', 0o400)
     assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
-    assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.W_OK)
+    if os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.W_OK):
+        pytest.skip('File is readable, are we running as root?')
     assert not helper.collect()
     assert os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.F_OK)
     assert not os.access(f'{sls.pending}/systemd/unit_2eservice.json.gz', os.W_OK)
@@ -212,3 +214,7 @@ def test_journal_invocation_merge(monkeypatch, mock_dbus, mock_config, mock_unit
     with gzip.open(f'{sls.pending}/systemd/unit_2eservice.json.gz', 'rt') as f:
         log = json.load(f)
     assert len(log) == 4
+
+
+def test_submit_bad_name():
+    assert not helper.submit('not-a-log.bin')

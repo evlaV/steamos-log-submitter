@@ -6,7 +6,6 @@
 import logging
 import os
 import time
-import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 
 logger = logging.getLogger(__name__)
@@ -44,4 +43,4 @@ def submit(fname: str) -> bool:
         'stack': '',
         'note': note,
     }
-    return upload_crash(product='holo-gpu', build=sls.util.get_build_id(), version=os.uname().release, info=info)
+    return upload_crash(product='holo-gpu', info=info)
