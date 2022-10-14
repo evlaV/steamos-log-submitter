@@ -22,6 +22,8 @@ units = [
     'jupiter-biosupdate.service',
     'jupiter-controller-update.service',
     'jupiter-fan-control.service',
+    'rauc.service',
+    'steam-web-debug-portforward.service',
     'steamos-boot.service',
     'steamos-cfs-debugfs-tunings.service',
     'steamos-create-homedir.service',
@@ -103,26 +105,26 @@ def collect() -> bool:
 
         old_journal = []
         try:
-            with gzip.open(f'{sls.pending}/systemd/{escape(unit)}.json.gz', 'rt') as f:
+            with gzip.open(f'{sls.pending}/journal/{escape(unit)}.json.gz', 'rt') as f:
                 old_journal = json.load(f)
         except FileNotFoundError:
             pass
         except gzip.BadGzipFile as e:
-            logger.error(f'Failed to decompress pending/systemd/{escape(unit)}.json.gz', exc_info=e)
+            logger.error(f'Failed to decompress pending/journal/{escape(unit)}.json.gz', exc_info=e)
         except IOError as e:
-            logger.error(f'Failed loading log pending/systemd/{escape(unit)}.json.gz', exc_info=e)
+            logger.error(f'Failed loading log pending/journal/{escape(unit)}.json.gz', exc_info=e)
             continue
 
         old_journal.extend(journal)
         journal = old_journal
 
         try:
-            with gzip.open(f'{sls.pending}/systemd/{escape(unit)}.json.gz', 'wt') as f:
+            with gzip.open(f'{sls.pending}/journal/{escape(unit)}.json.gz', 'wt') as f:
                 json.dump(journal, f)
             config[f'{escape(unit)}.cursor'] = cursor
             updated = True
         except IOError as e:
-            logger.error(f'Failed writing log pending/systemd/{escape(unit)}.json.gz', exc_info=e)
+            logger.error(f'Failed writing log pending/journal/{escape(unit)}.json.gz', exc_info=e)
 
     if updated:
         sls.config.write_config()
@@ -140,4 +142,4 @@ def submit(fname: str) -> bool:
         'stack': '',
         'note': '',
     }
-    return upload_crash(product='systemd', info=info, dump=fname)
+    return upload_crash(product='journal', info=info, dump=fname)
