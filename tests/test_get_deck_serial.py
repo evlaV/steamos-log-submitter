@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+# vim:ts=4:sw=4:et
+#
+# Copyright (c) 2022 Valve Software
+# Maintainer: Vicki Pfau <vi@endrift.com>
+import builtins
+import steamos_log_submitter as sls
+from . import open_shim, fake_pwuid
+
+
+def test_no_vdf(monkeypatch):
+    def raise_enoent(*args, **kwargs):
+        raise FileNotFoundError(args[0])
+    monkeypatch.setattr(builtins, "open", raise_enoent)
+    assert not sls.util.get_deck_serial()
+
+
+def test_no_serial(monkeypatch):
+    vdf = """"InstallConfigStore"
+{
+}"""
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.util.get_deck_serial() is None
+
+
+def test_serial(monkeypatch):
+    vdf = """"InstallConfigStore"
+{
+	"SteamDeckRegisteredSerialNumber"		"Test"
+}"""
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.util.get_deck_serial() == "Test"
+
+
+def test_invalid_vdf(monkeypatch):
+    vdf = "not"
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.util.get_deck_serial() is None
+
+
+def test_invalid_schema(monkeypatch):
+    vdf = """"liars"
+{
+	"SteamDeckRegisteredSerialNumber"		"Test"
+}"""
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.util.get_deck_serial() is None
+
+
+def test_invalid_schema2(monkeypatch):
+    vdf = """"InstallConfigStore"
+{
+	"SteamDeckRegisteredSerialNumber"
+	{
+	}
+}"""
+    monkeypatch.setattr(builtins, "open", open_shim(vdf))
+    assert sls.util.get_deck_serial() is None

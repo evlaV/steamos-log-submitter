@@ -1,0 +1,23 @@
+stages:
+  - test
+
+image: registry.gitlab.steamos.cloud/steam/steamos-docker-images/holo/base:latest
+
+run_pytest:
+  stage: test
+  tags:
+    - docker
+    - linux
+  script:
+    - pacman -Sy --noconfirm dbus-python python-pip python-pytest
+    - pip install .[test]
+    - pytest
+
+lint:
+  stage: test
+  tags:
+    - docker
+    - linux
+  script:
+    - pacman -Sy --noconfirm flake8
+    - flake8

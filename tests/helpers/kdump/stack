@@ -1,0 +1,14 @@
+<4>[   64.076561]  <TASK>
+<4>[   64.076577]  dump_stack_lvl+0x45/0x5e
+<4>[   64.076606]  panic+0x10c/0x299
+<4>[   64.076627]  ? _printk+0x58/0x73
+<4>[   64.076650]  sysrq_handle_crash+0x16/0x20
+<4>[   64.076677]  __handle_sysrq.cold+0x43/0x11a
+<4>[   64.076704]  write_sysrq_trigger+0x24/0x40
+<4>[   64.076727]  proc_reg_write+0x51/0x90
+<4>[   64.076749]  vfs_write+0xc6/0x3d0
+<4>[   64.076771]  ? handle_mm_fault+0xb2/0x2a0
+<4>[   64.076797]  ksys_write+0x5f/0xe0
+<4>[   64.076817]  do_syscall_64+0x3b/0x90
+<4>[   64.076838]  entry_SYSCALL_64_after_hwframe+0x63/0xcd
+<4>[   64.076866] RIP: 0033:0x7f6d971fa907
