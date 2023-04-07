@@ -1,7 +1,7 @@
 stages:
   - test
 
-image: registry.gitlab.steamos.cloud/steam/steamos-docker-images/holo/base:latest
+image: registry.gitlab.steamos.cloud/steam/steamos-docker-images/holo-main/base:latest
 
 run_pytest:
   stage: test
