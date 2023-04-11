@@ -17,10 +17,13 @@ logger = logging.getLogger(__name__)
 def get_summaries(dmesg: TextIO) -> tuple[str, str]:
     crash_summary = []
     call_trace = []
-    call_trace_grab = False
+    call_trace_grab = 0
 
-    # Extract only the lines between "Kernel panic -" and "Kernel Offset:" into the crash summary,
-    # and the subset of those lines after " Call Trace:" and until " RIP:" into the call trace log
+    # Extract only the lines between "Kernel panic -" and
+    # "Kernel Offset:" / "Sending NMI" into the crash summary, and
+    # the subset of those lines after " Call Trace:" and until the
+    # 2nd "RIP:" into the call trace log - notice we remove the useless
+    # lines like "Call Trace / <TASK>" and "Sending NMI / Kernel Offset".
     for line in dmesg:
         if crash_summary or 'Kernel panic -' in line:
             crash_summary.append(line)
@@ -28,14 +31,19 @@ def get_summaries(dmesg: TextIO) -> tuple[str, str]:
             if call_trace_grab:
                 call_trace.append(line)
                 if ' RIP:' in line:
-                    call_trace_grab = False
+                    call_trace_grab -= 1
             elif ' Call Trace:' in line:
-                call_trace_grab = True
+                call_trace_grab = 2
 
-            if 'Kernel Offset:' in line:
+            if 'Kernel Offset:' in line or 'Sending NMI' in line:
+                crash_summary.pop()
                 break
 
     crash_summary = ''.join(crash_summary)
+
+    if call_trace:
+        call_trace.pop(0)
+        call_trace.pop()
     call_trace = ''.join(call_trace)
     return crash_summary, call_trace
 
@@ -57,6 +65,8 @@ def submit(fname: str) -> bool:
                     continue
                 with io.TextIOWrapper(f.open(zname)) as dmesg:
                     note, stack = get_summaries(dmesg)
+                    if note:
+                        break
     except (zipfile.BadZipFile, IOError):
         return False
 

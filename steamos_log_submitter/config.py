@@ -68,7 +68,7 @@ def reload_config():
         elif config.has_option('sls', 'uid'):
             try:
                 uid = config.get('sls', 'uid')
-                user_home = pwd.getpwuid(uid).pw_dir
+                user_home = pwd.getpwuid(int(uid)).pw_dir
                 user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
             except KeyError:
                 logging.error(f'Configured uid {uid} does not exist')
