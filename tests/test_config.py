@@ -221,6 +221,27 @@ def test_reload_config_bad_uid(monkeypatch):
     assert not config.config.has_option('sls', 'extra')
 
 
+def test_reload_config_nonnumeric_uid(monkeypatch):
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', 'base-uid-nonnumeric.cfg')
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(KeyError))
+    monkeypatch.chdir(file_base)
+
+    real_open = open
+
+    def open_uid(fname):
+        assert fname == 'base-uid-nonnumeric.cfg'
+        return real_open(fname)
+    monkeypatch.setattr(builtins, 'open', open_uid)
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'uid')
+    assert config.config.get('sls', 'uid') == 'steam'
+
+    assert not config.config.has_option('sls', 'extra')
+
+
 def test_reload_config_uid_user(monkeypatch):
     monkeypatch.setattr(config, 'config', None)
     monkeypatch.setattr(config, 'base_config_path', 'base-uid-user.cfg')

@@ -72,6 +72,8 @@ def reload_config():
                 user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
             except KeyError:
                 logging.error(f'Configured uid {uid} does not exist')
+            except ValueError:
+                logging.error(f'Configured uid {uid} is not numeric')
     if user_config_path:
         try:
             with open(user_config_path) as f:
