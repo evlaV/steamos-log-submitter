@@ -78,6 +78,8 @@ def reload_config():
         try:
             with open(user_config_path) as f:
                 config.read_file(f, source=user_config_path)
+        except OSError:
+            logging.error("Couldn't open user configuration file")
         except FileNotFoundError:
             pass
 
