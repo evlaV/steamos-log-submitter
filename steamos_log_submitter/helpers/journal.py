@@ -91,7 +91,7 @@ def collect() -> bool:
             props = dbus_unit.properties('org.freedesktop.systemd1.Unit')
             state = props['ActiveState']
         except dbus.exceptions.DBusException as e:
-            logger.warn(f'Exception getting state of unit {unit}', exc_info=e)
+            logger.warning(f'Exception getting state of unit {unit}', exc_info=e)
             continue
         if state != 'failed':
             continue
