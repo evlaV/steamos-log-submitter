@@ -71,15 +71,15 @@ def reload_config():
                 user_home = pwd.getpwuid(int(uid)).pw_dir
                 user_config_path = f'{user_home}/.steam/root/config/steamos-log-submitter.cfg'
             except KeyError:
-                logging.error(f'Configured uid {uid} does not exist')
+                logger.error(f'Configured uid {uid} does not exist')
             except ValueError:
-                logging.error(f'Configured uid {uid} is not numeric')
+                logger.error(f'Configured uid {uid} is not numeric')
     if user_config_path:
         try:
             with open(user_config_path) as f:
                 config.read_file(f, source=user_config_path)
         except OSError:
-            logging.error("Couldn't open user configuration file")
+            logger.error("Couldn't open user configuration file")
         except FileNotFoundError:
             pass
 
