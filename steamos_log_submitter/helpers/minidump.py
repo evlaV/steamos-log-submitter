@@ -43,5 +43,11 @@ def submit(fname: str) -> bool:
 
     if post.status_code != 200:
         logger.error(f'Attempting to upload minidump {name} failed with status {post.status_code}')
+    if post.status_code == 400:
+        data = post.json()
+        if data.get('detail') == 'invalid minidump':
+            logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
+            # Just lie so it gets cleaned up
+            return True
 
     return post.status_code == 200
