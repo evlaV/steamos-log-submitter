@@ -3,11 +3,13 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import logging
 import os
 import requests
 import steamos_log_submitter as sls
 
 config = sls.get_config(__name__)
+logger = logging.getLogger(__name__)
 dsn = config.get('dsn')
 
 
@@ -38,5 +40,8 @@ def submit(fname: str) -> bool:
         metadata['sentry[tags][build_id]'] = build_id
 
     post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
+
+    if post.status_code != 200:
+        logger.error(f'Attempting to upload minidump {name} failed with status {post.status_code}')
 
     return post.status_code == 200
