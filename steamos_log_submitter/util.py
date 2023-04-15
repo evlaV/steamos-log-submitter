@@ -29,7 +29,7 @@ def get_appid(pid: int) -> Optional[int]:
         try:
             with open(f'/proc/{pid}/stat') as f:
                 stat = f.read()
-        except IOError:
+        except OSError:
             return None
 
         stat_match = stat_parse.match(stat)
@@ -40,7 +40,7 @@ def get_appid(pid: int) -> Optional[int]:
             try:
                 with open(f'/proc/{pid}/cmdline') as f:
                     cmdline = f.read()
-            except IOError:
+            except OSError:
                 return None
 
             cmdline = cmdline.split('\0')
@@ -74,7 +74,7 @@ def get_deck_serial(uid: int = default_uid) -> Optional[str]:
     try:
         with open(f'{home}/.steam/root/config/config.vdf') as v:
             config = vdf.load(v)
-    except (IOError, SyntaxError):
+    except (OSError, SyntaxError):
         return None
 
     if 'InstallConfigStore' not in config:
@@ -95,7 +95,7 @@ def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
     try:
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (IOError, SyntaxError):
+    except (OSError, SyntaxError):
         return None
 
     if 'users' not in loginusers:
@@ -116,7 +116,7 @@ def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
     try:
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (IOError, SyntaxError):
+    except (OSError, SyntaxError):
         return None
 
     if 'users' not in loginusers:

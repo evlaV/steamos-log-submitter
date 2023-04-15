@@ -23,7 +23,7 @@ def submit(fname: str) -> bool:
     try:
         with open(fname) as f:
             note = f.read()
-    except IOError:
+    except OSError:
         return False
 
     timestamp = None

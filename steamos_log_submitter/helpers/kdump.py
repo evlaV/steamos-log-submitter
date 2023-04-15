@@ -67,7 +67,7 @@ def submit(fname: str) -> bool:
                     note, stack = get_summaries(dmesg)
                     if note:
                         break
-    except (zipfile.BadZipFile, IOError):
+    except (zipfile.BadZipFile, OSError):
         return False
 
     if note is None or stack is None:

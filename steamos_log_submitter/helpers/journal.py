@@ -111,7 +111,7 @@ def collect() -> bool:
             pass
         except gzip.BadGzipFile as e:
             logger.error(f'Failed to decompress pending/journal/{escape(unit)}.json.gz', exc_info=e)
-        except IOError as e:
+        except OSError as e:
             logger.error(f'Failed loading log pending/journal/{escape(unit)}.json.gz', exc_info=e)
             continue
 
@@ -123,7 +123,7 @@ def collect() -> bool:
                 json.dump(journal, f)
             config[f'{escape(unit)}.cursor'] = cursor
             updated = True
-        except IOError as e:
+        except OSError as e:
             logger.error(f'Failed writing log pending/journal/{escape(unit)}.json.gz', exc_info=e)
 
     if updated:

@@ -100,7 +100,7 @@ def submit():
         logger.info('Submitting logs for {category}')
         try:
             logs = os.listdir(f'{pending}/{category}')
-        except IOError as e:
+        except OSError as e:
             logger.error(f'Encountered error listing logs for {category}', exc_info=e)
             continue
 
