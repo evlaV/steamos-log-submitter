@@ -11,6 +11,7 @@ import subprocess
 import sys
 import steamos_log_submitter as sls
 
+logging.basicConfig(f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 try:
@@ -53,9 +54,9 @@ try:
         pass
 
     try:
-        os.setxattr(minidump, 'user.executable', f)
-        os.setxattr(minidump, 'user.comm', e)
-        os.setxattr(minidump, 'user.path', E)
+        os.setxattr(minidump, 'user.executable', f.encode())
+        os.setxattr(minidump, 'user.comm', e.encode())
+        os.setxattr(minidump, 'user.path', E.replace('!', '/').encode())
     except OSError as e:
         logger.warning('Failed to set xattrs', exc_info=e)
     shutil.chown(minidump, user='steamos-log-submitter')
