@@ -11,7 +11,7 @@ import subprocess
 import sys
 import steamos_log_submitter as sls
 
-logging.basicConfig(f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
+logging.basicConfig(filename=f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
 
 try:
