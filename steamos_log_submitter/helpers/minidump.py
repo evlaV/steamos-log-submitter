@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import logging
 import os
@@ -38,6 +38,20 @@ def submit(fname: str) -> bool:
     build_id = sls.util.get_build_id()
     if build_id is not None:
         metadata['sentry[tags][build_id]'] = build_id
+
+    try:
+        executable = os.getxattr(fname, 'user.executable')
+        comm = os.getxattr(fname, 'user.comm')
+        path = os.getxattr(fname, 'user.path')
+
+        if executable is not None:
+            metadata['sentry[tags][executable]'] = executable
+        if comm is not None:
+            metadata['sentry[tags][comm]'] = comm
+        if path is not None:
+            metadata['sentry[tags][path]'] = path
+    except IOError:
+        logger.warning('Failed to get xattrs on minidump.')
 
     post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
