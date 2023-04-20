@@ -39,29 +39,25 @@ def submit(fname: str) -> bool:
     if build_id is not None:
         metadata['sentry[tags][build_id]'] = build_id
 
-    try:
-        executable = os.getxattr(fname, 'user.executable')
-        comm = os.getxattr(fname, 'user.comm')
-        path = os.getxattr(fname, 'user.path')
-
-        if executable is not None:
-            metadata['sentry[tags][executable]'] = executable
-        if comm is not None:
-            metadata['sentry[tags][comm]'] = comm
-        if path is not None:
-            metadata['sentry[tags][path]'] = path
-    except IOError:
-        logger.warning('Failed to get xattrs on minidump.')
+    for attr in ('executable', 'comm', 'path'):
+        try:
+            value = os.getxattr(fname, f'user.{attr}')
+            metadata[f'sentry[tags][{attr}]'] = value
+        except IOError:
+            logger.warning(f'Failed to get f{attr} xattr on minidump.')
 
     post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
     if post.status_code != 200:
         logger.error(f'Attempting to upload minidump {name} failed with status {post.status_code}')
     if post.status_code == 400:
-        data = post.json()
-        if data.get('detail') == 'invalid minidump':
-            logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
-            # Just lie so it gets cleaned up
-            return True
+        try:
+            data = post.json()
+            if data.get('detail') == 'invalid minidump':
+                logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
+                # Just lie so it gets cleaned up
+                return True
+        except requests.exceptions.JSONDecodeError:
+            pass
 
     return post.status_code == 200
