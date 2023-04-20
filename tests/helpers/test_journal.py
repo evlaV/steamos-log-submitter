@@ -218,3 +218,13 @@ def test_journal_invocation_merge(monkeypatch, mock_dbus, mock_config, mock_unit
 
 def test_submit_bad_name():
     assert not helper.submit('not-a-log.bin')
+
+
+def test_subprocess_failure(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
+    def fake_subprocess(*args, **kwargs):
+        raise subprocess.SubprocessError()
+
+    os.mkdir(f'{sls.pending}/journal')
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+
+    assert not helper.collect()

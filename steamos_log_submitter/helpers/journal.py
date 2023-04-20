@@ -49,8 +49,8 @@ def read_journal(unit: str, cursor: Optional[str] = None) -> tuple[list[dict], s
         cmd.extend(['--after-cursor', cursor])
     try:
         journal = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-    except subprocess.CalledProcessError:
-        return None
+    except (subprocess.SubprocessError, OSError):
+        return None, None
 
     invocations = {}
     cursor = None
