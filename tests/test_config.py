@@ -278,6 +278,31 @@ def test_reload_config_user_missing(monkeypatch):
     assert not config.config.has_option('sls', 'extra')
 
 
+def test_reload_config_user_inaccessible(monkeypatch):
+    fake_path = 'user.cfg'
+    hit = False
+
+    real_open = open
+
+    def bad_open(path, *args, **kwargs):
+        nonlocal hit
+        if path == fake_path:
+            hit = True
+            raise PermissionError
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-user.cfg')
+    monkeypatch.setattr(builtins, 'open', bad_open)
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == 'user.cfg'
+
+    assert not config.config.has_option('sls', 'extra')
+
+
 def test_reload_config_local(monkeypatch):
     monkeypatch.setattr(config, 'config', None)
     monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())

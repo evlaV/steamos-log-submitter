@@ -78,10 +78,10 @@ def reload_config():
         try:
             with open(user_config_path) as f:
                 config.read_file(f, source=user_config_path)
-        except OSError:
-            logger.error("Couldn't open user configuration file")
         except FileNotFoundError:
             pass
+        except OSError:
+            logger.error("Couldn't open user configuration file")
 
     if config.has_section('sls') and config.has_option('sls', 'local-config'):
         local_config_path = config.get('sls', 'local-config')
