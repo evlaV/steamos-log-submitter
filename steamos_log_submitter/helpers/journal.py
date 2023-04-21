@@ -127,7 +127,10 @@ def collect() -> bool:
             logger.error(f'Failed writing log pending/journal/{escape(unit)}.json.gz', exc_info=e)
 
     if updated:
-        sls.config.write_config()
+        try:
+            sls.config.write_config()
+        except OSError as e:
+            logger.error(f'Failed writing updated cursor information', exc_info=e)
 
     return updated
 

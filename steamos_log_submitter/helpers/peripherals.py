@@ -143,7 +143,10 @@ def collect() -> bool:
 
     if not timestamp or new_file:
         config['timestamp'] = now
-        sls.config.write_config()
+        try:
+            sls.config.write_config()
+        except OSError as e:
+            logger.error(f'Failed writing updated timestamp information', exc_info=e)
 
     return new_file
 
