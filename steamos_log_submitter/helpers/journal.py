@@ -130,7 +130,7 @@ def collect() -> bool:
         try:
             sls.config.write_config()
         except OSError as e:
-            logger.error(f'Failed writing updated cursor information', exc_info=e)
+            logger.error('Failed writing updated cursor information', exc_info=e)
 
     return updated
 

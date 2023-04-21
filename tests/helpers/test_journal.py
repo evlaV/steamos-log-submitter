@@ -44,7 +44,6 @@ def test_collect_no_failed(monkeypatch, mock_dbus):
 
 def test_collect_dbus_exception(monkeypatch, mock_dbus):
     mock_dbus.add_bus(bus)
-    service = MockDBusObject(bus, f'{base}/unit_2eservice', mock_dbus)
     monkeypatch.setattr(helper, 'units', ['unit.service'])
     monkeypatch.setattr(helper, 'read_journal', unreachable)
 
