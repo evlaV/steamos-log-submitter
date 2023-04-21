@@ -42,6 +42,15 @@ def test_collect_no_failed(monkeypatch, mock_dbus):
     assert not helper.collect()
 
 
+def test_collect_dbus_exception(monkeypatch, mock_dbus):
+    mock_dbus.add_bus(bus)
+    service = MockDBusObject(bus, f'{base}/unit_2eservice', mock_dbus)
+    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'read_journal', unreachable)
+
+    assert not helper.collect()
+
+
 def test_collect_success(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
