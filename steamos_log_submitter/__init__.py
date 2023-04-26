@@ -99,7 +99,7 @@ def submit():
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
             continue
-        logger.info('Submitting logs for {category}')
+        logger.info(f'Submitting logs for {category}')
         try:
             logs = os.listdir(f'{pending}/{category}')
         except OSError as e:
