@@ -56,9 +56,9 @@ try:
         pass
 
     if breakpad.returncode:
-        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode')
+        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
     if systemd.returncode:
-        logger.error(f'systemd-coredump failed with status {systemd.returncode')
+        logger.error(f'systemd-coredump failed with status {systemd.returncode}')
 
     try:
         os.setxattr(minidump, 'user.executable', f.encode())
