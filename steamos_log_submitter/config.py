@@ -91,6 +91,8 @@ def reload_config():
                     local_config.read_file(f, source=local_config_path)
             except FileNotFoundError:
                 pass
+            except OSError:
+                logger.error("Couldn't open local configuration file")
     else:
         local_config_path = None
 

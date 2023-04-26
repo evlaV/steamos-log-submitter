@@ -54,6 +54,8 @@ def trigger():
             submit()
         except Exception as e:
             logger.critical('Unhandled exception while submitting logs', exc_info=e)
+    else:
+        logger.debug('Routine collection/submission is disabled')
 
 
 def create_helper(category):
