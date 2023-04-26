@@ -44,8 +44,9 @@ def submit(fname: str) -> bool:
             value = os.getxattr(fname, f'user.{attr}')
             metadata[f'sentry[tags][{attr}]'] = value
         except IOError:
-            logger.warning(f'Failed to get f{attr} xattr on minidump.')
+            logger.warning(f'Failed to get {attr} xattr on minidump.')
 
+    logger.debug(f'Uploading minidump with metadata {metadata}')
     post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
     if post.status_code != 200:
