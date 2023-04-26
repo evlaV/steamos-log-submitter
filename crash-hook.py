@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 try:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
 
-    logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(t)}')
+    logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
     appid = sls.util.get_appid(int(P))
     minidump = f'{sls.pending}/minidump/{t}-{e}-{P}-{appid}.dmp'
     breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump], stdin=subprocess.PIPE)
@@ -54,6 +54,11 @@ try:
         systemd.wait(5)
     except Exception:
         pass
+
+    if breakpad.returncode:
+        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode')
+    if systemd.returncode:
+        logger.error(f'systemd-coredump failed with status {systemd.returncode')
 
     try:
         os.setxattr(minidump, 'user.executable', f.encode())
