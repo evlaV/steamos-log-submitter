@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import steamos_log_submitter as sls
+import time
 
 logging.basicConfig(filename=f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
@@ -17,8 +18,9 @@ logger = logging.getLogger(__name__)
 try:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
 
+    logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(t)}')
     appid = sls.util.get_appid(int(P))
-    minidump = f'{sls.pending}/minidump/{e}-{P}-{appid}.dmp'
+    minidump = f'{sls.pending}/minidump/{t}-{e}-{P}-{appid}.dmp'
     breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump], stdin=subprocess.PIPE)
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
 
