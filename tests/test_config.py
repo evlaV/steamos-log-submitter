@@ -347,5 +347,8 @@ def test_reload_config_interpolation(monkeypatch):
     config.reload_config()
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'base')
+    assert config.config.has_section('section')
+    assert config.config.has_option('section', 'gordon')
     assert config.config.get('sls', 'base') == '/fake'
     assert config.config.get('sls', 'subdir') == '/fake/dir'
+    assert config.config.get('section', 'gordon') == '/fake/freeman'
