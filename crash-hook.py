@@ -21,7 +21,7 @@ try:
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
     appid = sls.util.get_appid(int(P))
     minidump = f'{sls.pending}/minidump/{t}-{e}-{P}-{appid}.dmp'
-    breakpad = subprocess.Popen(['/usr/lib/core_handler', P, minidump], stdin=subprocess.PIPE)
+    breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, minidump], stdin=subprocess.PIPE)
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
 
     while True:
