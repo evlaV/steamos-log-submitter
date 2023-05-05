@@ -31,7 +31,7 @@ def submit(fname: str) -> bool:
         # Invalid appid
         pass
 
-    account = sls.util.get_steam_account_id()
+    account = sls.steam.get_steam_account_id()
     if account is not None:
         metadata['sentry[tags][steam_id]'] = account
 

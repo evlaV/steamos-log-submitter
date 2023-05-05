@@ -3,22 +3,16 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import pwd
 import re
 import requests
 import time
-import vdf
-import steamos_log_submitter.config as config
 from typing import Optional
 
 __all__ = [
     'check_network',
     'get_appid',
-    'get_deck_serial',
-    'get_steam_account_id',
+    'get_build_id',
 ]
-
-default_uid = int(config.get_config('steamos_log_submitter').get('uid', '1000'))
 
 
 def get_appid(pid: int) -> Optional[int]:
@@ -65,69 +59,6 @@ def get_build_id() -> Optional[str]:
             name, val = line.split('=', 1)
             if name == 'BUILD_ID':
                 return val.strip()
-    return None
-
-
-def get_deck_serial(uid: int = default_uid) -> Optional[str]:
-    home = pwd.getpwuid(uid).pw_dir
-
-    try:
-        with open(f'{home}/.steam/root/config/config.vdf') as v:
-            config = vdf.load(v)
-    except (OSError, SyntaxError):
-        return None
-
-    if 'InstallConfigStore' not in config:
-        return None
-
-    if 'SteamDeckRegisteredSerialNumber' not in config['InstallConfigStore']:
-        return None
-
-    serial = config['InstallConfigStore']['SteamDeckRegisteredSerialNumber']
-    if type(serial) != str:
-        return None
-    return serial
-
-
-def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
-    home = pwd.getpwuid(uid).pw_dir
-
-    try:
-        with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
-            loginusers = vdf.load(v)
-    except (OSError, SyntaxError):
-        return None
-
-    if 'users' not in loginusers:
-        return None
-
-    for userid, data in loginusers['users'].items():
-        if data.get('MostRecent', '0') == '1':
-            return int(userid)
-        if data.get('mostrecent', '0') == '1':
-            return int(userid)
-
-    return None
-
-
-def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
-    home = pwd.getpwuid(uid).pw_dir
-
-    try:
-        with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
-            loginusers = vdf.load(v)
-    except (OSError, SyntaxError):
-        return None
-
-    if 'users' not in loginusers:
-        return None
-
-    for data in loginusers['users'].values():
-        if data.get('MostRecent', '0') == '1':
-            return data.get('AccountName')
-        if data.get('mostrecent', '0') == '1':
-            return data.get('AccountName')
-
     return None
 
 

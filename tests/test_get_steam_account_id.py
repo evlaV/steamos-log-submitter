@@ -1,18 +1,36 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import steamos_log_submitter as sls
-from . import open_shim, fake_pwuid
+from . import fake_pwuid, mock_config, open_eacces, open_enoent, open_shim
+from steamos_log_submitter.steam import get_steam_account_id
 
 
 def test_no_vdf(monkeypatch):
-    def raise_enoent(*args, **kwargs):
-        raise FileNotFoundError(args[0])
-    monkeypatch.setattr(builtins, "open", raise_enoent)
-    assert sls.util.get_steam_account_id() is None
+    monkeypatch.setattr(builtins, "open", open_enoent)
+    assert get_steam_account_id() is None
+
+
+def test_eacces_vdf(monkeypatch):
+    monkeypatch.setattr(builtins, "open", open_eacces)
+    assert get_steam_account_id() is None
+
+
+def test_config_value(monkeypatch, mock_config):
+    monkeypatch.setattr(builtins, "open", open_enoent)
+    mock_config.add_section('steam')
+    mock_config.set('steam', 'account_id', '1')
+    assert get_steam_account_id() == 1
+
+
+def test_config_invalid_value(monkeypatch, mock_config):
+    monkeypatch.setattr(builtins, "open", open_enoent)
+    mock_config.add_section('steam')
+    mock_config.set('steam', 'account_id', 'foo')
+    assert get_steam_account_id() is None
 
 
 def test_no_users(monkeypatch):
@@ -20,7 +38,7 @@ def test_no_users(monkeypatch):
 {
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None
 
 
 def test_no_recent(monkeypatch):
@@ -32,7 +50,7 @@ def test_no_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None
 
 
 def test_no_recent2(monkeypatch):
@@ -49,7 +67,7 @@ def test_no_recent2(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None
 
 
 def test_one(monkeypatch):
@@ -61,7 +79,7 @@ def test_one(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() == 2
+    assert get_steam_account_id() == 2
 
 
 def test_lowercase(monkeypatch):
@@ -73,7 +91,7 @@ def test_lowercase(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() == 2
+    assert get_steam_account_id() == 2
 
 
 def test_first_recent(monkeypatch):
@@ -90,7 +108,7 @@ def test_first_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() == 2
+    assert get_steam_account_id() == 2
 
 
 def test_second_recent(monkeypatch):
@@ -107,13 +125,13 @@ def test_second_recent(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() == 3
+    assert get_steam_account_id() == 3
 
 
 def test_invalid_vdf(monkeypatch):
     vdf = "not"
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None
 
 
 def test_invalid_schema(monkeypatch):
@@ -125,7 +143,7 @@ def test_invalid_schema(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None
 
 
 def test_invalid_schema2(monkeypatch):
@@ -136,4 +154,4 @@ def test_invalid_schema2(monkeypatch):
 	}
 }"""
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
-    assert sls.util.get_steam_account_id() is None
+    assert get_steam_account_id() is None

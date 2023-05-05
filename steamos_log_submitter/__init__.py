@@ -7,6 +7,7 @@ from .lockfile import Lockfile, LockHeldError
 from steamos_log_submitter.config import get_config
 from steamos_log_submitter.logging import reconfigure_logging
 import steamos_log_submitter.util as util
+import steamos_log_submitter.steam as steam
 
 import importlib
 import logging
@@ -18,10 +19,11 @@ __all__ = [
     'pending',
     'uploaded',
     # Utility functions
+    'get_config',
     'submit',
     'trigger',
-    'get_config',
     # Submodules
+    'steam',
     'util',
 ]
 

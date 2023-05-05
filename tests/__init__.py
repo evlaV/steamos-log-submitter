@@ -34,6 +34,14 @@ def open_shim_cb(cb):
     return open_fake
 
 
+def open_enoent(fname, *args, **kwargs):
+    raise FileNotFoundError(fname)
+
+
+def open_eacces(fname, *args, **kwargs):
+    raise PermissionError(fname)
+
+
 def fake_request(status_code):
     def ret(*args, **kwargs):
         r = requests.Response()
