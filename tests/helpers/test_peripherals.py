@@ -10,8 +10,8 @@ import os
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
-from .. import unreachable, helper_directory, mock_config, patch_module, open_shim
-from ..dbus import mock_dbus, MockDBusInterface, MockDBusObject
+from .. import unreachable, helper_directory, mock_config, patch_module, open_shim  # NOQA: F401
+from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 
 def make_usb_devs(monkeypatch, devs):

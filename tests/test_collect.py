@@ -6,7 +6,7 @@
 import configparser
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from . import count_hits, helper_directory, patch_module, setup_categories, unreachable
+from . import count_hits, helper_directory, patch_module, setup_categories, unreachable  # NOQA: F401
 
 
 def submit(log):

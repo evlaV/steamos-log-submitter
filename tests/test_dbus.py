@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
-from .dbus import mock_dbus, MockDBusObject
+from .dbus import mock_dbus, MockDBusObject  # NOQA: F401
 import dbus
 
 

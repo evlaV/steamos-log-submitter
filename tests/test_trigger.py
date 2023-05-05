@@ -6,7 +6,7 @@
 import configparser
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from . import unreachable, count_hits
+from . import unreachable, count_hits  # NOQA: F401
 
 
 def setup_conf(monkeypatch, enable=None):

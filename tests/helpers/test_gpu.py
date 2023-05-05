@@ -4,10 +4,8 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
-import os
 import time
 import steamos_log_submitter.helpers.gpu as helper
-from .crash import FakeResponse
 from .. import open_shim
 
 

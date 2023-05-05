@@ -3,17 +3,15 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import builtins
 import gzip
 import json
 import os
 import pytest
 import subprocess
-import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
-from .. import unreachable, helper_directory, mock_config, patch_module, count_hits
-from ..dbus import mock_dbus, MockDBusInterface, MockDBusObject
+from .. import unreachable, helper_directory, mock_config, patch_module, count_hits  # NOQA: F401
+from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
 iface = 'org.freedesktop.systemd1.Unit'

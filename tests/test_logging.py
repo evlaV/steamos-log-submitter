@@ -3,12 +3,11 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import configparser
 import logging
 import os
 import tempfile
 import steamos_log_submitter as sls
-from . import mock_config
+from . import mock_config  # NOQA: F401
 
 logger = logging.getLogger(__name__)
 

@@ -4,15 +4,13 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import collections
-import configparser
 import os
 import pytest
 import threading
 import time
 import steamos_log_submitter as sls
-import steamos_log_submitter.config as config
-from . import helper_directory, patch_module, setup_categories, unreachable, count_hits
-from . import mock_config as testconf
+from . import helper_directory, patch_module, setup_categories, unreachable, count_hits  # NOQA: F401
+from . import mock_config as testconf  # NOQA: F401
 
 
 @pytest.fixture

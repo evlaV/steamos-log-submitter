@@ -9,7 +9,7 @@ import io
 import os
 import pwd
 import steamos_log_submitter.config as config
-from . import always_raise, fake_pwuid
+from . import always_raise, fake_pwuid  # NOQA: F401
 
 file_base = f'{os.path.dirname(__file__)}/config'
 

@@ -4,11 +4,8 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
-import steamos_log_submitter as sls
-from . import fake_pwuid, mock_config, open_eacces, open_enoent, open_shim
+from . import fake_pwuid, mock_config, open_eacces, open_enoent, open_shim  # NOQA: F401
 from steamos_log_submitter.steam import get_steam_account_name
-
-from steamos_log_submitter.steam import get_steam_account_id
 
 
 def test_no_vdf(monkeypatch):
