@@ -8,7 +8,6 @@ import os
 import requests
 import tempfile
 import steamos_log_submitter.helpers.minidump as helper
-import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
 from .. import open_shim
 
@@ -20,14 +19,12 @@ def test_submit_bad_name():
 def test_submit_metadata(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
-        assert data.get('sentry[tags][steam_id]') == 123
         assert data.get('sentry[tags][appid]') == 456
         assert data.get('sentry[tags][build_id]') == '20220202.202'
         r = requests.Response()
         r.status_code = 200
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 123)
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
@@ -38,7 +35,6 @@ def test_submit_metadata(monkeypatch):
 def test_no_metadata(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
-        assert 'sentry[tags][steam_id]' not in data
         assert 'sentry[tags][appid]' not in data
         assert 'sentry[tags][build_id]' not in data
         assert 'sentry[tags][executable]' not in data
@@ -48,7 +44,6 @@ def test_no_metadata(monkeypatch):
         r.status_code = 200
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
@@ -66,7 +61,6 @@ def test_no_xattrs(monkeypatch):
         r.status_code = 200
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
 
@@ -89,7 +83,6 @@ def test_partial_xattrs(monkeypatch):
         r.status_code = 200
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
 
@@ -108,7 +101,6 @@ def test_400_corrupted(monkeypatch):
         r.status_code = 400
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
@@ -122,7 +114,6 @@ def test_400_not_corrupted(monkeypatch):
         r.status_code = 400
         return r
 
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
