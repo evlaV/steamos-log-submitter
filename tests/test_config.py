@@ -340,6 +340,37 @@ def test_reload_config_local_missing(monkeypatch):
     assert not config.local_config.has_section('sls')
 
 
+def test_reload_config_local_inaccessible(monkeypatch):
+    fake_path = 'local.cfg'
+    hit = False
+
+    real_open = open
+
+    def bad_open(path, *args, **kwargs):
+        nonlocal hit
+        if path == fake_path:
+            hit = True
+            raise PermissionError
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
+    monkeypatch.setattr(config, 'local_config_path', None)
+    monkeypatch.setattr(config, 'base_config_path', f'{file_base}/base-local.cfg')
+    monkeypatch.setattr(builtins, 'open', bad_open)
+    monkeypatch.chdir(file_base)
+
+    config.reload_config()
+
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == 'local.cfg'
+    assert config.local_config_path == 'local.cfg'
+
+    assert not config.config.has_option('sls', 'local')
+    assert not config.local_config.has_section('sls')
+
+
 def test_reload_config_interpolation(monkeypatch):
     monkeypatch.setattr(config, 'config', None)
     monkeypatch.setattr(config, 'base_config_path', f'{file_base}/interpolation.cfg')
