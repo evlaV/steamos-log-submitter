@@ -1,4 +1,5 @@
 import os
+import pytest
 import tempfile
 import time
 import steamos_log_submitter.cli as cli
@@ -65,5 +66,7 @@ def test_create_file(monkeypatch):
 
 
 def test_inaccessible_config(monkeypatch):
+    if os.access('/', os.W_OK):
+        pytest.skip('Directory is writable, are we running as root?')
     monkeypatch.setattr(config, 'user_config_path', '/doesnotexist')
     assert not cli.set_enabled(True)
