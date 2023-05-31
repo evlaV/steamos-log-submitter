@@ -18,6 +18,9 @@ def set_enabled(enable) -> bool:
     except OSError:
         print("Couldn't open configuration file")
         return False
+    except configparser.Error:
+        print("Invalid config file. Please fix manually.")
+        return False
 
     if not user_config.has_section('sls'):
         user_config.add_section('sls')

@@ -65,6 +65,34 @@ def test_create_file(monkeypatch):
         os.unlink(user_config)
 
 
+def test_update_file(monkeypatch):
+    prefix = int((time.time() % 1) * 0x400000)
+    user_config = f'{prefix:06x}.cfg'
+    with open(user_config, 'w') as f:
+        f.write('[test]\nempty = 0\n\n')
+    monkeypatch.setattr(config, 'user_config_path', user_config)
+    try:
+        assert cli.set_enabled(True)
+        with open(user_config) as f:
+            assert f.read() == '[test]\nempty = 0\n\n[sls]\nenable = on\n\n'
+    finally:
+        os.unlink(user_config)
+
+
+def test_clobber_file(monkeypatch):
+    prefix = int((time.time() % 1) * 0x400000)
+    user_config = f'{prefix:06x}.cfg'
+    with open(user_config, 'w') as f:
+        f.write('=invalid=')
+    monkeypatch.setattr(config, 'user_config_path', user_config)
+    try:
+        assert not cli.set_enabled(True)
+        with open(user_config) as f:
+            assert f.read() == '=invalid='
+    finally:
+        os.unlink(user_config)
+
+
 def test_inaccessible_config(monkeypatch):
     if os.access('/', os.W_OK):
         pytest.skip('Directory is writable, are we running as root?')
