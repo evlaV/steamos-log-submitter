@@ -8,7 +8,7 @@ import logging
 import pwd
 
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
-user_config_path = None
+user_config_path = '/usr/lib/steamos-log-submitter/user.cfg'
 
 local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
