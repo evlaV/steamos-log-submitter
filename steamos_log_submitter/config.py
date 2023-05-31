@@ -8,7 +8,7 @@ import logging
 import pwd
 
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
-user_config_path = '/usr/lib/steamos-log-submitter/user.cfg'
+user_config_path = None
 
 local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
@@ -53,6 +53,7 @@ def get_config(mod, defaults=None) -> ConfigSection:
 def reload_config():
     global config
     global local_config_path
+    global user_config_path
     config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 
     try:
