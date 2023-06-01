@@ -10,7 +10,7 @@ import pytest
 import subprocess
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
-from .. import unreachable, helper_directory, mock_config, patch_module, count_hits  # NOQA: F401
+from .. import unreachable, helper_directory, mock_config, patch_module, count_hits, always_raise  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
@@ -129,6 +129,22 @@ def test_collect_write_error(monkeypatch, mock_dbus, mock_config, count_hits, he
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.W_OK)
 
 
+def test_collect_no_local(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+    monkeypatch.setattr(helper, 'read_journal', count_hits)
+    monkeypatch.setattr(sls.config, 'write_config', always_raise(FileNotFoundError))
+    count_hits.ret = ['log'], 'cursor'
+    os.mkdir(f'{sls.pending}/journal')
+
+    assert helper.collect()
+    assert count_hits.hits == 1
+    assert mock_config.has_section('helpers.journal')
+    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
+    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'cursor'
+    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+        log = json.load(f)
+    assert log == ['log']
+
+
 def test_journal_error(monkeypatch, mock_dbus, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', lambda *args: (None, None))
     monkeypatch.setattr(gzip, 'open', unreachable)
@@ -227,10 +243,7 @@ def test_submit_bad_name():
 
 
 def test_subprocess_failure(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
-    def fake_subprocess(*args, **kwargs):
-        raise subprocess.SubprocessError()
-
     os.mkdir(f'{sls.pending}/journal')
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError()))
 
     assert not helper.collect()

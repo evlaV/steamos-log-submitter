@@ -35,6 +35,18 @@ def test_enable(monkeypatch):
         assert f.read() == '[sls]\nenable = off\n\n'
 
 
+def test_enable2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['enable'])
+    with open(user_config.name) as f:
+        assert f.read() == '[sls]\nenable = on\n\n'
+
+    cli.main(['disable'])
+    with open(user_config.name) as f:
+        assert f.read() == '[sls]\nenable = off\n\n'
+
+
 def test_disable(monkeypatch):
     user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
     monkeypatch.setattr(config, 'user_config_path', user_config.name)
@@ -43,6 +55,18 @@ def test_disable(monkeypatch):
         assert f.read() == '[sls]\nenable = off\n\n'
 
     assert cli.set_enabled(True)
+    with open(user_config.name) as f:
+        assert f.read() == '[sls]\nenable = on\n\n'
+
+
+def test_disable2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['disable'])
+    with open(user_config.name) as f:
+        assert f.read() == '[sls]\nenable = off\n\n'
+
+    cli.main(['enable'])
     with open(user_config.name) as f:
         assert f.read() == '[sls]\nenable = on\n\n'
 

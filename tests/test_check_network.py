@@ -6,7 +6,7 @@
 import requests
 import time
 import steamos_log_submitter as sls
-from . import fake_request
+from . import fake_request, always_raise
 
 
 def sleepless(*args, **kwargs):
@@ -49,10 +49,7 @@ def test_200_to_204(monkeypatch):
 
 
 def test_raise(monkeypatch):
-    def ret_raise(*args, **kwargs):
-        raise Exception()
-
-    monkeypatch.setattr(requests, "head", ret_raise)
+    monkeypatch.setattr(requests, "head", always_raise(Exception()))
     monkeypatch.setattr(time, "sleep", sleepless)
     assert sls.util.check_network() is False
 

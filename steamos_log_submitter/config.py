@@ -84,18 +84,17 @@ def reload_config():
         except OSError:
             logger.error("Couldn't open user configuration file")
 
+    local_config_path = None
     if config.has_section('sls') and config.has_option('sls', 'local-config'):
         local_config_path = config.get('sls', 'local-config')
-        if local_config_path is not None:
-            try:
-                with open(local_config_path) as f:
-                    local_config.read_file(f, source=local_config_path)
-            except FileNotFoundError:
-                pass
-            except OSError:
-                logger.error("Couldn't open local configuration file")
-    else:
-        local_config_path = None
+    if local_config_path is not None:
+        try:
+            with open(local_config_path) as f:
+                local_config.read_file(f, source=local_config_path)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            logger.error("Couldn't open local configuration file")
 
 
 def write_config():
