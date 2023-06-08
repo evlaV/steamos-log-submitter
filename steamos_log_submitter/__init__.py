@@ -6,6 +6,7 @@
 from .lockfile import Lockfile, LockHeldError
 from steamos_log_submitter.config import get_config
 from steamos_log_submitter.logging import reconfigure_logging
+import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
 
@@ -97,7 +98,7 @@ def submit():
         logger.info('Network is offline, bailing out')
         return
 
-    for category in os.listdir(pending):
+    for category in helpers.list_helpers():
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
             continue

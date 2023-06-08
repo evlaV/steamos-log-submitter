@@ -12,6 +12,7 @@ import pytest
 import requests
 import tempfile
 import steamos_log_submitter as sls
+import steamos_log_submitter.helpers
 
 
 def open_shim(text):
@@ -93,6 +94,11 @@ def helper_directory(monkeypatch, patch_module):
             return patch_module
         return original_import_module(name, package)
     monkeypatch.setattr(importlib, 'import_module', import_module)
+
+    def list_helpers():
+        nonlocal d
+        return list(os.listdir(f'{d.name}/pending'))
+    monkeypatch.setattr(steamos_log_submitter.helpers, 'list_helpers', list_helpers)
 
     yield d.name
 

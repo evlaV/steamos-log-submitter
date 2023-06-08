@@ -9,6 +9,7 @@ import pytest
 import threading
 import time
 import steamos_log_submitter as sls
+import steamos_log_submitter.helpers as helpers
 from . import helper_directory, patch_module, setup_categories, unreachable, count_hits  # NOQA: F401
 from . import mock_config as testconf  # NOQA: F401
 
@@ -27,7 +28,7 @@ def setup_logs(helper_directory, logs):
 
 def test_offline(monkeypatch):
     monkeypatch.setattr(sls.util, 'check_network', lambda: False)
-    monkeypatch.setattr(os, 'listdir', unreachable)
+    monkeypatch.setattr(helpers, 'list_helpers', unreachable)
     sls.submit()
 
 
