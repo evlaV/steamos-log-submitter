@@ -9,7 +9,7 @@ import logging
 import os
 
 import steamos_log_submitter as sls
-from steamos_log_submitter.helpers import list_helpers
+import steamos_log_submitter.helpers as helpers
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +22,19 @@ class Serializable:
             if field_data is not None:
                 data[field] = field_data
 
-        return json.dumps(data)
+        return json.dumps(data).encode() + b'\n'
 
     @classmethod
     def deserialize(cls, data):
         try:
             args = {}
-            parsed_data = json.loads(data)
+            parsed_data = json.loads(data.decode())
             for field in cls._fields:
                 field_data = parsed_data.get(field)
                 if field_data is not None:
                     args[field] = field_data
             return cls(**args)
-        except (json.JSONDecodeError, KeyError, TypeError) as e:
+        except (json.JSONDecodeError, KeyError, TypeError, UnicodeDecodeError) as e:
             logger.warning('Failed to deserialize command', exc_info=e)
             return None
 
@@ -76,7 +76,7 @@ class Daemon:
         logger.debug(f'Arguments {command.args}')
         if not function:
             logger.warning(f'Unknown command {command.command} called')
-            return Reply(error=Reply.INVALID_COMMAND)
+            return Reply(status=Reply.INVALID_COMMAND)
         try:
             reply = await function(self, *command.args)
             if type(reply) == Reply:
@@ -84,7 +84,7 @@ class Daemon:
             return Reply(Reply.OK, data=reply)
         except Exception as e:
             logger.error('Exception hit when attempting to run command', exc_info=e)
-            return Reply(error=Reply.UNKNOWN_ERROR)
+            return Reply(status=Reply.UNKNOWN_ERROR)
 
     async def _conn_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._conns.append((reader, writer))
@@ -94,12 +94,16 @@ class Daemon:
                 line = await reader.readline()
                 if not line:
                     break
-                command = Command.deserialize(line.decode(errors='replace'))
-                reply = await self._run_command(command)
-                writer.write(reply.serialize().encode() + b'\n')
-
             except Exception as e:
                 logger.error('Failed reading from remote connection', exc_info=e)
+                continue
+            try:
+                command = Command.deserialize(line)
+                reply = await self._run_command(command)
+                writer.write(reply.serialize())
+                await writer.drain()
+            except Exception as e:
+                logger.error('Failed executing remote connection', exc_info=e)
         self._conns.remove((reader, writer))
 
     async def start(self) -> None:
@@ -114,9 +118,10 @@ class Daemon:
         logger.info('Daemon shutting down')
         self._serving = False
         self._server.close()
+        await self._server.wait_closed()
         os.unlink(self.socket)
 
-        if self._exit_on_shutdown:
+        if self._exit_on_shutdown:  # pragma: no cover
             loop = asyncio.get_event_loop()
             loop.stop()
 
@@ -124,8 +129,8 @@ class Daemon:
         sls.trigger()
 
     async def _list(self) -> Reply:
-        helpers = list_helpers()
-        return Reply(Reply.OK, data=helpers)
+        helper_list = helpers.list_helpers()
+        return Reply(Reply.OK, data=helper_list)
 
     _commands = {
         'shutdown': shutdown,
@@ -134,7 +139,7 @@ class Daemon:
     }
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     daemon = Daemon(exit_on_shutdown=True)
     loop = asyncio.get_event_loop()
     loop.create_task(daemon.start())
