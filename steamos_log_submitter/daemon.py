@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import os
+from steamos_log_submitter.helpers import list_helpers
 
 logger = logging.getLogger(__name__)
 
@@ -17,17 +18,7 @@ class Daemon:
         self._conns = []
         self._exit_on_shutdown = exit_on_shutdown
 
-    async def shutdown(self):
-        logger.info('Daemon shutting down')
-        self._serving = False
-        self._server.close()
-        os.unlink(self.socket)
-
-        if self._exit_on_shutdown:
-            loop = asyncio.get_event_loop()
-            loop.stop()
-
-    async def _start_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    async def _conn_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._conns.append((reader, writer))
 
         while self._serving:
@@ -42,7 +33,10 @@ class Daemon:
                 if not function:
                     logger.warning(f'Unknown command {command[0]} called')
                 else:
-                    await function(self, *command[1:])
+                    try:
+                        await function(self, *command[1:])
+                    except Exception as e:
+                        logger.error('Exception hit when attempting to run command', exc_info=e)
 
             except Exception as e:
                 logger.error('Failed reading from remote connection', exc_info=e)
@@ -53,11 +47,25 @@ class Daemon:
             os.unlink(self.socket)
 
         self._serving = True
-        self._server = await asyncio.start_unix_server(self._start_cb, path=self.socket)
+        self._server = await asyncio.start_unix_server(self._conn_cb, path=self.socket)
         os.chmod(self.socket, 0o660)
+
+    async def shutdown(self):
+        logger.info('Daemon shutting down')
+        self._serving = False
+        self._server.close()
+        os.unlink(self.socket)
+
+        if self._exit_on_shutdown:
+            loop = asyncio.get_event_loop()
+            loop.stop()
+
+    async def _list(self):
+        print(*list_helpers())
 
     _commands = {
         'shutdown': shutdown,
+        'list': _list,
     }
 
 
