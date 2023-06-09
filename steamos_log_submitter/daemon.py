@@ -10,6 +10,7 @@ import os
 import time
 
 import steamos_log_submitter as sls
+import steamos_log_submitter.steam
 import steamos_log_submitter.helpers as helpers
 
 config = sls.config.get_config(__name__)
@@ -46,7 +47,7 @@ class Command(Serializable):
 
     def __init__(self, command, args=None):
         self.command = command
-        self.args = args or []
+        self.args = args or {}
 
 
 class Reply(Serializable):
@@ -54,6 +55,7 @@ class Reply(Serializable):
     UNKNOWN_ERROR = -1
     INVALID_COMMAND = -2
     INVALID_DATA = -3
+    INVALID_ARGUMENTS = -4
 
     _fields = ['status', 'data']
 
@@ -84,7 +86,7 @@ class Daemon:
             logger.warning(f'Unknown command {command.command} called')
             return Reply(status=Reply.INVALID_COMMAND)
         try:
-            reply = await function(self, *command.args)
+            reply = await function(self, **command.args)
             if type(reply) == Reply:
                 return reply
             return Reply(Reply.OK, data=reply)
@@ -158,10 +160,23 @@ class Daemon:
         helper_list = helpers.list_helpers()
         return Reply(Reply.OK, data=helper_list)
 
+    async def _set_steam_info(self, key: str, value) -> Reply:
+        if key not in (
+            'deck_serial',
+            'account_id',
+            'account_name'
+        ):
+            return Reply(Reply.INVALID_ARGUMENTS, data={'key': key})
+
+        sls.steam.config[key] = value
+        sls.config.write_config()
+        return Reply(Reply.OK)
+
     _commands = {
         'shutdown': shutdown,
         'list': _list,
         'trigger': trigger,
+        'set-steam-info': _set_steam_info,
     }
 
 
