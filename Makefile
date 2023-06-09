@@ -41,3 +41,5 @@ install: all $(infiles)
 	install -D -m0644 base.cfg $(DESTDIR)$(libdir)/steamos-log-submitter/base.cfg
 	install -D -m0755 crash-hook.py $(DESTDIR)$(libdir)/steamos-log-submitter/crash-hook.py
 	install -D -m0755 log-gpu-crash.py $(DESTDIR)$(libdir)/steamos-log-submitter/log-gpu-crash.py
+	mkdir -p $(DESTDIR)$(systemdunitsdir)/timers.target.wants
+	ln -sf $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/timers.target.wants
