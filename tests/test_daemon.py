@@ -10,6 +10,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
+from . import count_hits  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -76,6 +77,21 @@ async def test_shutdown(fake_socket):
 
 
 @pytest.mark.asyncio
+async def test_disconnect(test_daemon):
+    daemon, reader, writer = await test_daemon
+
+    await asyncio.sleep(0.01)
+    assert len(daemon._conns) == 1
+
+    writer.close()
+    await writer.wait_closed()
+    await asyncio.sleep(0.01)
+    assert len(daemon._conns) == 0
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_invalid_format(test_daemon):
     daemon, reader, writer = await test_daemon
     writer.write(b'bad\n')
@@ -133,4 +149,23 @@ async def test_list(test_daemon, monkeypatch):
     reply = await transact(sls.daemon.Command("list"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
     assert reply.data == ['test']
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_periodic(monkeypatch, count_hits):
+    async def trigger():
+        count_hits()
+
+    daemon = sls.daemon.Daemon()
+    monkeypatch.setattr(daemon, 'trigger', trigger)
+    monkeypatch.setattr(daemon, '_startup', 0.05)
+    monkeypatch.setattr(daemon, '_interval', 0.03)
+    await daemon.start()
+
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.06)
+    assert count_hits.hits == 1
+    await asyncio.sleep(0.07)
+    assert count_hits.hits == 3
     await daemon.shutdown()

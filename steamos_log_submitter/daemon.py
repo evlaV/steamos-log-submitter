@@ -63,9 +63,13 @@ class Reply(Serializable):
 class Daemon:
     socket = 'steamos-log-submitter.socket'
 
+    _startup = 30
+    _interval = 3600
+
     def __init__(self, *, exit_on_shutdown=False):
         self._conns = []
         self._exit_on_shutdown = exit_on_shutdown
+        self._periodic_task = None
 
     async def _run_command(self, command: dict) -> Reply:
         if not command:
@@ -85,6 +89,12 @@ class Daemon:
         except Exception as e:
             logger.error('Exception hit when attempting to run command', exc_info=e)
             return Reply(status=Reply.UNKNOWN_ERROR)
+
+    async def _trigger_periodic(self):
+        await asyncio.sleep(self._startup)
+        while self._serving:
+            asyncio.create_task(self.trigger())
+            await asyncio.sleep(self._interval)
 
     async def _conn_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._conns.append((reader, writer))
@@ -114,9 +124,12 @@ class Daemon:
         self._server = await asyncio.start_unix_server(self._conn_cb, path=self.socket)
         os.chmod(self.socket, 0o660)
 
+        self._periodic_task = asyncio.create_task(self._trigger_periodic())
+
     async def shutdown(self):
         logger.info('Daemon shutting down')
         self._serving = False
+        self._periodic_task.cancel()
         self._server.close()
         await self._server.wait_closed()
         os.unlink(self.socket)
