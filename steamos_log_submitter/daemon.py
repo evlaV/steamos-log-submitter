@@ -7,10 +7,12 @@ import asyncio
 import json
 import logging
 import os
+import time
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
 
+config = sls.config.get_config(__name__)
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +65,7 @@ class Reply(Serializable):
 class Daemon:
     socket = 'steamos-log-submitter.socket'
 
-    _startup = 30
+    _startup = 20
     _interval = 3600
 
     def __init__(self, *, exit_on_shutdown=False):
@@ -91,10 +93,21 @@ class Daemon:
             return Reply(status=Reply.UNKNOWN_ERROR)
 
     async def _trigger_periodic(self):
-        await asyncio.sleep(self._startup)
+        last_trigger = config.get('last_trigger')
+        if last_trigger is not None:
+            next_trigger = float(last_trigger) + self._interval
+        else:
+            next_trigger = time.time() + self._startup
+
         while self._serving:
-            asyncio.create_task(self.trigger())
-            await asyncio.sleep(self._interval)
+            next_interval = next_trigger - time.time()
+            if next_interval > 0:
+                await asyncio.sleep(next_interval)
+            await self.trigger()
+            last_trigger = time.time()
+            config['last_trigger'] = last_trigger
+            sls.config.write_config()
+            next_trigger = last_trigger + self._interval
 
     async def _conn_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._conns.append((reader, writer))
