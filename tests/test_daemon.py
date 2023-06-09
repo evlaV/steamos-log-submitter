@@ -10,6 +10,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
+import steamos_log_submitter.steam
 from . import count_hits, mock_config  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
@@ -149,6 +150,30 @@ async def test_list(test_daemon, monkeypatch):
     reply = await transact(sls.daemon.Command("list"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
     assert reply.data == ['test']
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_set_steam_info(test_daemon, mock_config):
+    daemon, reader, writer = await test_daemon
+    reply = await transact(sls.daemon.Command("set-steam-info"), reader, writer)
+    assert reply.status == sls.daemon.Reply.UNKNOWN_ERROR
+
+    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "invalid", "value": "foo"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    assert reply.data == {"key": "invalid"}
+
+    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "account_name", "value": "gaben"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert sls.steam.get_steam_account_name() == 'gaben'
+
+    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "account_id", "value": 12345}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert sls.steam.get_steam_account_id() == 12345
+
+    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "deck_serial", "value": "HEV Mark IV"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert sls.steam.get_deck_serial() == 'HEV Mark IV'
     await daemon.shutdown()
 
 
