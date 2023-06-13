@@ -66,7 +66,9 @@ try:
         os.setxattr(minidump, 'user.path', E.replace('!', '/').encode())
     except OSError as e:
         logger.warning('Failed to set xattrs', exc_info=e)
+
     shutil.chown(minidump, user='steamos-log-submitter')
-    sls.trigger()
+    with sls.util.drop_root():
+        sls.trigger()
 except Exception as e:
     logger.critical('Unhandled exception', exc_info=e)

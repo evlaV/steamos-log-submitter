@@ -3,10 +3,16 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import grp
+import logging
+import os
+import pwd
 import re
 import requests
 import time
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     'check_network',
@@ -74,3 +80,29 @@ def check_network() -> bool:
         time.sleep(4)
 
     return False
+
+
+class drop_root:
+    def __enter__(self):
+        self.uid = os.geteuid()
+        self.gid = os.getegid()
+
+        uid = pwd.getpwnam('steamos-log-submitter')[2]
+        gid = grp.getgrnam('steamos-log-submitter')[2]
+
+        if self.uid == uid and self.gid == gid:
+            return
+        try:
+            os.seteuid(uid)
+            os.setegid(gid)
+        except PermissionError as e:
+            logger.error("Couldn't drop permissions", exc_info=e)
+            raise
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            os.seteuid(self.uid)
+            os.setegid(self.gid)
+        except PermissionError as e:
+            logger.error("Couldn't undrop permissions", exc_info=e)
+        return False
