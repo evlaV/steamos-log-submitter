@@ -93,8 +93,8 @@ class drop_root:
         if self.uid == uid and self.gid == gid:
             return
         try:
-            os.seteuid(uid)
             os.setegid(gid)
+            os.seteuid(uid)
         except PermissionError as e:
             logger.error("Couldn't drop permissions", exc_info=e)
             raise
