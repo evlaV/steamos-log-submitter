@@ -6,7 +6,7 @@
 import builtins
 import os
 import pytest
-from steamos_log_submitter.lockfile import Lockfile, LockHeldError, LockNotHeldError
+from steamos_log_submitter.lockfile import Lockfile, LockHeldError, LockNotHeldError, LockRetry
 
 
 @pytest.fixture(scope='function')
@@ -327,3 +327,57 @@ def test_very_slow_lockinfo(lockfile, monkeypatch):
         assert lock_a.lockfile
         assert not lock_b.lockfile
         assert os.access(lock_a._path, os.F_OK)
+
+
+def test_contended_retry(lockfile, monkeypatch):
+    attempt = 0
+    real_open = open
+    lock_a = Lockfile(lockfile)
+
+    def open_fake(fname, mode):
+        nonlocal attempt
+        if mode == 'x':
+            attempt += 1
+            if attempt == 3:
+                lock_a.unlock()
+                raise FileExistsError
+        return real_open(fname, mode)
+
+    monkeypatch.setattr(builtins, 'open', open_fake)
+
+    lock_b = Lockfile(lockfile)
+
+    assert lock_a
+    assert lock_b
+    assert not lock_a.lockfile
+    assert not lock_b.lockfile
+
+    lock_a.lock()
+    assert lock_a.lockfile
+    assert not lock_b.lockfile
+    with LockRetry(lock_b, 2):
+        assert attempt == 4
+    assert attempt == 4
+    assert not lock_a.lockfile
+    assert not lock_b.lockfile
+
+
+def test_contended_retry_fail(lockfile):
+    lock_a = Lockfile(lockfile)
+    lock_b = Lockfile(lockfile)
+
+    assert lock_a
+    assert lock_b
+    assert not lock_a.lockfile
+    assert not lock_b.lockfile
+
+    with lock_a:
+        assert lock_a.lockfile
+        assert not lock_b.lockfile
+        try:
+            with LockRetry(lock_b, 2):
+                assert False
+        except LockHeldError:
+            pass
+        assert lock_a.lockfile
+        assert not lock_b.lockfile

@@ -87,3 +87,23 @@ class Lockfile:
         self.lockfile.close()
         self.lockfile = None
         logger.debug(f'Lock on {self._path} released')
+
+
+class LockRetry:
+    def __init__(self, lock, attempts=5, delay=0.1):
+        self.lock = lock
+        self._attempts = attempts
+        self._delay = delay
+
+    def __enter__(self):
+        for _ in range(self._attempts):
+            try:
+                self.lock.lock()
+            except LockHeldError:
+                if _ + 1 == self._attempts:
+                    raise
+                time.sleep(self._delay)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.lock.unlock()
+        return not exc_type
