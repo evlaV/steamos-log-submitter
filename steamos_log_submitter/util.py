@@ -105,4 +105,4 @@ class drop_root:
             os.setegid(self.gid)
         except PermissionError as e:
             logger.error("Couldn't undrop permissions", exc_info=e)
-        return False
+        return not exc_type
