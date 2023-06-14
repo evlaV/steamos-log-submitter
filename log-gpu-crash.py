@@ -9,6 +9,8 @@ import os
 import shutil
 import time
 import steamos_log_submitter as sls
+import steamos_log_submitter.helpers
+from steamos_log_submitter.lockfile import LockHeldError, LockRetry
 
 logging.basicConfig(filename=f'{sls.base}/gpu-crash.log', encoding='utf-8', level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
@@ -16,20 +18,25 @@ logger = logging.getLogger(__name__)
 try:
     ts = time.time_ns()
 
-    with open(f'{sls.pending}/gpu/{ts}.log', 'w') as f:
-        pid = None
-        for key, val in os.environ.items():
-            if key in ('PWD', '_'):
-                continue
-            if key == 'PID':
-                pid = int(val)
-            print(f'{key}={val}', file=f)
-        if pid:
-            appid = sls.util.get_appid(pid)
-            print(f'APPID={appid}', file=f)
-        print(f'TIMESTAMP={ts}', file=f)
+    try:
+        with LockRetry(sls.helpers.lock('gpu'), 10):
+            with open(f'{sls.pending}/gpu/{ts}.log', 'w') as f:
+                pid = None
+                for key, val in os.environ.items():
+                    if key in ('PWD', '_'):
+                        continue
+                    if key == 'PID':
+                        pid = int(val)
+                    print(f'{key}={val}', file=f)
+                if pid:
+                    appid = sls.util.get_appid(pid)
+                    print(f'APPID={appid}', file=f)
+                print(f'TIMESTAMP={ts}', file=f)
 
-    shutil.chown(f'{sls.pending}/gpu/{ts}.log', user='steamos-log-submitter')
+            shutil.chown(f'{sls.pending}/gpu/{ts}.log', user='steamos-log-submitter')
+    except LockHeldError:
+        logger.error("Couldn't claim gpu lockfile, giving up")
+
     with sls.util.drop_root():
         sls.trigger()
 except Exception as e:

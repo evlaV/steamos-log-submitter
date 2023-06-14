@@ -9,11 +9,37 @@ import os
 import shutil
 import subprocess
 import sys
-import steamos_log_submitter as sls
 import time
+
+import steamos_log_submitter as sls
+import steamos_log_submitter.helpers
+from steamos_log_submitter.lockfile import LockHeldError, LockRetry
 
 logging.basicConfig(filename=f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
 logger = logging.getLogger(__name__)
+
+
+def tee(infd, outprocs):
+    while True:
+        buffer = infd.read(4096)
+        if not buffer:
+            break
+        for proc in outprocs:
+            try:
+                proc.stdin.write(buffer)
+            except Exception:
+                pass
+
+    for proc in outprocs:
+        try:
+            proc.stdin.close()
+        except Exception:
+            pass
+        try:
+            proc.wait(5)
+        except Exception:
+            pass
+
 
 try:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
@@ -21,53 +47,30 @@ try:
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
     appid = sls.util.get_appid(int(P))
     minidump = f'{sls.pending}/minidump/{t}-{e}-{P}-{appid}.dmp'
-    breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, minidump], stdin=subprocess.PIPE)
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
-
-    while True:
-        buffer = sys.stdin.buffer.read(4096)
-        if not buffer:
-            break
-        try:
-            breakpad.stdin.write(buffer)
-        except Exception:
-            pass
-        try:
-            systemd.stdin.write(buffer)
-        except Exception:
-            pass
-
     try:
-        breakpad.stdin.close()
-    except Exception:
-        pass
-    try:
-        breakpad.wait(5)
-    except Exception:
-        pass
+        with LockRetry(sls.helpers.lock('minidump'), 50):
+            breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, minidump], stdin=subprocess.PIPE)
 
-    try:
-        systemd.stdin.close()
-    except Exception:
-        pass
-    try:
-        systemd.wait(5)
-    except Exception:
-        pass
+            tee(sys.stdin.buffer, (breakpad, systemd))
 
-    if breakpad.returncode:
-        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
-    if systemd.returncode:
-        logger.error(f'systemd-coredump failed with status {systemd.returncode}')
+            if breakpad.returncode:
+                logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
+            if systemd.returncode:
+                logger.error(f'systemd-coredump failed with status {systemd.returncode}')
 
-    try:
-        os.setxattr(minidump, 'user.executable', f.encode())
-        os.setxattr(minidump, 'user.comm', e.encode())
-        os.setxattr(minidump, 'user.path', E.replace('!', '/').encode())
-    except OSError as e:
-        logger.warning('Failed to set xattrs', exc_info=e)
+            try:
+                os.setxattr(minidump, 'user.executable', f.encode())
+                os.setxattr(minidump, 'user.comm', e.encode())
+                os.setxattr(minidump, 'user.path', E.replace('!', '/').encode())
+            except OSError as e:
+                logger.warning('Failed to set xattrs', exc_info=e)
 
-    shutil.chown(minidump, user='steamos-log-submitter')
+            shutil.chown(minidump, user='steamos-log-submitter')
+    except LockHeldError:
+        logger.error("Couldn't claim minidump lockfile, giving up")
+        tee(sys.stdin.buffer, (systemd,))
+
     with sls.util.drop_root():
         sls.trigger()
 except Exception as e:
