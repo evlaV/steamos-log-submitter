@@ -3,14 +3,13 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-from .lockfile import Lockfile, LockHeldError
 from steamos_log_submitter.config import get_config
+from steamos_log_submitter.lockfile import LockHeldError
 from steamos_log_submitter.logging import reconfigure_logging
 import steamos_log_submitter.helpers as helpers
-import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
+import steamos_log_submitter.util as util
 
-import importlib
 import logging
 import os
 
@@ -42,10 +41,6 @@ reconfigure_logging()
 logger = logging.getLogger(__name__)
 
 
-class HelperError(RuntimeError):
-    pass
-
-
 def trigger():
     if base_config['enable'] == 'on':
         logger.info('Routine collection/submission triggered')
@@ -61,16 +56,6 @@ def trigger():
         logger.debug('Routine collection/submission is disabled')
 
 
-def create_helper(category):
-    try:
-        helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
-        if not hasattr(helper, 'submit'):
-            raise HelperError('Helper module does not contain submit function')
-    except ModuleNotFoundError as e:
-        raise HelperError from e
-    return helper
-
-
 def collect():
     logger.info('Starting log collection')
     for category in os.listdir(pending):
@@ -79,8 +64,8 @@ def collect():
             continue
         logger.info(f'Collecting logs for {category}')
         try:
-            with Lockfile(f'{pending}/{category}/.lock'):
-                helper = create_helper(category)
+            with helpers.lock(category):
+                helper = helpers.create_helper(category)
                 helper.collect()
         except LockHeldError:
             # Another process is currently working on this directory
@@ -114,9 +99,9 @@ def submit():
             continue
 
         try:
-            with Lockfile(f'{pending}/{category}/.lock'):
+            with helpers.lock(category):
                 try:
-                    helper = create_helper(category)
+                    helper = helpers.create_helper(category)
                     for log in logs:
                         if log.startswith('.'):
                             continue
