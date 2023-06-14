@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def upload(product, *, build=None, version=None, info, dump=None) -> bool:
-    logger.info(f'Uploading crash log for {product} (build: {build}, version: {version}')
+    logger.info(f'Uploading crash log for {product} (build: {build}, version: {version})')
     account = sls.steam.get_steam_account_id()
 
     info = dict(info)
