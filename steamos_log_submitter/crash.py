@@ -8,6 +8,10 @@ import os
 import requests
 import steamos_log_submitter as sls
 
+__all__ = [
+    'upload',
+]
+
 start_url = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
 finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
 

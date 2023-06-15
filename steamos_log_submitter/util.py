@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     'check_network',
+    'drop_root',
     'get_appid',
     'get_build_id',
 ]

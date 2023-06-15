@@ -7,6 +7,12 @@ import configparser
 import logging
 import pwd
 
+__all__ = [
+    'get_config',
+    'reload_config',
+    'write_config',
+]
+
 base_config_path = '/usr/lib/steamos-log-submitter/base.cfg'
 user_config_path = None
 

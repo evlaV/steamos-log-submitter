@@ -6,6 +6,10 @@
 import logging
 import steamos_log_submitter as sls
 
+__all__ = [
+    'reconfigure_logging',
+]
+
 config = sls.get_config(__name__)
 logger = logging.getLogger(__name__)
 
