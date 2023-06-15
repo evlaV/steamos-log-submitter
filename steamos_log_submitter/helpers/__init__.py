@@ -4,7 +4,9 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import importlib
+import os
 import pkgutil
+import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.lockfile as lockfile
 
@@ -29,3 +31,23 @@ def list_helpers():
 
 def lock(helper):
     return lockfile.Lockfile(f'{sls.pending}/{helper}/.lock')
+
+
+class StagingFile:
+    def __init__(self, category, name, mode='w+b'):
+        self._final_name = f'{sls.pending}/{category}/{name}'
+        self._tempfile = tempfile.NamedTemporaryFile(mode=mode, dir=f'{sls.pending}/{category}', prefix='.staging-', delete=False)
+
+    def close(self):
+        self._tempfile.close()
+        os.rename(self.name, self._final_name)
+
+    def __getattr__(self, attr):
+        return getattr(self._tempfile, attr)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return not exc_type
