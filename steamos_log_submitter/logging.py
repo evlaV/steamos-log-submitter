@@ -7,6 +7,7 @@ import logging
 import steamos_log_submitter as sls
 
 config = sls.get_config(__name__)
+logger = logging.getLogger(__name__)
 
 
 def reconfigure_logging():
@@ -27,4 +28,12 @@ def reconfigure_logging():
     if path:
         kwargs['filename'] = path
 
-    logging.basicConfig(**kwargs)
+    try:
+        logging.basicConfig(**kwargs)
+    except OSError:
+        # If we got an error trying to open the log file, retry without the file
+        if not path:
+            raise
+        del kwargs['filename']
+        logging.basicConfig(**kwargs)
+        logger.warning("Couldn't open log file")
