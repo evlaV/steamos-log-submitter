@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from steamos_log_submitter.config import get_config
 from steamos_log_submitter.lockfile import LockHeldError
@@ -20,6 +20,7 @@ __all__ = [
     'uploaded',
     # Utility functions
     'get_config',
+    'get_data',
     'submit',
     'trigger',
     # Submodules
@@ -39,6 +40,9 @@ uploaded = f'{base}/uploaded'
 reconfigure_logging()
 
 logger = logging.getLogger(__name__)
+
+# This needs to be imported late so that sls.base is populated
+from steamos_log_submitter.data import get_data  # NOQA: E402
 
 
 def trigger():

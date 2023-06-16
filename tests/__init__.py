@@ -143,3 +143,15 @@ class HitCounter:
 @pytest.fixture
 def count_hits():
     return HitCounter()
+
+
+@pytest.fixture
+def data_directory(monkeypatch):
+    d = tempfile.TemporaryDirectory(prefix='sls-')
+    monkeypatch.setattr(sls.data, 'data_root', d.name)
+    for dat in sls.data.datastore.values():
+        monkeypatch.setattr(dat, '_data', {})
+        monkeypatch.setattr(dat, '_dirty', False)
+    yield d.name
+
+    del d
