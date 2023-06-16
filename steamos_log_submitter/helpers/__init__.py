@@ -11,7 +11,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.lockfile as lockfile
 
 
-class HelperError(RuntimeError):
+class HelperError(NotImplementedError):
     pass
 
 
