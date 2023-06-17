@@ -10,7 +10,7 @@ import pytest
 import subprocess
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
-from .. import unreachable, helper_directory, mock_config, patch_module, count_hits, always_raise  # NOQA: F401
+from .. import always_raise, count_hits, data_directory, helper_directory, patch_module, unreachable  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
@@ -48,22 +48,22 @@ def test_collect_dbus_exception(monkeypatch, mock_dbus):
     assert not helper.collect()
 
 
-def test_collect_success(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_success(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
     assert helper.collect()
     assert count_hits.hits == 1
-    assert mock_config.has_section('helpers.journal')
-    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
-    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'cursor'
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'cursor'
     with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
 
 
-def test_collect_append(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_append(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -72,15 +72,15 @@ def test_collect_append(monkeypatch, mock_dbus, mock_config, count_hits, helper_
         json.dump(['old'], f)
     assert helper.collect()
     assert count_hits.hits == 1
-    assert mock_config.has_section('helpers.journal')
-    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
-    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'cursor'
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'cursor'
     with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
         log = json.load(f)
     assert log == ['old', 'log']
 
 
-def test_collect_corrupted(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -89,15 +89,15 @@ def test_collect_corrupted(monkeypatch, mock_dbus, mock_config, count_hits, help
         f.write('definitely not json!')
     assert helper.collect()
     assert count_hits.hits == 1
-    assert mock_config.has_section('helpers.journal')
-    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
-    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'cursor'
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'cursor'
     with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
 
 
-def test_collect_read_error(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_read_error(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -113,7 +113,7 @@ def test_collect_read_error(monkeypatch, mock_dbus, mock_config, count_hits, hel
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.R_OK)
 
 
-def test_collect_write_error(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_write_error(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -129,7 +129,7 @@ def test_collect_write_error(monkeypatch, mock_dbus, mock_config, count_hits, he
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.W_OK)
 
 
-def test_collect_no_local(monkeypatch, mock_dbus, mock_config, count_hits, helper_directory, mock_unit):
+def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     monkeypatch.setattr(sls.config, 'write_config', always_raise(FileNotFoundError))
     count_hits.ret = ['log'], 'cursor'
@@ -137,9 +137,9 @@ def test_collect_no_local(monkeypatch, mock_dbus, mock_config, count_hits, helpe
 
     assert helper.collect()
     assert count_hits.hits == 1
-    assert mock_config.has_section('helpers.journal')
-    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
-    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'cursor'
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'cursor'
     with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
@@ -152,7 +152,7 @@ def test_journal_error(monkeypatch, mock_dbus, mock_unit):
     assert not helper.collect()
 
 
-def test_journal_cursor_read(monkeypatch, mock_dbus, mock_config, mock_unit):
+def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_unit):
     configured_cursor = 'Passport'
 
     def check_cursor(unit, cursor=None):
@@ -161,13 +161,12 @@ def test_journal_cursor_read(monkeypatch, mock_dbus, mock_config, mock_unit):
 
     monkeypatch.setattr(helper, 'read_journal', check_cursor)
 
-    mock_config.add_section('helpers.journal')
-    mock_config.set('helpers.journal', 'unit_2eservice.cursor', configured_cursor)
+    helper.data['unit_2eservice.cursor'] = configured_cursor
 
     assert not helper.collect()
 
 
-def test_journal_cursor_update(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
+def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = [json.dumps({'__CURSOR': str(x)}) for x in range(20)]
@@ -181,12 +180,12 @@ def test_journal_cursor_update(monkeypatch, mock_dbus, mock_config, mock_unit, h
 
     assert helper.collect()
 
-    assert mock_config.has_section('helpers.journal')
-    assert mock_config.has_option('helpers.journal', 'unit_2eservice.cursor')
-    assert mock_config.get('helpers.journal', 'unit_2eservice.cursor') == 'foo'
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'foo'
 
 
-def test_journal_invocation_prune(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
+def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = []
@@ -212,7 +211,7 @@ def test_journal_invocation_prune(monkeypatch, mock_dbus, mock_config, mock_unit
     assert len(log) == 2
 
 
-def test_journal_invocation_merge(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
+def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = []
@@ -242,7 +241,7 @@ def test_submit_bad_name():
     assert not helper.submit('not-a-log.bin')
 
 
-def test_subprocess_failure(monkeypatch, mock_dbus, mock_config, mock_unit, helper_directory):
+def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError()))
 

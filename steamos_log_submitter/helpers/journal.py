@@ -15,7 +15,7 @@ import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
 
-config = sls.get_config(__name__)
+data = sls.get_data(__name__)
 logger = logging.getLogger(__name__)
 
 units = [
@@ -96,7 +96,7 @@ def collect() -> bool:
         if state != 'failed':
             continue
 
-        cursor = config.get(f'{escape(unit)}.cursor')
+        cursor = data.get(f'{escape(unit)}.cursor')
         journal, cursor = read_journal(unit, cursor)
 
         if not journal:
@@ -121,14 +121,14 @@ def collect() -> bool:
         try:
             with gzip.open(f'{sls.pending}/journal/{escape(unit)}.json.gz', 'wt') as f:
                 json.dump(journal, f)
-            config[f'{escape(unit)}.cursor'] = cursor
+            data[f'{escape(unit)}.cursor'] = cursor
             updated = True
         except OSError as e:
             logger.error(f'Failed writing log pending/journal/{escape(unit)}.json.gz', exc_info=e)
 
     if updated:
         try:
-            sls.config.write_config()
+            data.write()
         except OSError as e:
             logger.error('Failed writing updated cursor information', exc_info=e)
 

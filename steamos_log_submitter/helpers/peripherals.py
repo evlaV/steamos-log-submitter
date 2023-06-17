@@ -15,6 +15,7 @@ from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
 
 config = sls.get_config(__name__)
+data = sls.get_data(__name__, defaults={'timestamp': None})
 logger = logging.getLogger(__name__)
 
 
@@ -110,10 +111,10 @@ def collect() -> bool:
         'bluetooth': list_bluetooth(),
         'monitors': list_monitors(),
     }
-    os.makedirs(f'{sls.base}/data', exist_ok=True)
+    os.makedirs(sls.data.data_root, exist_ok=True)
     known = {}
     try:
-        with open(f'{sls.base}/data/peripherals.json') as f:
+        with open(f'{sls.data.data_root}/peripherals.json') as f:
             known = json.load(f)
     except FileNotFoundError:
         pass
@@ -128,23 +129,22 @@ def collect() -> bool:
                 devs.add(json.dumps(dev))
         known[section] = [json.loads(dev) for dev in devs]
 
-    with open(f'{sls.base}/data/peripherals.json', 'w') as f:
+    with open(f'{sls.data.data_root}/peripherals.json', 'w') as f:
         json.dump(known, f)
 
     now = time.time()
-    timestamp = config.get('timestamp')
+    timestamp = data['timestamp']
     new_file = False
     if timestamp is not None:
-        timestamp = float(timestamp)
         if now - timestamp >= config.get('interval', 60 * 60 * 24 * 7):
             # If last submitted over a week ago, submit now
-            os.rename(f'{sls.base}/data/peripherals.json', f'{sls.pending}/peripherals/{now:.0f}.json')
+            os.rename(f'{sls.data.data_root}/peripherals.json', f'{sls.pending}/peripherals/{now:.0f}.json')
             new_file = True
 
     if not timestamp or new_file:
-        config['timestamp'] = now
+        data['timestamp'] = now
         try:
-            sls.config.write_config()
+            data.write()
         except OSError as e:
             logger.error('Failed writing updated timestamp information', exc_info=e)
 
