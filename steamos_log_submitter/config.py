@@ -41,6 +41,13 @@ class ConfigSection:
             local_config.add_section(self.name)
         local_config.set(self.name, name, str(value))
 
+    def __contains__(self, name):
+        if local_config.has_section(self.name) and local_config.has_option(self.name, name):
+            return True
+        if config.has_section(self.name) and config.has_option(self.name, name):
+            return True
+        return False
+
     def get(self, name, default=None):
         try:
             return self[name]

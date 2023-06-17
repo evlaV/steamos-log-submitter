@@ -70,6 +70,16 @@ def test_section_get_val_default(monkeypatch):
         assert False
 
 
+def test_section_contains(monkeypatch):
+    testconf = configparser.ConfigParser()
+    testconf.add_section('test')
+    monkeypatch.setattr(config, 'config', testconf)
+    section = config.ConfigSection('test')
+    assert 'foo' not in section
+    testconf.set('test', 'foo', '1')
+    assert 'foo' in section
+
+
 def test_local_setting(monkeypatch):
     monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
     section = config.ConfigSection('test')
@@ -84,6 +94,14 @@ def test_local_setting(monkeypatch):
         assert section['nothing'] == '1'
     except KeyError:
         assert False
+
+
+def test_local_contains(monkeypatch):
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser())
+    section = config.ConfigSection('test')
+    assert 'nothing' not in section
+    section['nothing'] = '1'
+    assert 'nothing' in section
 
 
 def test_write_setting(monkeypatch):
