@@ -122,3 +122,87 @@ def test_inaccessible_config(monkeypatch):
         pytest.skip('Directory is writable, are we running as root?')
     monkeypatch.setattr(config, 'user_config_path', '/doesnotexist')
     assert not cli.set_enabled(True)
+
+
+def test_set_steam_key_account_name(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert cli.set_steam_info('account-name', 'gaben')
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\naccount_name = gaben\n\n'
+
+
+def test_set_steam_key_account_name2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['set-steam-info', 'account-name', 'gaben'])
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\naccount_name = gaben\n\n'
+
+
+def test_set_steam_key_account_id(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert cli.set_steam_info('account-id', '42')
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\naccount_id = 42\n\n'
+
+
+def test_set_steam_key_account_id2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['set-steam-info', 'account-id', '42'])
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\naccount_id = 42\n\n'
+
+
+def test_set_steam_key_account_id_invalid(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert not cli.set_steam_info('account-id', 'gaben')
+    with open(user_config.name) as f:
+        assert f.read() == ''
+
+
+def test_set_steam_key_account_id_invalid2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['set-steam-info', 'account-id', 'gaben'])
+    with open(user_config.name) as f:
+        assert f.read() == ''
+
+
+def test_set_steam_key_deck_serial(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert cli.set_steam_info('deck-serial', 'AAAA0000')
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
+
+
+def test_set_steam_key_deck_serial2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['set-steam-info', 'deck-serial', 'AAAA0000'])
+    with open(user_config.name) as f:
+        assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
+
+
+def test_set_steam_key_invalid(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert not cli.set_steam_info('malicious_key', 'Breen')
+    with open(user_config.name) as f:
+        assert f.read() == ''
+
+
+def test_set_steam_key_invalid2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    try:
+        cli.main(['set-steam-info', 'malicious_key', 'Breen'])
+        assert False
+    except SystemExit:
+        pass
+    with open(user_config.name) as f:
+        assert f.read() == ''
