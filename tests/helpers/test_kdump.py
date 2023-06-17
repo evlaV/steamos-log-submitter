@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.helpers.kdump as kdump
+import steamos_log_submitter.steam as steam
 from .crash import FakeResponse
 from .. import fake_pwuid  # NOQA: F401
 
@@ -28,6 +29,7 @@ def test_submit_bad_name():
 
 
 def test_submit_succeed(monkeypatch):
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     response = FakeResponse()
     response.success(monkeypatch)
     assert kdump.submit(f'{file_base}/dmesg.zip')

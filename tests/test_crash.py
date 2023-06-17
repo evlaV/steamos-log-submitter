@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import requests
@@ -11,7 +11,7 @@ from . import fake_request
 
 
 def test_bad_start(monkeypatch):
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     monkeypatch.setattr(requests, 'post', fake_request(400))
     assert not crash.upload('holo', version=0, info={})
 
@@ -45,7 +45,7 @@ def test_no_file(monkeypatch):
         'url': 'file:///',
         'gid': 111
     }})
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     monkeypatch.setattr(requests, 'post', fake_response(response))
     assert crash.upload('holo', version=0, info={})
     assert attempt == 2
@@ -80,7 +80,7 @@ def test_bad_end(monkeypatch):
         'url': 'file:///',
         'gid': 111
     }})
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     monkeypatch.setattr(requests, 'post', fake_response(response))
     assert not crash.upload('holo', version=0, info={})
     assert attempt == 2
@@ -124,7 +124,7 @@ def test_file(monkeypatch):
     }})
     file = __file__
     respond = fake_response(response)
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     monkeypatch.setattr(requests, 'post', respond)
     monkeypatch.setattr(requests, 'put', respond)
     assert crash.upload('holo', version=0, info={}, dump=file)
