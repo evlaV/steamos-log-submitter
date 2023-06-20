@@ -7,7 +7,7 @@ import json
 import requests
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
-from . import fake_request
+from . import fake_request, unreachable
 
 
 def test_bad_start(monkeypatch):
@@ -49,6 +49,12 @@ def test_no_file(monkeypatch):
     monkeypatch.setattr(requests, 'post', fake_response(response))
     assert crash.upload('holo', version=0, info={})
     assert attempt == 2
+
+
+def test_no_account(monkeypatch):
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
+    monkeypatch.setattr(requests, 'post', unreachable)
+    assert not crash.upload('holo', version=0, info={})
 
 
 def test_bad_end(monkeypatch):
@@ -129,3 +135,29 @@ def test_file(monkeypatch):
     monkeypatch.setattr(requests, 'put', respond)
     assert crash.upload('holo', version=0, info={}, dump=file)
     assert attempt == 3
+
+
+def test_rate_limit(monkeypatch):
+    attempt = 0
+
+    def fake_response(body):
+        def ret(url, data=None, *args, **kwargs):
+            nonlocal attempt
+            attempt += 1
+            if attempt == 1:
+                assert url == crash.start_url
+                r = requests.Response()
+                r.status_code = 200
+                r._content = body.encode()
+                return r
+            assert False
+        return ret
+
+    response = json.dumps({'response': {}})
+    file = __file__
+    respond = fake_response(response)
+    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
+    monkeypatch.setattr(requests, 'post', respond)
+    monkeypatch.setattr(requests, 'put', respond)
+    assert not crash.upload('holo', version=0, info={}, dump=file)
+    assert attempt == 1
