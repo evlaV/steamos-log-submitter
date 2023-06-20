@@ -14,8 +14,9 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from steamos_log_submitter.lockfile import LockHeldError, LockRetry
+from steamos_log_submitter.logging import reconfigure_logging
 
-logging.basicConfig(filename=f'{sls.base}/crash-hook.log', encoding='utf-8', level=logging.INFO, force=True)
+reconfigure_logging(f'{sls.base}/crash-hook.log')
 logger = logging.getLogger(__name__)
 
 

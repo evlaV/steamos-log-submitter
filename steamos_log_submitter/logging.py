@@ -14,7 +14,7 @@ config = sls.get_config(__name__)
 logger = logging.getLogger(__name__)
 
 
-def reconfigure_logging():
+def reconfigure_logging(path=None):
     level = config.get('level', 'WARNING').upper()
     try:
         level = getattr(logging, level)
@@ -28,7 +28,8 @@ def reconfigure_logging():
         'force': True
     }
 
-    path = config.get('path')
+    if path is None:
+        path = config.get('path')
     if path:
         kwargs['filename'] = path
 
