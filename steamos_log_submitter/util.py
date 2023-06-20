@@ -30,7 +30,8 @@ def get_appid(pid: int) -> Optional[int]:
         try:
             with open(f'/proc/{pid}/stat') as f:
                 stat = f.read()
-        except OSError:
+        except OSError as e:
+            logger.error(f'Failed to read /proc/{pid}/stat', exc_info=e)
             return None
 
         stat_match = stat_parse.match(stat)
@@ -41,7 +42,8 @@ def get_appid(pid: int) -> Optional[int]:
             try:
                 with open(f'/proc/{pid}/cmdline') as f:
                     cmdline = f.read()
-            except OSError:
+            except OSError as e:
+                logger.error(f'Failed to read /proc/{pid}/cmdline', exc_info=e)
                 return None
 
             cmdline = cmdline.split('\0')
