@@ -202,22 +202,22 @@ def test_collect_monitors_edid(monkeypatch):
 def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [],
+    })
 
     assert not helper.collect()
     with open(f'{data_directory}/peripherals.json') as f:
         output = json.load(f)
-    assert output == {'usb': [], 'bluetooth': [], 'monitors': []}
+    assert output == {'usb': []}
 
 
 def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [],
+    })
 
     with open(f'{data_directory}/peripherals.json', 'w') as f:
         f.write('not json')
@@ -225,7 +225,7 @@ def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_c
     assert not helper.collect()
     with open(f'{data_directory}/peripherals.json') as f:
         output = json.load(f)
-    assert output == {'usb': [], 'bluetooth': [], 'monitors': []}
+    assert output == {'usb': []}
 
 
 def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
@@ -271,9 +271,9 @@ def test_collect_large_interval(monkeypatch, data_directory, helper_directory, m
 def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
+    })
 
     with open(f'{data_directory}/peripherals.json', 'w') as f:
         json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
@@ -290,9 +290,10 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
 def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
+        'monitors': lambda: [],
+    })
 
     with open(f'{data_directory}/peripherals.json', 'w') as f:
         json.dump({'usb': [], 'monitors': [{'edid': '00'}]}, f)
@@ -309,9 +310,9 @@ def test_collect_append(monkeypatch, data_directory, helper_directory, mock_conf
 def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
+    })
 
     with open(f'{data_directory}/peripherals.json', 'w') as f:
         json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
@@ -324,6 +325,28 @@ def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_con
     assert len(cache['usb']) == 2
     assert {'vid': '1234', 'pid': '5678'} in cache['usb']
     assert {'vid': '5678', 'pid': '1234'} in cache['usb']
+
+
+def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['peripherals'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {
+        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
+        'monitors': lambda: [],
+    })
+
+    with open(f'{data_directory}/peripherals.json', 'w') as f:
+        json.dump({'monitors': []}, f)
+
+    assert not helper.collect()
+
+    with open(f'{data_directory}/peripherals.json') as f:
+        cache = json.load(f)
+
+    assert 'monitors' in cache
+    assert len(cache['monitors']) == 0
+    assert len(cache['usb']) == 1
+    assert {'vid': '1234', 'pid': '5678'} in cache['usb']
 
 
 def test_read_file_text(monkeypatch):

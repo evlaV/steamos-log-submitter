@@ -6,9 +6,10 @@
 import collections
 import json
 import logging
-import re
-import time
 import os
+import re
+import subprocess
+import time
 from typing import Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
@@ -105,12 +106,32 @@ def list_bluetooth() -> list[dict]:
     return devices
 
 
+def list_filesystems() -> list[dict]:
+    try:
+        findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size', '-b', '--real', '--list'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True)
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.error('Failed to exec findmnt', exc_info=e)
+        return None
+    try:
+        mntinfo = json.loads(findmnt.stdout.decode())
+    except json.decoder.JSONDecodeError as e:
+        logger.error('Got invalid JSON from findmnt', exc_info=e)
+        return None
+    if 'filesystems' not in mntinfo:
+        return None
+    return mntinfo['filesystems']
+
+
+device_types = {
+    'usb': list_usb,
+    'bluetooth': list_bluetooth,
+    'monitors': list_monitors,
+    'filesystems': list_filesystems,
+}
+
+
 def collect() -> bool:
-    devices = {
-        'usb': list_usb(),
-        'bluetooth': list_bluetooth(),
-        'monitors': list_monitors(),
-    }
+    devices = {type: cb() for type, cb in device_types.items()}
     os.makedirs(sls.data.data_root, exist_ok=True)
     known = {}
     try:
