@@ -14,9 +14,9 @@ run_pytest:
     - pacman-key --init
     - pacman-key --populate
     - pacman -Sy --noconfirm archlinux-keyring
-    - pacman -S --noconfirm openssl
     # Remove above after holo-main/base is unbroken
-    - pacman -S --noconfirm --needed dbus-python python-pip
+    - pacman -Sy --noconfirm --needed dbus-python python-pip
+    - pacman -S --noconfirm openssl
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
     - pip install .[test]
