@@ -9,7 +9,16 @@ run_pytest:
     - docker
     - linux
   script:
-    - pacman -Sy --noconfirm dbus-python python-pip python-pytest
+    # Terrible workaround block below
+    - sed -i.bak '/^faked-system-time/d' /etc/pacman.d/gnupg/gpg.conf
+    - pacman-key --init
+    - pacman-key --populate
+    - pacman -Sy --noconfirm archlinux-keyring
+    - pacman -S --noconfirm openssl
+    # Remove above after holo-main/base is unbroken
+    - pacman -S --noconfirm --needed dbus-python python-pip
+    - python -m venv --system-site-packages venv
+    - . venv/bin/activate
     - pip install .[test]
     - pytest
 
