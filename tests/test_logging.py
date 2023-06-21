@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import logging
 import os
+import pytest
 import tempfile
 import steamos_log_submitter as sls
 from . import mock_config  # NOQA: F401
@@ -62,3 +63,11 @@ def test_log_level_invalid(mock_config):
 
     assert 'WARNING' in log
     assert 'INFO' not in log
+
+
+def test_log_open_failure(capsys):
+    if os.access('/nonexistent', os.W_OK):
+        pytest.skip('File is writable, are we running as root?')
+        return
+    sls.reconfigure_logging('/nonexistent')
+    assert capsys.readouterr().err.strip().endswith("Couldn't open log file")
