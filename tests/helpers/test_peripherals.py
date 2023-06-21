@@ -231,9 +231,7 @@ def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_c
 def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {})
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     assert helper.data.get('timestamp') is None
@@ -243,9 +241,7 @@ def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, moc
 
 def test_collect_small_interval(monkeypatch, data_directory, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {})
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     helper.data['timestamp'] = 999
@@ -257,9 +253,7 @@ def test_collect_small_interval(monkeypatch, data_directory, helper_directory, m
 def test_collect_large_interval(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['peripherals'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
-    monkeypatch.setattr(helper, 'list_bluetooth', lambda: [])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'device_types', {})
     monkeypatch.setattr(time, 'time', lambda: 1000000)
 
     helper.data['timestamp'] = 1
