@@ -66,8 +66,11 @@ def test_log_level_invalid(mock_config):
 
 
 def test_log_open_failure(capsys):
-    if os.access('/nonexistent', os.W_OK):
+    try:
+        open('/nonexistent', 'w')
         pytest.skip('File is writable, are we running as root?')
         return
+    except PermissionError:
+        pass
     sls.reconfigure_logging('/nonexistent')
     assert capsys.readouterr().err.strip().endswith("Couldn't open log file")
