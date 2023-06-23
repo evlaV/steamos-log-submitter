@@ -10,7 +10,7 @@ import pwd
 import re
 import requests
 import time
-from typing import Optional
+from typing import Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -86,18 +86,26 @@ def check_network() -> bool:
 
 
 class drop_root:
+    def __init__(self, target_uid: Union[int, str] = 'steamos-log-submitter', target_gid: Union[int, str] = 'steamos-log-submitter'):
+        try:
+            self.target_uid = int(target_uid)
+        except ValueError:
+            self.target_uid = pwd.getpwnam(target_uid)[2]
+
+        try:
+            self.target_gid = int(target_gid)
+        except ValueError:
+            self.target_gid = grp.getgrnam(target_gid)[2]
+
     def __enter__(self):
         self.uid = os.geteuid()
         self.gid = os.getegid()
 
-        uid = pwd.getpwnam('steamos-log-submitter')[2]
-        gid = grp.getgrnam('steamos-log-submitter')[2]
-
-        if self.uid == uid and self.gid == gid:
+        if self.uid == self.target_uid and self.gid == self.target_gid:
             return
         try:
-            os.setegid(gid)
-            os.seteuid(uid)
+            os.setegid(self.target_gid)
+            os.seteuid(self.target_uid)
         except PermissionError as e:
             logger.error("Couldn't drop permissions", exc_info=e)
             raise

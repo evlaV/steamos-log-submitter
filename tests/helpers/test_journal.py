@@ -10,7 +10,8 @@ import pytest
 import subprocess
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
-from .. import always_raise, count_hits, data_directory, helper_directory, patch_module, unreachable  # NOQA: F401
+from .. import always_raise, unreachable
+from .. import data_directory, count_hits, drop_root, helper_directory, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
@@ -97,7 +98,7 @@ def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, h
     assert log == ['log']
 
 
-def test_collect_read_error(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -113,7 +114,7 @@ def test_collect_read_error(monkeypatch, mock_dbus, data_directory, count_hits, 
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.R_OK)
 
 
-def test_collect_write_error(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')

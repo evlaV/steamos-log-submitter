@@ -155,3 +155,12 @@ def data_directory(monkeypatch):
     yield d.name
 
     del d
+
+
+@pytest.fixture
+def drop_root():
+    if os.geteuid() != 0:
+        yield
+    else:
+        with sls.util.drop_root('nobody', 'nobody'):
+            yield

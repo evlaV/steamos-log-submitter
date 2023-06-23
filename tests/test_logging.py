@@ -8,7 +8,7 @@ import os
 import pytest
 import tempfile
 import steamos_log_submitter as sls
-from . import mock_config  # NOQA: F401
+from . import drop_root, mock_config  # NOQA: F401
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def test_log_level_invalid(mock_config):
     assert 'INFO' not in log
 
 
-def test_log_open_failure(capsys):
+def test_log_open_failure(capsys, drop_root):
     try:
         open('/nonexistent', 'w')
         pytest.skip('File is writable, are we running as root?')

@@ -4,7 +4,7 @@ import tempfile
 import time
 import steamos_log_submitter.cli as cli
 import steamos_log_submitter.config as config
-from . import mock_config  # NOQA: F401
+from . import drop_root, mock_config  # NOQA: F401
 
 
 def test_status(capsys, mock_config):
@@ -117,7 +117,7 @@ def test_clobber_file(monkeypatch):
         os.unlink(user_config)
 
 
-def test_inaccessible_config(monkeypatch):
+def test_inaccessible_config(drop_root, monkeypatch):
     if os.access('/', os.W_OK):
         pytest.skip('Directory is writable, are we running as root?')
     monkeypatch.setattr(config, 'user_config_path', '/doesnotexist')
