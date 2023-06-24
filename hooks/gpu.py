@@ -31,8 +31,5 @@ try:
             print(f'APPID={appid}', file=f)
         print(f'TIMESTAMP={ts}', file=f)
         shutil.chown(f.name, user='steamos-log-submitter')
-
-    with sls.util.drop_root():
-        sls.trigger()
 except Exception as e:
     logger.critical('Unhandled exception', exc_info=e)
