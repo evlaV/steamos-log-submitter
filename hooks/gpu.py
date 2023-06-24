@@ -28,7 +28,13 @@ try:
             print(f'{key}={val}', file=f)
         if pid:
             appid = sls.util.get_appid(pid)
-            print(f'APPID={appid}', file=f)
+            if appid is not None:
+                print(f'APPID={appid}', file=f)
+        try:
+            executable = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
+            print(f'EXE={executable}', file=f)
+        except OSError:
+            pass
         print(f'TIMESTAMP={ts}', file=f)
         shutil.chown(f.name, user='steamos-log-submitter')
 except Exception as e:

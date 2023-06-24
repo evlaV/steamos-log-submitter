@@ -123,3 +123,22 @@ def test_appid(mock_config, monkeypatch):
 
     assert helper.submit('fake.log')
     assert hit
+
+
+def test_exe(mock_config, monkeypatch):
+    hit = False
+    mock_config.add_section('helpers.gpu')
+    mock_config.set('helpers.gpu', 'dsn', '')
+
+    def check_now(dsn, **kwargs):
+        nonlocal hit
+        hit = True
+        assert kwargs['tags']['executable'] == 'hl2.exe'
+        assert 'executable:hl2.exe' in kwargs['fingerprint']
+        return True
+
+    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nEXE=hl2.exe\nB=1\n'))
+
+    assert helper.submit('fake.log')
+    assert hit

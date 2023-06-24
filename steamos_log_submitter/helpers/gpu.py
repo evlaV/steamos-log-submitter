@@ -29,12 +29,18 @@ def submit(fname: str) -> bool:
 
     timestamp = None
     appid = None
+    tags = {}
+    fingerprint = []
     for line in attachment.split(b'\n'):
         try:
             if line.startswith(b'TIMESTAMP='):
                 timestamp = float(line.split(b'=')[1]) / 1_000_000_000
             elif line.startswith(b'APPID='):
                 appid = int(line.split(b'=')[1])
+            elif line.startswith(b'EXE='):
+                executable = line.split(b'=')[1].decode()
+                tags['executable'] = executable
+                fingerprint.append(f'executable:{executable}')
         except ValueError:
             continue
 
@@ -43,4 +49,9 @@ def submit(fname: str) -> bool:
         'filename': 'udev.log',
         'data': attachment
     }]
-    return send_event(config['dsn'], attachments=attachments, appid=appid, timestamp=timestamp)
+    return send_event(config['dsn'],
+                      attachments=attachments,
+                      appid=appid,
+                      timestamp=timestamp,
+                      tags=tags,
+                      fingerprint=fingerprint)
