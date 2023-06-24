@@ -21,7 +21,7 @@ def test_bad_start(monkeypatch):
         return r
 
     monkeypatch.setattr(requests, 'post', fake_response)
-    assert not sentry.send_event('', attachment=b'')
+    assert not sentry.send_event('', attachments=[{'data': b''}])
 
 
 def test_dsn_parsing(monkeypatch):
@@ -110,6 +110,8 @@ def test_envelope(monkeypatch):
             line, data = data.split(b'\n', 1)
             header = json.loads(line)
             assert header.get('type') == 'attachment'
+            assert header.get('filename') == 'enemy.txt'
+            assert header.get('content_type') == 'text/plain'
             attachment = data[:header['length']]
             assert attachment == b'headcrab zombie'
             assert data[len(attachment):] == b'\n'
@@ -120,7 +122,52 @@ def test_envelope(monkeypatch):
         return r
 
     monkeypatch.setattr(requests, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', attachment=b'headcrab zombie')
+    assert sentry.send_event('https://fake@dsn/0', attachments=[{
+        'data': b'headcrab zombie',
+        'filename': 'enemy.txt',
+        'mime-type': 'text/plain',
+    }])
+
+
+def test_envelope_multiple_attachments(monkeypatch):
+    event_id = None
+
+    def fake_response(url, **kwargs):
+        nonlocal event_id
+        if url == 'https://fake@dsn/api/0/store/':
+            pass
+        elif url == 'https://fake@dsn/api/0/envelope/':
+            data = gzip.decompress(kwargs['data'])
+            line, data = data.split(b'\n', 1)
+            attachment_num = 0
+            while len(data):
+                line, data = data.split(b'\n', 1)
+                header = json.loads(line)
+                assert header.get('type') == 'attachment'
+                attachment = data[:header['length']]
+                assert data[header['length']] == ord('\n')
+                data = data[header['length'] + 1:]
+                assert attachment_num < 2
+                if attachment_num == 0:
+                    assert attachment == b'crowbar'
+                elif attachment_num == 1:
+                    assert attachment == b'gravity gun'
+                attachment_num += 1
+        else:
+            assert False
+        r = requests.Response()
+        r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests, 'post', fake_response)
+    assert sentry.send_event('https://fake@dsn/0', attachments=[
+        {
+            'data': b'crowbar',
+        },
+        {
+            'data': b'gravity gun',
+        }
+    ])
 
 
 def test_envelope_timestamp(monkeypatch):
@@ -139,4 +186,4 @@ def test_envelope_timestamp(monkeypatch):
         return r
 
     monkeypatch.setattr(requests, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachment=b'')
+    assert sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachments=[{'data': b''}])

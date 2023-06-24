@@ -38,4 +38,9 @@ def submit(fname: str) -> bool:
         except ValueError:
             continue
 
-    return send_event(config['dsn'], attachment=attachment, appid=appid, timestamp=timestamp)
+    attachments = [{
+        'mime-type': 'text/plain',
+        'filename': 'udev.log',
+        'data': attachment
+    }]
+    return send_event(config['dsn'], attachments=attachments, appid=appid, timestamp=timestamp)

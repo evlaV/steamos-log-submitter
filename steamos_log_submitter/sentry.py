@@ -11,13 +11,13 @@ import logging
 import requests
 import urllib.parse
 import uuid
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import steamos_log_submitter as sls
 
 logger = logging.getLogger(__name__)
 
 
-def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b'', tags: Dict[str, str] = {}, fingerprint: List[str] = [], timestamp: Optional[float] = None) -> bool:
+def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[str, Any]] = [], tags: Dict[str, str] = {}, fingerprint: List[str] = [], timestamp: Optional[float] = None) -> bool:
     raw_envelope = io.BytesIO()
     envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
 
@@ -71,16 +71,23 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b''
         logger.error(f'Failed to submit event: {store_post.content}')
         return False
 
-    if attachment:
+    if attachments:
         append_json({
             'dsn': dsn,
             'event_id': event_id,
             'sent_at': sent_at,
         })
-        append_item({
-            'type': 'attachment',
-            'length': len(attachment)
-        }, attachment)
+
+        for attachment in attachments:
+            attachment_info = {
+                'type': 'attachment',
+                'length': len(attachment['data'])
+            }
+            if 'mime-type' in attachment:
+                attachment_info['content_type'] = attachment['mime-type']
+            if 'filename' in attachment:
+                attachment_info['filename'] = attachment['filename']
+            append_item(attachment_info, attachment['data'])
 
         envelope.close()
 
