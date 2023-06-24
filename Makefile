@@ -39,7 +39,7 @@ install: all $(infiles)
 	install -D -m0644 systemd/crash-hook.sysctl $(DESTDIR)$(sysctldir)/60-crash-hook.conf
 	install -D -m0644 udev/steamos-log-submitter.rules $(DESTDIR)$(udevdir)/rules.d/79-steamos-log-submitter.rules
 	install -D -m0644 base.cfg $(DESTDIR)$(libdir)/steamos-log-submitter/base.cfg
-	install -D -m0755 crash-hook.py $(DESTDIR)$(libdir)/steamos-log-submitter/crash-hook.py
-	install -D -m0755 log-gpu-crash.py $(DESTDIR)$(libdir)/steamos-log-submitter/log-gpu-crash.py
+	install -D -m0755 hooks/coredump.py $(DESTDIR)$(libdir)/steamos-log-submitter/hooks/coredump.py
+	install -D -m0755 hooks/gpu.py $(DESTDIR)$(libdir)/steamos-log-submitter/hooks/gpu.py
 	mkdir -p $(DESTDIR)$(systemdunitsdir)/timers.target.wants
 	ln -sf $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/timers.target.wants
