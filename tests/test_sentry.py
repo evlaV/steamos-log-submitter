@@ -121,3 +121,22 @@ def test_envelope(monkeypatch):
 
     monkeypatch.setattr(requests, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', attachment=b'headcrab zombie')
+
+
+def test_envelope_timestamp(monkeypatch):
+    def fake_response(url, **kwargs):
+        if url == 'https://fake@dsn/api/0/store/':
+            assert kwargs['json']['timestamp'] == 0.0
+        elif url == 'https://fake@dsn/api/0/envelope/':
+            data = gzip.decompress(kwargs['data'])
+            line, data = data.split(b'\n', 1)
+            header = json.loads(line)
+            assert type(header.get('sent_at')) == str
+        else:
+            assert False
+        r = requests.Response()
+        r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests, 'post', fake_response)
+    assert sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachment=b'')
