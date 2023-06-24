@@ -17,7 +17,7 @@ import steamos_log_submitter as sls
 logger = logging.getLogger(__name__)
 
 
-def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b'', tags: Dict[str, str] = {}, fingerprint: List[str] = []) -> bool:
+def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b'', tags: Dict[str, str] = {}, fingerprint: List[str] = [], timestamp: Optional[float] = None) -> bool:
     raw_envelope = io.BytesIO()
     envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
 
@@ -31,7 +31,10 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b''
         envelope.write(b'\n')
 
     event_id = uuid.uuid4().hex
-    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    if timestamp is None:
+        timestamp = sent_at
+
     event = {
         'event_id': event_id,
         'timestamp': timestamp,
@@ -72,7 +75,7 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachment: bytes = b''
         append_json({
             'dsn': dsn,
             'event_id': event_id,
-            'sent_at': timestamp,
+            'sent_at': sent_at,
         })
         append_item({
             'type': 'attachment',
