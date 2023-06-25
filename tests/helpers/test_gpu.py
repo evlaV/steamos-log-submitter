@@ -5,8 +5,11 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import steamos_log_submitter.helpers.gpu as helper
-from .. import open_shim
+from .. import custom_dsn, open_shim
 from .. import mock_config  # NOQA: F401
+
+
+dsn = custom_dsn('helpers.gpu')
 
 
 def test_submit_bad_name():
@@ -17,10 +20,8 @@ def test_collect_none():
     assert not helper.collect()
 
 
-def test_no_timestamp(mock_config, monkeypatch):
+def test_no_timestamp(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -35,10 +36,8 @@ def test_no_timestamp(mock_config, monkeypatch):
     assert hit
 
 
-def test_bad_timestamp(mock_config, monkeypatch):
+def test_bad_timestamp(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -53,10 +52,8 @@ def test_bad_timestamp(mock_config, monkeypatch):
     assert hit
 
 
-def test_timestamp(mock_config, monkeypatch):
+def test_timestamp(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -71,10 +68,8 @@ def test_timestamp(mock_config, monkeypatch):
     assert hit
 
 
-def test_no_appid(mock_config, monkeypatch):
+def test_no_appid(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -89,10 +84,8 @@ def test_no_appid(mock_config, monkeypatch):
     assert hit
 
 
-def test_bad_appid(mock_config, monkeypatch):
+def test_bad_appid(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -107,10 +100,8 @@ def test_bad_appid(mock_config, monkeypatch):
     assert hit
 
 
-def test_appid(mock_config, monkeypatch):
+def test_appid(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -125,10 +116,8 @@ def test_appid(mock_config, monkeypatch):
     assert hit
 
 
-def test_exe(mock_config, monkeypatch):
+def test_exe(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit
@@ -144,10 +133,8 @@ def test_exe(mock_config, monkeypatch):
     assert hit
 
 
-def test_kernel(mock_config, monkeypatch):
+def test_kernel(monkeypatch):
     hit = False
-    mock_config.add_section('helpers.gpu')
-    mock_config.set('helpers.gpu', 'dsn', '')
 
     def check_now(dsn, **kwargs):
         nonlocal hit

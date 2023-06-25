@@ -164,3 +164,12 @@ def drop_root():
     else:
         with sls.util.drop_root('nobody', 'nobody'):
             yield
+
+
+def custom_dsn(section: str, dsn: str = ''):
+    @pytest.fixture(autouse=True)
+    def dsn_fixture(mock_config):
+        mock_config.add_section(section)
+        mock_config.set(section, 'dsn', dsn)
+
+    return dsn_fixture
