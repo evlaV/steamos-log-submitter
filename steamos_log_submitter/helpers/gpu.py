@@ -41,6 +41,10 @@ def submit(fname: str) -> bool:
                 executable = line.split(b'=')[1].decode()
                 tags['executable'] = executable
                 fingerprint.append(f'executable:{executable}')
+            elif line.startswith(b'KERNEL='):
+                kernel = line.split(b'=')[1].decode()
+                tags['kernel'] = kernel
+                fingerprint.append(f'kernel:{kernel}')
         except ValueError:
             continue
 

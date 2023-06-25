@@ -142,3 +142,22 @@ def test_exe(mock_config, monkeypatch):
 
     assert helper.submit('fake.log')
     assert hit
+
+
+def test_kernel(mock_config, monkeypatch):
+    hit = False
+    mock_config.add_section('helpers.gpu')
+    mock_config.set('helpers.gpu', 'dsn', '')
+
+    def check_now(dsn, **kwargs):
+        nonlocal hit
+        hit = True
+        assert kwargs['tags']['kernel'] == '4.20.69-valve1'
+        assert 'kernel:4.20.69-valve1' in kwargs['fingerprint']
+        return True
+
+    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nKERNEL=4.20.69-valve1\nB=1\n'))
+
+    assert helper.submit('fake.log')
+    assert hit

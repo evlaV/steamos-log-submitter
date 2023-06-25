@@ -36,6 +36,8 @@ try:
         except OSError:
             pass
         print(f'TIMESTAMP={ts}', file=f)
+        kernel = os.uname().release
+        print(f'KERNEL={kernel}', file=f)
         shutil.chown(f.name, user='steamos-log-submitter')
 except Exception as e:
     logger.critical('Unhandled exception', exc_info=e)
