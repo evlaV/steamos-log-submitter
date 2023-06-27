@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import json
 import logging
 import os
 import steamos_log_submitter as sls
@@ -18,7 +19,7 @@ def collect() -> bool:
 
 def submit(fname: str) -> bool:
     name, ext = os.path.splitext(os.path.basename(fname))
-    if ext != '.log':
+    if ext != '.json':
         return False
 
     try:
@@ -27,30 +28,41 @@ def submit(fname: str) -> bool:
     except OSError:
         return False
 
-    timestamp = None
-    appid = None
     tags = {}
     fingerprint = []
-    for line in attachment.split(b'\n'):
+    try:
+        log = json.loads(attachment.decode())
+    except json.decoder.JSONDecodeError as e:
+        logger.error("Couldn't decode GPU log", exc_info=e)
+        return True  # lie
+
+    timestamp = None
+    if 'timestamp' in log:
         try:
-            if line.startswith(b'TIMESTAMP='):
-                timestamp = float(line.split(b'=')[1]) / 1_000_000_000
-            elif line.startswith(b'APPID='):
-                appid = int(line.split(b'=')[1])
-            elif line.startswith(b'EXE='):
-                executable = line.split(b'=')[1].decode()
-                tags['executable'] = executable
-                fingerprint.append(f'executable:{executable}')
-            elif line.startswith(b'KERNEL='):
-                kernel = line.split(b'=')[1].decode()
-                tags['kernel'] = kernel
-                fingerprint.append(f'kernel:{kernel}')
-        except ValueError:
-            continue
+            timestamp = float(log['timestamp'])
+        except (ValueError, TypeError):
+            pass
+
+    appid = None
+    if 'appid' in log:
+        try:
+            appid = int(log['appid'])
+        except (ValueError, TypeError):
+            pass
+
+    executable = log.get('executable')
+    if executable:
+        tags['executable'] = executable
+        fingerprint.append(f'executable:{executable}')
+
+    kernel = log.get('kernel')
+    if kernel is not None:
+        tags['kernel'] = kernel
+        fingerprint.append(f'kernel:{kernel}')
 
     attachments = [{
-        'mime-type': 'text/plain',
-        'filename': 'udev.log',
+        'mime-type': 'application/json',
+        'filename': os.path.basename(fname),
         'data': attachment
     }]
     return send_event(config['dsn'],

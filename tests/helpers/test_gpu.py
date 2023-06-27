@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import steamos_log_submitter.helpers.gpu as helper
-from .. import custom_dsn, open_shim
+from .. import custom_dsn, open_shim, unreachable
 from .. import mock_config  # NOQA: F401
 
 
@@ -20,6 +20,13 @@ def test_collect_none():
     assert not helper.collect()
 
 
+def test_bad_file(monkeypatch):
+    monkeypatch.setattr(helper, 'send_event', unreachable)
+    monkeypatch.setattr(builtins, 'open', open_shim(b'!'))
+
+    assert helper.submit('fake.json')
+
+
 def test_no_timestamp(monkeypatch):
     hit = False
 
@@ -30,9 +37,9 @@ def test_no_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b''))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -46,9 +53,9 @@ def test_bad_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nTIMESTAMP=fake\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":"fake"}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -62,9 +69,9 @@ def test_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nTIMESTAMP=1234000000000\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":1234.0}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -78,9 +85,9 @@ def test_no_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b''))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -94,9 +101,9 @@ def test_bad_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nAPPID=None\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":null}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -110,9 +117,9 @@ def test_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nAPPID=1234\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":1234}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -127,9 +134,9 @@ def test_exe(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nEXE=hl2.exe\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"executable":"hl2.exe"}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit
 
 
@@ -144,7 +151,7 @@ def test_kernel(monkeypatch):
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'A=0\nKERNEL=4.20.69-valve1\nB=1\n'))
+    monkeypatch.setattr(builtins, 'open', open_shim(b'{"kernel":"4.20.69-valve1"}'))
 
-    assert helper.submit('fake.log')
+    assert helper.submit('fake.json')
     assert hit

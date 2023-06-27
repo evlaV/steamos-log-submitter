@@ -4,6 +4,7 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import json
 import logging
 import os
 import shutil
@@ -17,27 +18,28 @@ logger = logging.getLogger(__name__)
 
 try:
     ts = time.time_ns()
-
-    with sls.helpers.StagingFile('gpu', f'{ts}.log', 'w') as f:
-        pid = None
-        for key, val in os.environ.items():
-            if key in ('PWD', '_'):
-                continue
-            if key == 'PID':
-                pid = int(val)
-            print(f'{key}={val}', file=f)
-        if pid:
-            appid = sls.util.get_appid(pid)
-            if appid is not None:
-                print(f'APPID={appid}', file=f)
-        try:
-            executable = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
-            print(f'EXE={executable}', file=f)
-        except OSError:
-            pass
-        print(f'TIMESTAMP={ts}', file=f)
-        kernel = os.uname().release
-        print(f'KERNEL={kernel}', file=f)
+    log = {
+        'env': {},
+        'timestamp': ts / 1_000_000_000,
+        'kernel': os.uname().release,
+    }
+    pid = None
+    for key, val in os.environ.items():
+        if key == 'PID':
+            pid = int(val)
+        log['env'][key] = val
+    if pid:
+        log['pid'] = pid
+        appid = sls.util.get_appid(pid)
+        if appid is not None:
+            log['appid'] = appid
+    try:
+        executable = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
+        log['executable'] = executable
+    except OSError:
+        pass
+    with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
+        json.dump(log, f)
         shutil.chown(f.name, user='steamos-log-submitter')
 except Exception as e:
     logger.critical('Unhandled exception', exc_info=e)
