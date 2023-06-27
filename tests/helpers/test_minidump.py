@@ -9,6 +9,7 @@ import requests
 import tempfile
 import steamos_log_submitter.helpers.minidump as helper
 import steamos_log_submitter.util as util
+import steamos_log_submitter.steam as steam
 from .. import open_shim
 
 
@@ -21,11 +22,13 @@ def test_submit_metadata(monkeypatch):
         data = kwargs['data']
         assert data.get('sentry[tags][appid]') == 456
         assert data.get('sentry[tags][build_id]') == '20220202.202'
+        assert data.get('sentry[environment]') == 'rel'
         r = requests.Response()
         r.status_code = 200
         return r
 
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
+    monkeypatch.setattr(steam, 'get_steamos_branch', lambda: 'rel')
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
@@ -40,11 +43,13 @@ def test_no_metadata(monkeypatch):
         assert 'sentry[tags][executable]' not in data
         assert 'sentry[tags][comm]' not in data
         assert 'sentry[tags][path]' not in data
+        assert 'sentry[environment]' not in data
         r = requests.Response()
         r.status_code = 200
         return r
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(steam, 'get_steamos_branch', lambda: None)
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 

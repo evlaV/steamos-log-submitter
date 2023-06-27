@@ -22,6 +22,7 @@ try:
         'env': {},
         'timestamp': ts / 1_000_000_000,
         'kernel': os.uname().release,
+        'branch': sls.steam.get_steamos_branch(),
     }
     pid = None
     for key, val in os.environ.items():

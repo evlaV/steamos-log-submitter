@@ -35,6 +35,10 @@ def submit(fname: str) -> bool:
     if build_id is not None:
         metadata['sentry[tags][build_id]'] = build_id
 
+    environment = sls.steam.get_steamos_branch()
+    if environment:
+        metadata['sentry[environment]'] = environment
+
     for attr in ('executable', 'comm', 'path'):
         try:
             value = os.getxattr(fname, f'user.{attr}')

@@ -3,7 +3,9 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import logging
 import pwd
+import subprocess
 import vdf
 import steamos_log_submitter.config as config
 from typing import Optional
@@ -15,6 +17,7 @@ __all__ = [
 ]
 
 config = config.get_config(__name__)
+logger = logging.getLogger(__name__)
 
 try:
     default_uid = int(config.get('uid', '1000'))
@@ -97,4 +100,13 @@ def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
         if data.get('mostrecent', '0') == '1':
             return data.get('AccountName')
 
+    return None
+
+
+def get_steamos_branch() -> Optional[str]:
+    try:
+        result = subprocess.run(['/usr/bin/steamos-select-branch', '-c'], capture_output=True, errors='replace', check=True)
+        return result.stdout.strip()
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.warning('Failed to read SteamOS branch', exc_info=e)
     return None
