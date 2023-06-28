@@ -72,6 +72,7 @@ def test_submit_skip_dot(helper_directory, online, patch_module, count_hits):
 
     assert os.access(f'{sls.pending}/test/.skip', os.F_OK)
     assert not os.access(f'{sls.uploaded}/test/.skip', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/.skip', os.F_OK)
     assert count_hits.hits == 0
 
 
@@ -82,6 +83,7 @@ def test_missing_module(helper_directory, online):
 
     assert os.access(f'{sls.pending}/foo/log', os.F_OK)
     assert not os.access(f'{sls.uploaded}/foo/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/foo/log', os.F_OK)
 
 
 def test_broken_module(helper_directory, online):
@@ -91,31 +93,68 @@ def test_broken_module(helper_directory, online):
 
     assert os.access(f'{sls.pending}/test/log', os.F_OK)
     assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log', os.F_OK)
 
 
 def test_success(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-    count_hits.ret = True
+    count_hits.ret = helpers.HelperResult()
 
     patch_module.submit = count_hits
     sls.submit()
 
     assert not os.access(f'{sls.pending}/test/log', os.F_OK)
     assert os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log', os.F_OK)
     assert count_hits.hits == 1
 
 
-def test_failure(helper_directory, online, patch_module, count_hits):
+def test_transient_failure(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-    count_hits.ret = False
+    count_hits.ret = helpers.HelperResult(helpers.HelperResult.TRANSIENT_ERROR)
 
     patch_module.submit = count_hits
     sls.submit()
 
     assert os.access(f'{sls.pending}/test/log', os.F_OK)
     assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log', os.F_OK)
+    assert count_hits.hits == 1
+
+
+def test_permanent_failure(helper_directory, online, patch_module, count_hits):
+    setup_categories(['test'])
+    setup_logs(helper_directory, collections.OrderedDict([('test/log', ''), ('test/log2', '')]))
+    count_hits.ret = helpers.HelperResult(helpers.HelperResult.PERMANENT_ERROR)
+
+    patch_module.submit = count_hits
+    sls.submit()
+
+    assert not os.access(f'{sls.pending}/test/log', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert os.access(f'{sls.failed}/test/log', os.F_OK)
+    assert not os.access(f'{sls.pending}/test/log2', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log2', os.F_OK)
+    assert os.access(f'{sls.failed}/test/log2', os.F_OK)
+    assert count_hits.hits == 2
+
+
+def test_class_failure(helper_directory, online, patch_module, count_hits):
+    setup_categories(['test'])
+    setup_logs(helper_directory, collections.OrderedDict([('test/log', ''), ('test/log2', '')]))
+    count_hits.ret = helpers.HelperResult(helpers.HelperResult.CLASS_ERROR)
+
+    patch_module.submit = count_hits
+    sls.submit()
+
+    assert os.access(f'{sls.pending}/test/log', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log', os.F_OK)
+    assert os.access(f'{sls.pending}/test/log2', os.F_OK)
+    assert not os.access(f'{sls.uploaded}/test/log2', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log2', os.F_OK)
     assert count_hits.hits == 1
 
 
@@ -124,16 +163,20 @@ def test_filename(helper_directory, online, patch_module):
     setup_logs(helper_directory, collections.OrderedDict([('test/fail', ''), ('test/log', '')]))
 
     def submit(fname):
-        return fname == f'{sls.pending}/test/log'
+        if fname == f'{sls.pending}/test/log':
+            return helpers.HelperResult()
+        return helpers.HelperResult(helpers.HelperResult.PERMANENT_ERROR)
 
     patch_module.submit = submit
     sls.submit()
 
     assert not os.access(f'{sls.pending}/test/log', os.F_OK)
     assert os.access(f'{sls.uploaded}/test/log', os.F_OK)
+    assert not os.access(f'{sls.failed}/test/log', os.F_OK)
 
-    assert os.access(f'{sls.pending}/test/fail', os.F_OK)
+    assert not os.access(f'{sls.pending}/test/fail', os.F_OK)
     assert not os.access(f'{sls.uploaded}/test/fail', os.F_OK)
+    assert os.access(f'{sls.failed}/test/fail', os.F_OK)
 
 
 def test_lock(helper_directory, online, patch_module):
@@ -142,7 +185,7 @@ def test_lock(helper_directory, online, patch_module):
 
     def submit(fname):
         time.sleep(0.1)
-        return True
+        return helpers.HelperResult()
 
     patch_module.submit = submit
     running = 0

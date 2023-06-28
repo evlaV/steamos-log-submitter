@@ -17,6 +17,7 @@ __all__ = [
     # Constants
     'base',
     'pending',
+    'failed',
     'uploaded',
     # Utility functions
     'get_config',
@@ -36,6 +37,7 @@ base_config = get_config(__name__, defaults={
 base = base_config['base']
 pending = f'{base}/pending'
 uploaded = f'{base}/uploaded'
+failed = f'{base}/failed'
 
 reconfigure_logging()
 
@@ -43,6 +45,10 @@ logger = logging.getLogger(__name__)
 
 # This needs to be imported late so that sls.base is populated
 from steamos_log_submitter.data import get_data  # NOQA: E402
+
+
+class RateLimitingError(RuntimeError):
+    pass
 
 
 def trigger():
@@ -110,11 +116,16 @@ def submit():
                         if log.startswith('.'):
                             continue
                         logger.debug(f'Found log {category}/{log}')
-                        if helper.submit(f'{pending}/{category}/{log}'):
+                        result = helper.submit(f'{pending}/{category}/{log}')
+                        if result.code == helpers.HelperResult.OK:
                             logger.debug(f'Succeeded in submitting {category}/{log}')
                             os.replace(f'{pending}/{category}/{log}', f'{uploaded}/{category}/{log}')
                         else:
-                            logger.warning(f'Failed to submit log {category}/{log}')
+                            logger.warning(f'Failed to submit log {category}/{log} with code {result.code}')
+                        if result.code == helpers.HelperResult.PERMANENT_ERROR:
+                            os.replace(f'{pending}/{category}/{log}', f'{failed}/{category}/{log}')
+                        elif result.code == helpers.HelperResult.CLASS_ERROR:
+                            break
                 except Exception as e:
                     logger.error(f'Encountered error submitting logs for {category}', exc_info=e)
                     continue

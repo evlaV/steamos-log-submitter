@@ -8,6 +8,7 @@ import logging
 import os
 import steamos_log_submitter as sls
 from steamos_log_submitter.sentry import send_event
+from . import HelperResult
 
 config = sls.get_config(__name__)
 logger = logging.getLogger(__name__)
@@ -17,16 +18,16 @@ def collect() -> bool:
     return False
 
 
-def submit(fname: str) -> bool:
+def submit(fname: str) -> HelperResult:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.json':
-        return False
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     try:
         with open(fname, 'rb') as f:
             attachment = f.read()
     except OSError:
-        return False
+        return HelperResult(HelperResult.TRANSIENT_ERROR)
 
     tags = {}
     fingerprint = []
@@ -34,7 +35,7 @@ def submit(fname: str) -> bool:
         log = json.loads(attachment.decode())
     except json.decoder.JSONDecodeError as e:
         logger.error("Couldn't decode GPU log", exc_info=e)
-        return True  # lie
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     timestamp = None
     if 'timestamp' in log:
@@ -65,9 +66,12 @@ def submit(fname: str) -> bool:
         'filename': os.path.basename(fname),
         'data': attachment
     }]
-    return send_event(config['dsn'],
-                      attachments=attachments,
-                      appid=appid,
-                      timestamp=timestamp,
-                      tags=tags,
-                      fingerprint=fingerprint)
+    ok = send_event(config['dsn'],
+                    attachments=attachments,
+                    appid=appid,
+                    timestamp=timestamp,
+                    tags=tags,
+                    fingerprint=fingerprint)
+    if ok:
+        return HelperResult()
+    return HelperResult(HelperResult.TRANSIENT_ERROR)

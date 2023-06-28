@@ -10,6 +10,7 @@ import os
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
+from steamos_log_submitter.helpers import HelperResult
 from .. import data_directory, helper_directory, mock_config, open_shim, patch_module, setup_categories, unreachable  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
@@ -359,4 +360,4 @@ def test_read_file_none(monkeypatch):
 
 
 def test_submit_bad_name():
-    assert not helper.submit('not-a-log.bin')
+    assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR

@@ -5,8 +5,9 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
 import steamos_log_submitter.crash as crash
-import steamos_log_submitter.helpers.kdump as kdump
+import steamos_log_submitter.helpers.kdump as helper
 import steamos_log_submitter.steam as steam
+from steamos_log_submitter.helpers import HelperResult
 from .crash import FakeResponse
 from .. import fake_pwuid  # NOQA: F401
 
@@ -19,32 +20,32 @@ def test_dmesg_parse():
     with open(f'{file_base}/stack') as f:
         stack_expected = f.read()
     with open(f'{file_base}/dmesg') as f:
-        crash, stack = kdump.get_summaries(f)
+        crash, stack = helper.get_summaries(f)
     assert crash == crash_expected
     assert stack == stack_expected
 
 
 def test_submit_bad_name():
-    assert not kdump.submit('not-a-zip.txt')
+    assert helper.submit('not-a-zip.txt').code == HelperResult.PERMANENT_ERROR
 
 
 def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     response = FakeResponse()
     response.success(monkeypatch)
-    assert kdump.submit(f'{file_base}/dmesg.zip')
+    assert helper.submit(f'{file_base}/dmesg.zip').code == HelperResult.OK
     assert response.attempt == 3
 
 
 def test_submit_empty(monkeypatch):
     monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
-    assert not kdump.submit(f'{file_base}/empty.zip')
+    assert helper.submit(f'{file_base}/empty.zip').code == HelperResult.PERMANENT_ERROR
 
 
 def test_submit_bad_zip(monkeypatch):
     monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
-    assert not kdump.submit(f'{file_base}/bad.zip')
+    assert helper.submit(f'{file_base}/bad.zip').code == HelperResult.PERMANENT_ERROR
 
 
 def test_collect_none():
-    assert not kdump.collect()
+    assert not helper.collect()

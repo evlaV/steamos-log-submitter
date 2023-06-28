@@ -10,11 +10,12 @@ import tempfile
 import steamos_log_submitter.helpers.minidump as helper
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
+from steamos_log_submitter.helpers import HelperResult
 from .. import open_shim
 
 
 def test_submit_bad_name():
-    assert not helper.submit('not-a-dmp.txt')
+    assert helper.submit('not-a-dmp.txt').code == HelperResult.PERMANENT_ERROR
 
 
 def test_submit_metadata(monkeypatch):
@@ -32,7 +33,7 @@ def test_submit_metadata(monkeypatch):
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake-0-456.dmp')
+    assert helper.submit('fake-0-456.dmp').code == HelperResult.OK
 
 
 def test_no_metadata(monkeypatch):
@@ -53,7 +54,7 @@ def test_no_metadata(monkeypatch):
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake.dmp')
+    assert helper.submit('fake.dmp').code == HelperResult.OK
 
 
 def test_no_xattrs(monkeypatch):
@@ -75,7 +76,7 @@ def test_no_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.comm', b'comm')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert helper.submit(mdmp.name)
+    assert helper.submit(mdmp.name).code == HelperResult.OK
 
 
 def test_partial_xattrs(monkeypatch):
@@ -96,7 +97,7 @@ def test_partial_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.executable', b'exe')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert helper.submit(mdmp.name)
+    assert helper.submit(mdmp.name).code == HelperResult.OK
 
 
 def test_400_corrupted(monkeypatch):
@@ -110,7 +111,7 @@ def test_400_corrupted(monkeypatch):
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake.dmp')
+    assert helper.submit('fake.dmp').code == HelperResult.PERMANENT_ERROR
 
 
 def test_400_not_corrupted(monkeypatch):
@@ -123,4 +124,4 @@ def test_400_not_corrupted(monkeypatch):
     monkeypatch.setattr(requests, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert not helper.submit('fake.dmp')
+    assert helper.submit('fake.dmp').code == HelperResult.TRANSIENT_ERROR

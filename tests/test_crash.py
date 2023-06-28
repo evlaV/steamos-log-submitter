@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import requests
+import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
 from . import fake_request, unreachable
@@ -159,5 +160,9 @@ def test_rate_limit(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     monkeypatch.setattr(requests, 'post', respond)
     monkeypatch.setattr(requests, 'put', respond)
-    assert not crash.upload('holo', version=0, info={}, dump=file)
+    try:
+        crash.upload('holo', version=0, info={}, dump=file)
+        assert False
+    except sls.RateLimitingError:
+        pass
     assert attempt == 1

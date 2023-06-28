@@ -7,6 +7,7 @@ import logging
 import os
 import requests
 import steamos_log_submitter as sls
+from . import HelperResult
 
 config = sls.get_config(__name__)
 logger = logging.getLogger(__name__)
@@ -17,10 +18,10 @@ def collect() -> bool:  # pragma: no cover
     return False
 
 
-def submit(fname: str) -> bool:
+def submit(fname: str) -> HelperResult:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext not in ('.md', '.dmp'):
-        return False
+        return HelperResult(HelperResult.PERMANENT_ERROR)
     name_parts = name.split('-')
 
     metadata = {}
@@ -56,9 +57,11 @@ def submit(fname: str) -> bool:
             data = post.json()
             if data.get('detail') == 'invalid minidump':
                 logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
-                # Just lie so it gets cleaned up
-                return True
+                return HelperResult(HelperResult.PERMANENT_ERROR)
         except requests.exceptions.JSONDecodeError:
             pass
 
-    return post.status_code == 200
+    if post.status_code == 200:
+        return HelperResult()
+    else:
+        return HelperResult(HelperResult.TRANSIENT_ERROR)

@@ -10,8 +10,8 @@ respective services maintained by Valve. As each different type of log
 collected may require a different flow to be submitted, SLS includes
 **helpers** that know what the various types of logs its looking for are, how
 they should be prepared for submission, and how to submit them. Each category
-of log gathered has its own helper and its own `pending` and `uploaded`
-directories.
+of log gathered has its own helper and its own `pending`, `uploaded`, and
+`failed` directories.
 
 SLS has two distinct phases, which each helper hooks into:
 
@@ -25,10 +25,11 @@ do nothing in this phase.
 
 Submission iterates over the logs in the `pending` directory and attempts to
 upload them one at a time. Any logs that are successfully uploaded get moved to
-the `uploaded` directory, and any that fail stay in the `pending` directory to
-be retried later. Both directories get pruned, but the uploaded directory has a
-much shorter time-to-live for the files since they've already been submitted
-and only remain for local reference if needed.
+the `uploaded` directory, and any that fail either stay in the `pending`
+directory to be retried later, or are moved to the `failed` directory in the
+case of a permanent failure. All three directories get pruned, but the uploaded
+directory has a much shorter time-to-live for the files since they've already
+been submitted and only remain for local reference if needed.
 
 ## Configuration
 

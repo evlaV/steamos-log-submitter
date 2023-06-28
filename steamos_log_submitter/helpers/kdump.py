@@ -10,6 +10,7 @@ import time
 import zipfile
 from typing import TextIO
 from steamos_log_submitter.crash import upload as upload_crash
+from . import HelperResult
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +53,10 @@ def collect() -> bool:
     return False
 
 
-def submit(fname: str) -> bool:
+def submit(fname: str) -> HelperResult:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.zip':
-        return False
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     note, stack = None, None
     try:
@@ -67,15 +68,19 @@ def submit(fname: str) -> bool:
                     note, stack = get_summaries(dmesg)
                     if note:
                         break
-    except (zipfile.BadZipFile, OSError):
-        return False
+    except zipfile.BadZipFile:
+        return HelperResult(HelperResult.PERMANENT_ERROR)
+    except OSError:
+        return HelperResult(HelperResult.TEMPORARY_ERROR)
 
     if note is None or stack is None:
-        return False
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     info = {
         'crash_time': int(time.time()),
         'stack': stack,
         'note': note,
     }
-    return upload_crash(product='holo', info=info, dump=fname)
+    if upload_crash(product='holo', info=info, dump=fname):
+        return HelperResult()
+    return HelperResult(HelperResult.TRANSIENT_ERROR)

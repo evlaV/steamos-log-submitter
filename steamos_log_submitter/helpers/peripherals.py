@@ -14,6 +14,7 @@ from typing import Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
+from . import HelperResult
 
 config = sls.get_config(__name__)
 data = sls.get_data(__name__, defaults={'timestamp': None})
@@ -172,14 +173,16 @@ def collect() -> bool:
     return new_file
 
 
-def submit(fname: str) -> bool:
+def submit(fname: str) -> HelperResult:
     name, ext = os.path.splitext(os.path.basename(fname))
     if ext != '.json':
-        return False
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     info = {
         'crash_time': int(time.time()),
         'stack': '',
         'note': '',
     }
-    return upload_crash(product='peripherals', info=info, dump=fname)
+    if upload_crash(product='peripherals', info=info, dump=fname):
+        return HelperResult()
+    return HelperResult(HelperResult.TRANSIENT_ERROR)

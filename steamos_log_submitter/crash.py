@@ -48,7 +48,7 @@ def upload(product, *, build=None, version=None, info, dump=None) -> bool:
     response = start.json()['response']
     if not response:
         logger.warning('Got empty response from StartCrashUpload -- are we being rate-limited?')
-        return False
+        raise sls.RateLimitingError()
 
     if dump:
         headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}

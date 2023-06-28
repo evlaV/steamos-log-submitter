@@ -82,10 +82,13 @@ def helper_directory(monkeypatch, patch_module):
     d = tempfile.TemporaryDirectory(prefix='sls-')
     pending = f'{d.name}/pending'
     uploaded = f'{d.name}/uploaded'
+    failed = f'{d.name}/failed'
     os.mkdir(pending)
     os.mkdir(uploaded)
-    monkeypatch.setattr(sls, 'pending', f'{d.name}/pending')
-    monkeypatch.setattr(sls, 'uploaded', f'{d.name}/uploaded')
+    os.mkdir(failed)
+    monkeypatch.setattr(sls, 'pending', pending)
+    monkeypatch.setattr(sls, 'uploaded', uploaded)
+    monkeypatch.setattr(sls, 'failed', failed)
 
     original_import_module = importlib.import_module
 
@@ -109,6 +112,7 @@ def setup_categories(categories):
     for category in categories:
         os.mkdir(f'{sls.pending}/{category}')
         os.mkdir(f'{sls.uploaded}/{category}')
+        os.mkdir(f'{sls.failed}/{category}')
 
 
 @pytest.fixture

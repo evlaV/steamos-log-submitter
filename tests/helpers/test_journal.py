@@ -10,6 +10,7 @@ import pytest
 import subprocess
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
+from steamos_log_submitter.helpers import HelperResult
 from .. import always_raise, unreachable
 from .. import data_directory, count_hits, drop_root, helper_directory, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
@@ -239,7 +240,7 @@ def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_u
 
 
 def test_submit_bad_name():
-    assert not helper.submit('not-a-log.bin')
+    assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR
 
 
 def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):

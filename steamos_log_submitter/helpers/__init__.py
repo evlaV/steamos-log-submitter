@@ -15,6 +15,17 @@ class HelperError(NotImplementedError):
     pass
 
 
+class HelperResult:
+    OK = 0
+    TRANSIENT_ERROR = -1
+    PERMANENT_ERROR = -2
+    CLASS_ERROR = -3
+
+    def __init__(self, code=OK):
+        super(HelperResult, self).__init__()
+        self.code = code
+
+
 def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
