@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import gzip
+import builtins
 import json
 import os
 import pytest
@@ -60,7 +60,7 @@ def test_collect_success(monkeypatch, mock_dbus, data_directory, count_hits, hel
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor'
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
 
@@ -70,14 +70,14 @@ def test_collect_append(monkeypatch, mock_dbus, data_directory, count_hits, help
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'wt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'wt') as f:
         json.dump(['old'], f)
     assert helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor'
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert log == ['old', 'log']
 
@@ -87,14 +87,14 @@ def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, h
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    with open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'w') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'w') as f:
         f.write('definitely not json!')
     assert helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor'
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
 
@@ -104,15 +104,15 @@ def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_root, c
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'wt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'wt') as f:
         json.dump(['old'], f)
-    os.chmod(f'{sls.pending}/journal/unit_2eservice.json.gz', 0o200)
-    assert os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.F_OK)
-    if os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.R_OK):
+    os.chmod(f'{sls.pending}/journal/unit_2eservice.json', 0o200)
+    assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
+    if os.access(f'{sls.pending}/journal/unit_2eservice.json', os.R_OK):
         pytest.skip('File is readable, are we running as root?')
     assert not helper.collect()
-    assert os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.F_OK)
-    assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.R_OK)
+    assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
+    assert not os.access(f'{sls.pending}/journal/unit_2eservice.json', os.R_OK)
 
 
 def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
@@ -120,15 +120,15 @@ def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, 
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'wt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'wt') as f:
         json.dump(['old'], f)
-    os.chmod(f'{sls.pending}/journal/unit_2eservice.json.gz', 0o400)
-    assert os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.F_OK)
-    if os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.W_OK):
+    os.chmod(f'{sls.pending}/journal/unit_2eservice.json', 0o400)
+    assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
+    if os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK):
         pytest.skip('File is readable, are we running as root?')
     assert not helper.collect()
-    assert os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.F_OK)
-    assert not os.access(f'{sls.pending}/journal/unit_2eservice.json.gz', os.W_OK)
+    assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
+    assert not os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK)
 
 
 def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
@@ -142,14 +142,14 @@ def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, he
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor'
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert log == ['log']
 
 
 def test_journal_error(monkeypatch, mock_dbus, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', lambda *args: (None, None))
-    monkeypatch.setattr(gzip, 'open', unreachable)
+    monkeypatch.setattr(builtins, 'open', unreachable)
 
     assert not helper.collect()
 
@@ -208,7 +208,7 @@ def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_u
 
     assert helper.collect()
 
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert len(log) == 2
 
@@ -234,9 +234,19 @@ def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_u
 
     assert helper.collect()
 
-    with gzip.open(f'{sls.pending}/journal/unit_2eservice.json.gz', 'rt') as f:
+    with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert len(log) == 4
+
+
+def test_escape():
+    assert helper.escape('abc/def_') == 'abc_2fdef_5f'
+
+
+def test_unescape():
+    assert helper.unescape('abc_2fdef_5f') == 'abc/def_'
+    assert helper.unescape('abc_2xdef_5f') == 'abcdef_'
+    assert helper.unescape('abc_xdef_5f') == 'abcef_'
 
 
 def test_submit_bad_name():
