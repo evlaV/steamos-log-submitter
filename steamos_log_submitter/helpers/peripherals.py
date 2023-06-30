@@ -4,6 +4,7 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import collections
+import dbus
 import json
 import logging
 import os
@@ -108,19 +109,35 @@ def list_bluetooth() -> list[dict]:
 
 
 def list_filesystems() -> list[dict]:
+    bus = 'org.freedesktop.UDisks2'
     try:
-        findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size', '-b', '--real', '--list'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=True)
+        findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
     except (subprocess.SubprocessError, OSError) as e:
         logger.error('Failed to exec findmnt', exc_info=e)
-        return None
+        return []
     try:
-        mntinfo = json.loads(findmnt.stdout.decode())
+        mntinfo = json.loads(findmnt.stdout)
     except json.decoder.JSONDecodeError as e:
         logger.error('Got invalid JSON from findmnt', exc_info=e)
-        return None
+        return []
     if 'filesystems' not in mntinfo:
-        return None
-    return mntinfo['filesystems']
+        return []
+    filesystems = mntinfo['filesystems']
+    for fs in filesystems:
+        if fs['size'] is None:
+            source = fs['source']
+            if not source.startswith('/dev/'):
+                logger.info(f'Failed to get size of device {source}: unknown device type')
+                continue
+            node = '/'.join(source.split('/')[2:])
+            try:
+                block_dev = DBusObject(bus, f'/org/freedesktop/UDisks2/block_devices/{node}')
+                dev_props = block_dev.properties('org.freedesktop.UDisks2.Block')
+                fs['size'] = int(dev_props['Size'])
+            except (KeyError, dbus.exceptions.DBusException) as e:
+                logger.info(f'Failed to get size of device {source}', exc_info=e)
+
+    return filesystems
 
 
 device_types = {

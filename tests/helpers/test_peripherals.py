@@ -1,17 +1,19 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
 import collections
 import json
 import os
+import subprocess
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.peripherals as helper
 from steamos_log_submitter.helpers import HelperResult
-from .. import data_directory, helper_directory, mock_config, open_shim, patch_module, setup_categories, unreachable  # NOQA: F401
+from .. import always_raise, open_shim, setup_categories, unreachable
+from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 
@@ -198,6 +200,79 @@ def test_collect_monitors_edid(monkeypatch):
     assert type(devices) == list
     assert len(devices) == 1
     assert devices[0]['edid'] == '41414141'
+
+
+def test_collect_filesystems_raise(monkeypatch):
+    monkeypatch.setattr(subprocess, 'run', always_raise(OSError))
+    assert helper.list_filesystems() == []
+
+
+def test_collect_filesystems_malformed(monkeypatch):
+    def fake_subprocess(*args, **kwargs):
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdout = '!'
+        return ret
+
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+
+    fs = helper.list_filesystems()
+    assert fs == []
+
+
+def test_collect_filesystems_missing(monkeypatch):
+    def fake_subprocess(*args, **kwargs):
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdout = '{"wrong_things":"go_here"}'
+        return ret
+
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+
+    fs = helper.list_filesystems()
+    assert fs == []
+
+
+def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
+    def fake_subprocess(*args, **kwargs):
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
+        return ret
+
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    bus = 'org.freedesktop.UDisks2'
+    mock_dbus.add_bus(bus)
+    block_dev = MockDBusObject(bus, '/org/freedesktop/UDisks2/block_devices/null', mock_dbus)
+    block_dev.properties['org.freedesktop.UDisks2.Block'] = {
+        'Size': 0,
+    }
+
+    fs = helper.list_filesystems()
+    assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
+
+
+def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
+    def fake_subprocess(*args, **kwargs):
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
+        return ret
+
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    bus = 'org.freedesktop.UDisks2'
+    mock_dbus.add_bus(bus)
+
+    fs = helper.list_filesystems()
+    assert fs == [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]
+
+
+def test_collect_filesystems_clean(monkeypatch):
+    def fake_subprocess(*args, **kwargs):
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
+        return ret
+
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+
+    fs = helper.list_filesystems()
+    assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
 
 
 def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
