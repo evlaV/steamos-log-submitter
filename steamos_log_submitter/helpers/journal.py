@@ -19,6 +19,7 @@ data = sls.get_data(__name__)
 logger = logging.getLogger(__name__)
 
 units = [
+    'gpu-trace.service',
     'jupiter-biosupdate.service',
     'jupiter-controller-update.service',
     'jupiter-fan-control.service',
