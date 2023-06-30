@@ -5,4 +5,5 @@
 
 u steamos-log-submitter - "SteamOS Log Submitter" @LOCALSTATEDIR@/lib/steamos-log-submitter/
 g steamos-log-submitter -
+m steamos-log-submitter systemd-journal
 m deck steamos-log-submitter
