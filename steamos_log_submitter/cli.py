@@ -52,6 +52,9 @@ def set_helper_enabled(helper: str, enable: bool) -> bool:
     if not user_config:
         return False
 
+    if helper not in sls.helpers.list_helpers():
+        print(f'Helper {helper} not found')
+
     if not user_config.has_section(f'helpers.{helper}'):
         user_config.add_section(f'helpers.{helper}')
     user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')

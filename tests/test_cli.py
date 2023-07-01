@@ -3,8 +3,16 @@ import pytest
 import tempfile
 import time
 import steamos_log_submitter.cli as cli
+import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.config as config
 from . import drop_root, mock_config  # NOQA: F401
+
+
+@pytest.fixture
+def user_config(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    return user_config
 
 
 def test_status(capsys, mock_config):
@@ -23,9 +31,7 @@ def test_status(capsys, mock_config):
     assert capsys.readouterr().out.strip().endswith('disabled')
 
 
-def test_enable(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_enable(user_config):
     assert cli.set_enabled(True)
     with open(user_config.name) as f:
         assert f.read() == '[sls]\nenable = on\n\n'
@@ -35,9 +41,7 @@ def test_enable(monkeypatch):
         assert f.read() == '[sls]\nenable = off\n\n'
 
 
-def test_enable2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_enable2(user_config):
     cli.main(['enable'])
     with open(user_config.name) as f:
         assert f.read() == '[sls]\nenable = on\n\n'
@@ -47,9 +51,7 @@ def test_enable2(monkeypatch):
         assert f.read() == '[sls]\nenable = off\n\n'
 
 
-def test_disable(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_disable(user_config):
     assert cli.set_enabled(False)
     with open(user_config.name) as f:
         assert f.read() == '[sls]\nenable = off\n\n'
@@ -59,9 +61,7 @@ def test_disable(monkeypatch):
         assert f.read() == '[sls]\nenable = on\n\n'
 
 
-def test_disable2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_disable2(user_config):
     cli.main(['disable'])
     with open(user_config.name) as f:
         assert f.read() == '[sls]\nenable = off\n\n'
@@ -71,9 +71,8 @@ def test_disable2(monkeypatch):
         assert f.read() == '[sls]\nenable = on\n\n'
 
 
-def test_enable_helper(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_enable_helper(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     assert cli.set_helper_enabled('test', True)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = on\n\n'
@@ -83,9 +82,8 @@ def test_enable_helper(monkeypatch):
         assert f.read() == '[helpers.test]\nenable = off\n\n'
 
 
-def test_enable_helper2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_enable_helper2(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     cli.main(['enable-helper', 'test'])
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = on\n\n'
@@ -95,9 +93,8 @@ def test_enable_helper2(monkeypatch):
         assert f.read() == '[helpers.test]\nenable = off\n\n'
 
 
-def test_disable_helper(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_disable_helper(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     assert cli.set_helper_enabled('test', False)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = off\n\n'
@@ -107,9 +104,8 @@ def test_disable_helper(monkeypatch):
         assert f.read() == '[helpers.test]\nenable = on\n\n'
 
 
-def test_disable_helper2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_disable_helper2(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     cli.main(['disable-helper', 'test'])
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = off\n\n'
@@ -172,81 +168,61 @@ def test_inaccessible_config(drop_root, monkeypatch):
     assert not cli.set_enabled(True)
 
 
-def test_set_steam_key_account_name(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_name(user_config):
     assert cli.set_steam_info('account-name', 'gaben')
     with open(user_config.name) as f:
         assert f.read() == '[steam]\naccount_name = gaben\n\n'
 
 
-def test_set_steam_key_account_name2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_name2(user_config):
     cli.main(['set-steam-info', 'account-name', 'gaben'])
     with open(user_config.name) as f:
         assert f.read() == '[steam]\naccount_name = gaben\n\n'
 
 
-def test_set_steam_key_account_id(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_id(user_config):
     assert cli.set_steam_info('account-id', '42')
     with open(user_config.name) as f:
         assert f.read() == '[steam]\naccount_id = 42\n\n'
 
 
-def test_set_steam_key_account_id2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_id2(user_config):
     cli.main(['set-steam-info', 'account-id', '42'])
     with open(user_config.name) as f:
         assert f.read() == '[steam]\naccount_id = 42\n\n'
 
 
-def test_set_steam_key_account_id_invalid(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_id_invalid(user_config):
     assert not cli.set_steam_info('account-id', 'gaben')
     with open(user_config.name) as f:
         assert f.read() == ''
 
 
-def test_set_steam_key_account_id_invalid2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_account_id_invalid2(user_config):
     cli.main(['set-steam-info', 'account-id', 'gaben'])
     with open(user_config.name) as f:
         assert f.read() == ''
 
 
-def test_set_steam_key_deck_serial(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_deck_serial(user_config):
     assert cli.set_steam_info('deck-serial', 'AAAA0000')
     with open(user_config.name) as f:
         assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
 
 
-def test_set_steam_key_deck_serial2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_deck_serial2(user_config):
     cli.main(['set-steam-info', 'deck-serial', 'AAAA0000'])
     with open(user_config.name) as f:
         assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
 
 
-def test_set_steam_key_invalid(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_invalid(user_config):
     assert not cli.set_steam_info('malicious_key', 'Breen')
     with open(user_config.name) as f:
         assert f.read() == ''
 
 
-def test_set_steam_key_invalid2(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+def test_set_steam_key_invalid2(user_config):
     try:
         cli.main(['set-steam-info', 'malicious_key', 'Breen'])
         assert False
