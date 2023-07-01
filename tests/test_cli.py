@@ -71,6 +71,54 @@ def test_disable2(monkeypatch):
         assert f.read() == '[sls]\nenable = on\n\n'
 
 
+def test_enable_helper(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert cli.set_helper_enabled('test', True)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n'
+
+    assert cli.set_helper_enabled('test', False)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n'
+
+
+def test_enable_helper2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['enable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n'
+
+    cli.main(['disable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n'
+
+
+def test_disable_helper(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    assert cli.set_helper_enabled('test', False)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n'
+
+    assert cli.set_helper_enabled('test', True)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n'
+
+
+def test_disable_helper2(monkeypatch):
+    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
+    monkeypatch.setattr(config, 'user_config_path', user_config.name)
+    cli.main(['disable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n'
+
+    cli.main(['enable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n'
+
+
 def test_no_config(monkeypatch):
     monkeypatch.setattr(config, 'user_config_path', None)
     assert not cli.set_enabled(True)

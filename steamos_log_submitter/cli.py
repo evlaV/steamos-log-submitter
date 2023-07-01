@@ -35,7 +35,7 @@ def save_user_config(user_config: configparser.ConfigParser) -> bool:
     return True
 
 
-def set_enabled(enable) -> bool:
+def set_enabled(enable: bool) -> bool:
     user_config = load_user_config()
     if not user_config:
         return False
@@ -43,6 +43,18 @@ def set_enabled(enable) -> bool:
     if not user_config.has_section('sls'):
         user_config.add_section('sls')
     user_config.set('sls', 'enable', 'on' if enable else 'off')
+
+    return save_user_config(user_config)
+
+
+def set_helper_enabled(helper: str, enable: bool) -> bool:
+    user_config = load_user_config()
+    if not user_config:
+        return False
+
+    if not user_config.has_section(f'helpers.{helper}'):
+        user_config.add_section(f'helpers.{helper}')
+    user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')
 
     return save_user_config(user_config)
 
@@ -87,6 +99,14 @@ def main(args=sys.argv[1:]):
 
     disable = subparsers.add_parser('disable')
     disable.set_defaults(func=lambda _: set_enabled(False))
+
+    enable_helper = subparsers.add_parser('enable-helper')
+    enable_helper.add_argument('helper')
+    enable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, True))
+
+    disable_helper = subparsers.add_parser('disable-helper')
+    disable_helper.add_argument('helper')
+    disable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, False))
 
     set_steam = subparsers.add_parser('set-steam-info')
     set_steam.add_argument('key', choices=('account-name', 'account-id', 'deck-serial'))
