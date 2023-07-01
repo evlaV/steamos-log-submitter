@@ -12,7 +12,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers.journal as helper
 from steamos_log_submitter.helpers import HelperResult
 from .. import always_raise, unreachable
-from .. import data_directory, count_hits, drop_root, helper_directory, patch_module  # NOQA: F401
+from .. import data_directory, count_hits, drop_root, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
@@ -251,6 +251,25 @@ def test_unescape():
 
 def test_submit_bad_name():
     assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR
+
+
+def test_submit_params(helper_directory, mock_config, monkeypatch):
+    def fake_submit(dsn, *, attachments, tags, fingerprint):
+        assert len(attachments) == 1
+        assert attachments[0]['mime-type'] == 'application/json'
+        assert attachments[0]['filename'] == 'abc_5fdef.json'
+        assert attachments[0]['data'] == b'{}'
+        assert tags['unit'] == 'abc_def'
+        assert 'unit:abc_def' in fingerprint
+        return HelperResult()
+
+    monkeypatch.setattr(helper, 'send_event', fake_submit)
+    mock_config.add_section('helpers.journal')
+    mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
+
+    with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
+        f.write('{}')
+    assert helper.submit(f'{helper_directory}/abc_5fdef.json').code == HelperResult.OK
 
 
 def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
