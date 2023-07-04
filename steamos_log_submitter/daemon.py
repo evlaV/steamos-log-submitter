@@ -163,6 +163,13 @@ class Daemon:
     async def trigger(self):
         sls.trigger()
 
+    async def _enable(self, state: bool) -> Reply:
+        if type(state) != bool:
+            return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
+        sls.base_config['enable'] = 'on' if state else 'off'
+        sls.config.write_config()
+        return Reply(Reply.OK)
+
     async def _list(self) -> Reply:
         helper_list = helpers.list_helpers()
         return Reply(Reply.OK, data=helper_list)
@@ -184,6 +191,7 @@ class Daemon:
         return Reply(Reply.OK)
 
     _commands = {
+        'enable': _enable,
         'status': _status,
         'list': _list,
         'set-steam-info': _set_steam_info,

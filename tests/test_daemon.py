@@ -173,6 +173,27 @@ async def test_status(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_enable(test_daemon, mock_config):
+    daemon, reader, writer = await test_daemon
+    reply = await transact(sls.daemon.Command("enable", {"state": True}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+
+    assert mock_config.has_section('sls')
+    assert mock_config.get('sls', 'enable') == 'on'
+
+    reply = await transact(sls.daemon.Command("enable", {"state": False}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+
+    assert mock_config.get('sls', 'enable') == 'off'
+
+    reply = await transact(sls.daemon.Command("enable", {"state": "on"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+
+    reply = await transact(sls.daemon.Command("enable"), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+
+
+@pytest.mark.asyncio
 async def test_set_steam_info(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("set-steam-info"), reader, writer)
