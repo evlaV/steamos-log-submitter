@@ -170,6 +170,18 @@ class Daemon:
         sls.config.write_config()
         return Reply(Reply.OK)
 
+    async def _enable_helpers(self, helpers: dict[str, bool]) -> Reply:
+        extant_helpers = set(sls.helpers.list_helpers())
+        requested_helpers = set(helpers.keys())
+        if requested_helpers - extant_helpers:
+            return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(requested_helpers - extant_helpers)})
+        for helper, state in helpers.items():
+            if type(state) != bool:
+                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
+            sls.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
+        sls.config.write_config()
+        return Reply(Reply.OK)
+
     async def _list(self) -> Reply:
         helper_list = helpers.list_helpers()
         return Reply(Reply.OK, data=helper_list)
@@ -192,6 +204,7 @@ class Daemon:
 
     _commands = {
         'enable': _enable,
+        'enable-helpers': _enable_helpers,
         'status': _status,
         'list': _list,
         'set-steam-info': _set_steam_info,

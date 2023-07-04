@@ -194,6 +194,26 @@ async def test_enable(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_enable_helpers(test_daemon, mock_config, monkeypatch):
+    daemon, reader, writer = await test_daemon
+    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+
+    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test": True}}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+
+    assert mock_config.has_section('helpers.test')
+    assert mock_config.get('helpers.test', 'enable') == 'on'
+
+    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test2": True}}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    assert reply.data == {'invalid-helper': ['test2']}
+
+    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test": "off"}}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    assert reply.data == {'invalid-state': ['test', 'off']}
+
+
+@pytest.mark.asyncio
 async def test_set_steam_info(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("set-steam-info"), reader, writer)
