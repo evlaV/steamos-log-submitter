@@ -4,21 +4,26 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
+import pwd
+from . import always_raise
 from . import fake_pwuid, mock_config, open_eacces, open_enoent, open_shim  # NOQA: F401
 from steamos_log_submitter.steam import get_steam_account_id
 
 
 def test_no_vdf(monkeypatch):
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_enoent)
     assert get_steam_account_id() is None
 
 
 def test_eacces_vdf(monkeypatch):
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_eacces)
     assert get_steam_account_id() is None
 
 
 def test_config_value(monkeypatch, mock_config):
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_enoent)
     mock_config.add_section('steam')
     mock_config.set('steam', 'account_id', '1')
@@ -26,9 +31,15 @@ def test_config_value(monkeypatch, mock_config):
 
 
 def test_config_invalid_value(monkeypatch, mock_config):
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_enoent)
     mock_config.add_section('steam')
     mock_config.set('steam', 'account_id', 'foo')
+    assert get_steam_account_id() is None
+
+
+def test_no_user(monkeypatch):
+    monkeypatch.setattr(pwd, "getpwuid", always_raise(KeyError))
     assert get_steam_account_id() is None
 
 
@@ -36,6 +47,7 @@ def test_no_users(monkeypatch):
     vdf = """"users"
 {
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None
 
@@ -48,6 +60,7 @@ def test_no_recent(monkeypatch):
 		"MostRecent"		"0"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None
 
@@ -65,6 +78,7 @@ def test_no_recent2(monkeypatch):
 		"MostRecent"		"0"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None
 
@@ -77,6 +91,7 @@ def test_one(monkeypatch):
 		"MostRecent"		"1"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() == 2
 
@@ -89,6 +104,7 @@ def test_lowercase(monkeypatch):
 		"mostrecent"		"1"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() == 2
 
@@ -106,6 +122,7 @@ def test_first_recent(monkeypatch):
 		"MostRecent"		"0"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() == 2
 
@@ -123,12 +140,14 @@ def test_second_recent(monkeypatch):
 		"MostRecent"		"1"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() == 3
 
 
 def test_invalid_vdf(monkeypatch):
     vdf = "not"
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None
 
@@ -141,6 +160,7 @@ def test_invalid_schema(monkeypatch):
 		"MostRecent"		"1"
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None
 
@@ -152,5 +172,6 @@ def test_invalid_schema2(monkeypatch):
 	{
 	}
 }"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     monkeypatch.setattr(builtins, "open", open_shim(vdf))
     assert get_steam_account_id() is None

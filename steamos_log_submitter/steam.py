@@ -26,16 +26,15 @@ except ValueError:
 
 
 def get_deck_serial(uid: int = default_uid) -> Optional[str]:
-    home = pwd.getpwuid(uid).pw_dir
-
     serial = config.get('deck_serial')
     if serial:
         return serial
 
     try:
+        home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/config.vdf') as v:
             steamconf = vdf.load(v)
-    except (OSError, SyntaxError):
+    except (OSError, SyntaxError, KeyError):
         return None
 
     if 'InstallConfigStore' not in steamconf:
@@ -51,8 +50,6 @@ def get_deck_serial(uid: int = default_uid) -> Optional[str]:
 
 
 def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
-    home = pwd.getpwuid(uid).pw_dir
-
     userid = config.get('account_id')
     if userid:
         try:
@@ -61,9 +58,10 @@ def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
             pass
 
     try:
+        home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError):
+    except (OSError, SyntaxError, KeyError):
         return None
 
     if 'users' not in loginusers:
@@ -79,16 +77,15 @@ def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
 
 
 def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
-    home = pwd.getpwuid(uid).pw_dir
-
     account_name = config.get('account_name')
     if account_name:
         return account_name
 
     try:
+        home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError):
+    except (OSError, SyntaxError, KeyError):
         return None
 
     if 'users' not in loginusers:
