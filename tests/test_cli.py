@@ -31,6 +31,12 @@ def test_status(capsys, mock_config):
     assert capsys.readouterr().out.strip().endswith('disabled')
 
 
+def test_list(capsys, monkeypatch):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+    cli.main(['list'])
+    assert capsys.readouterr().out.strip() == 'test'
+
+
 def test_enable(user_config):
     assert cli.set_enabled(True)
     with open(user_config.name) as f:

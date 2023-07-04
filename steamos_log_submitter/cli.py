@@ -66,6 +66,11 @@ def do_status(args):
     print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
 
 
+def do_list(args):
+    for helper in sorted(sls.helpers.list_helpers()):
+        print(helper)
+
+
 def set_steam_info(key, value) -> bool:
     if key not in ('account-name', 'account-id', 'deck-serial'):
         print(f"'{key}' is not a valid Steam info key")
@@ -96,6 +101,9 @@ def main(args=sys.argv[1:]):
 
     status = subparsers.add_parser('status')
     status.set_defaults(func=do_status)
+
+    status = subparsers.add_parser('list')
+    status.set_defaults(func=do_list)
 
     enable = subparsers.add_parser('enable')
     enable.set_defaults(func=lambda _: set_enabled(True))
