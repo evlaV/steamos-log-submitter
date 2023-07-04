@@ -160,6 +160,10 @@ class Daemon:
         helper_list = helpers.list_helpers()
         return Reply(Reply.OK, data=helper_list)
 
+    async def _status(self) -> Reply:
+        enabled = sls.base_config.get('enable') == 'on'
+        return Reply(Reply.OK, data={'enabled': enabled})
+
     async def _set_steam_info(self, key: str, value) -> Reply:
         if key not in (
             'deck_serial',
@@ -173,10 +177,11 @@ class Daemon:
         return Reply(Reply.OK)
 
     _commands = {
-        'shutdown': shutdown,
+        'status': _status,
         'list': _list,
-        'trigger': trigger,
         'set-steam-info': _set_steam_info,
+        'shutdown': shutdown,
+        'trigger': trigger,
     }
 
 
