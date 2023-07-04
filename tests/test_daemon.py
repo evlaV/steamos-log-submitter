@@ -129,7 +129,7 @@ async def test_invalid_command(test_daemon):
 
 @pytest.mark.asyncio
 async def test_broken_command(test_daemon, monkeypatch):
-    async def raise_now():
+    async def raise_now(self):
         raise Exception
 
     daemon, reader, writer = await test_daemon
@@ -176,7 +176,7 @@ async def test_status(test_daemon, mock_config):
 async def test_set_steam_info(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("set-steam-info"), reader, writer)
-    assert reply.status == sls.daemon.Reply.UNKNOWN_ERROR
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
 
     reply = await transact(sls.daemon.Command("set-steam-info", {"key": "invalid", "value": "foo"}), reader, writer)
     assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
