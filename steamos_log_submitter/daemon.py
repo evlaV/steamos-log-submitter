@@ -4,6 +4,7 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import inspect
 import json
 import logging
 import os
@@ -85,6 +86,12 @@ class Daemon:
         if not function:
             logger.warning(f'Unknown command {command.command} called')
             return Reply(status=Reply.INVALID_COMMAND)
+        signature = inspect.signature(function)
+        try:
+            signature.bind(self, **command.args)
+        except Exception as e:
+            logger.error('Invocation does not match signature', exc_info=e)
+            return Reply(status=Reply.INVALID_ARGUMENTS)
         try:
             reply = await function(self, **command.args)
             if type(reply) == Reply:
