@@ -58,6 +58,17 @@ def test_fingerprint(monkeypatch):
     assert sentry.send_event('https://fake@dsn/0', fingerprint=['gordon', 'freeman'])
 
 
+def test_message(monkeypatch):
+    def fake_response(url, json, **kwargs):
+        assert json.get('message') == 'Rise and shine, Mr. Freeman'
+        r = requests.Response()
+        r.status_code = 200
+        return r
+
+    monkeypatch.setattr(requests, 'post', fake_response)
+    assert sentry.send_event('https://fake@dsn/0', message='Rise and shine, Mr. Freeman')
+
+
 def test_appid(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']

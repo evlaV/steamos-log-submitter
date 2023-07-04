@@ -254,12 +254,13 @@ def test_submit_bad_name():
 
 
 def test_submit_params(helper_directory, mock_config, monkeypatch):
-    def fake_submit(dsn, *, attachments, tags, fingerprint):
+    def fake_submit(dsn, *, attachments, tags, fingerprint, message):
         assert len(attachments) == 1
         assert attachments[0]['mime-type'] == 'application/json'
         assert attachments[0]['filename'] == 'abc_5fdef.json'
         assert attachments[0]['data'] == b'{}'
         assert tags['unit'] == 'abc_def'
+        assert message == 'abc_def'
         assert 'unit:abc_def' in fingerprint
         return HelperResult()
 

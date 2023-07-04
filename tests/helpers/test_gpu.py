@@ -83,6 +83,7 @@ def test_no_appid(monkeypatch):
         nonlocal hit
         hit = True
         assert kwargs['appid'] is None
+        assert kwargs['message'] == 'GPU reset'
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
@@ -99,6 +100,7 @@ def test_bad_appid(monkeypatch):
         nonlocal hit
         hit = True
         assert kwargs['appid'] is None
+        assert kwargs['message'] == 'GPU reset'
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
@@ -115,6 +117,7 @@ def test_appid(monkeypatch):
         nonlocal hit
         hit = True
         assert kwargs['appid'] == 1234
+        assert kwargs['message'] == 'GPU reset (1234)'
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)
@@ -132,6 +135,7 @@ def test_exe(monkeypatch):
         hit = True
         assert kwargs['tags']['executable'] == 'hl2.exe'
         assert 'executable:hl2.exe' in kwargs['fingerprint']
+        assert kwargs['message'] == 'GPU reset (hl2.exe)'
         return True
 
     monkeypatch.setattr(helper, 'send_event', check_now)

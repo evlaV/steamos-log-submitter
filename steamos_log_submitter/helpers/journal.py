@@ -185,7 +185,8 @@ def submit(fname: str) -> HelperResult:
     ok = send_event(config['dsn'],
                     attachments=attachments,
                     tags=tags,
-                    fingerprint=fingerprint)
+                    fingerprint=fingerprint,
+                    message=unit)
     if ok:
         return HelperResult()
     return HelperResult(HelperResult.TRANSIENT_ERROR)

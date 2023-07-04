@@ -17,7 +17,7 @@ import steamos_log_submitter as sls
 logger = logging.getLogger(__name__)
 
 
-def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[str, Any]] = [], tags: Dict[str, str] = {}, fingerprint: List[str] = [], timestamp: Optional[float] = None, environment: Optional[str] = None) -> bool:
+def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[str, Any]] = [], tags: Dict[str, str] = {}, fingerprint: List[str] = [], timestamp: Optional[float] = None, environment: Optional[str] = None, message: Optional[str] = None) -> bool:
     raw_envelope = io.BytesIO()
     envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
 
@@ -44,6 +44,9 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[
     build_id = sls.util.get_build_id()
     if build_id:
         event['release'] = build_id
+
+    if message:
+        event['message'] = message
 
     if not environment:
         environment = sls.steam.get_steamos_branch()

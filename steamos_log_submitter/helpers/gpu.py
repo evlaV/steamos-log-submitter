@@ -44,10 +44,12 @@ def submit(fname: str) -> HelperResult:
         except (ValueError, TypeError):
             pass
 
+    message = None
     appid = None
     if 'appid' in log:
         try:
             appid = int(log['appid'])
+            message = f'GPU reset ({appid})'
         except (ValueError, TypeError):
             pass
 
@@ -55,6 +57,11 @@ def submit(fname: str) -> HelperResult:
     if executable:
         tags['executable'] = executable
         fingerprint.append(f'executable:{executable}')
+        if not message:
+            message = f'GPU reset ({executable})'
+
+    if not message:
+        message = 'GPU reset'
 
     kernel = log.get('kernel')
     if kernel is not None:
@@ -71,7 +78,8 @@ def submit(fname: str) -> HelperResult:
                     appid=appid,
                     timestamp=timestamp,
                     tags=tags,
-                    fingerprint=fingerprint)
+                    fingerprint=fingerprint,
+                    message=message)
     if ok:
         return HelperResult()
     return HelperResult(HelperResult.TRANSIENT_ERROR)
