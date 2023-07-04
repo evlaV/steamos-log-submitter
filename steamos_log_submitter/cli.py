@@ -47,17 +47,18 @@ def set_enabled(enable: bool) -> bool:
     return save_user_config(user_config)
 
 
-def set_helper_enabled(helper: str, enable: bool) -> bool:
+def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
     user_config = load_user_config()
     if not user_config:
         return False
 
-    if helper not in sls.helpers.list_helpers():
-        print(f'Helper {helper} not found')
+    for helper in helpers:
+        if helper not in sls.helpers.list_helpers():
+            print(f'Helper {helper} not found')
 
-    if not user_config.has_section(f'helpers.{helper}'):
-        user_config.add_section(f'helpers.{helper}')
-    user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')
+        if not user_config.has_section(f'helpers.{helper}'):
+            user_config.add_section(f'helpers.{helper}')
+        user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')
 
     return save_user_config(user_config)
 
@@ -96,30 +97,47 @@ def set_steam_info(key, value) -> bool:
 def main(args=sys.argv[1:]):
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
-        description='SteamOS log collectin and submission tool')
-    subparsers = parser.add_subparsers(required=True)
+        description='SteamOS log collection and submission tool')
+    subparsers = parser.add_subparsers(required=True, metavar='command')
 
-    status = subparsers.add_parser('status')
+    status = subparsers.add_parser('status',
+                                   description='Display the current status of the log collection service.',
+                                   help='Current status')
     status.set_defaults(func=do_status)
 
-    status = subparsers.add_parser('list')
+    status = subparsers.add_parser('list',
+                                   description='''List all available helper modules. Each helper
+                                                  module handles one or more types of logs that have
+                                                  a common method of collection and submission.''',
+                                   help='List helper modules')
     status.set_defaults(func=do_list)
 
-    enable = subparsers.add_parser('enable')
+    enable = subparsers.add_parser('enable',
+                                   description='Enable the log collection service.',
+                                   help='Enable log collection')
     enable.set_defaults(func=lambda _: set_enabled(True))
 
-    disable = subparsers.add_parser('disable')
+    disable = subparsers.add_parser('disable',
+                                    description='Disable the log collection service.',
+                                    help='Disable log collection')
     disable.set_defaults(func=lambda _: set_enabled(False))
 
-    enable_helper = subparsers.add_parser('enable-helper')
-    enable_helper.add_argument('helper')
+    enable_helper = subparsers.add_parser('enable-helper',
+                                          description='Enable one or more specific helper modules.',
+                                          help='Enable helper modules')
+    enable_helper.add_argument('helper', nargs='+')
     enable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, True))
 
-    disable_helper = subparsers.add_parser('disable-helper')
-    disable_helper.add_argument('helper')
+    disable_helper = subparsers.add_parser('disable-helper',
+                                           description='Enable one or more specific helper modules.',
+                                           help='Disable helper modules')
+    disable_helper.add_argument('helper', nargs='+')
     disable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, False))
 
-    set_steam = subparsers.add_parser('set-steam-info')
+    set_steam = subparsers.add_parser('set-steam-info',
+                                      description='''Set a value relating to the current Steam configuration.
+                                                     This command should not be used directly, as any values
+                                                     manually set may be changed by Steam directly.''')
     set_steam.add_argument('key', choices=('account-name', 'account-id', 'deck-serial'))
     set_steam.add_argument('value', type=str)
     set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))

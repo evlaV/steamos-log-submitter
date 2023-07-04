@@ -79,11 +79,11 @@ def test_disable2(user_config):
 
 def test_enable_helper(monkeypatch, user_config):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    assert cli.set_helper_enabled('test', True)
+    assert cli.set_helper_enabled(['test'], True)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = on\n\n'
 
-    assert cli.set_helper_enabled('test', False)
+    assert cli.set_helper_enabled(['test'], False)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = off\n\n'
 
@@ -101,11 +101,11 @@ def test_enable_helper2(monkeypatch, user_config):
 
 def test_disable_helper(monkeypatch, user_config):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    assert cli.set_helper_enabled('test', False)
+    assert cli.set_helper_enabled(['test'], False)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = off\n\n'
 
-    assert cli.set_helper_enabled('test', True)
+    assert cli.set_helper_enabled(['test'], True)
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = on\n\n'
 
@@ -119,6 +119,66 @@ def test_disable_helper2(monkeypatch, user_config):
     cli.main(['enable-helper', 'test'])
     with open(user_config.name) as f:
         assert f.read() == '[helpers.test]\nenable = on\n\n'
+
+
+def test_enable_helpers(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    assert cli.set_helper_enabled(['test', 'test2'], True)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
+
+    assert cli.set_helper_enabled(['test'], False)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = on\n\n'
+
+    assert cli.set_helper_enabled(['test2'], False)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
+
+
+def test_enable_helpers2(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    cli.main(['enable-helper', 'test', 'test2'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
+
+    cli.main(['disable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = on\n\n'
+
+    cli.main(['disable-helper', 'test2'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
+
+
+def test_disable_helpers(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    assert cli.set_helper_enabled(['test', 'test2'], False)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
+
+    assert cli.set_helper_enabled(['test'], True)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = off\n\n'
+
+    assert cli.set_helper_enabled(['test2'], True)
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
+
+
+def test_disable_helpers2(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    cli.main(['disable-helper', 'test', 'test2'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
+
+    cli.main(['enable-helper', 'test'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = off\n\n'
+
+    cli.main(['enable-helper', 'test2'])
+    with open(user_config.name) as f:
+        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
 
 
 def test_no_config(monkeypatch):
