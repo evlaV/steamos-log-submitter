@@ -10,15 +10,18 @@ d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending 	0750	steamos-log-submitter	
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed  	0750	steamos-log-submitter	steamos-log-submitter	-	-
 # Clean up submissions after 2 weeks, or 1 week if it's already been uploaded
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/gpu        	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/journal    	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/kdump      	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/minidump   	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/peripherals	0750	steamos-log-submitter	steamos-log-submitter	14d	-
+
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/gpu        	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/journal    	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/kdump      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/minidump   	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/peripherals	0750	steamos-log-submitter	steamos-log-submitter	7d	-
+
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/gpu        	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/journal    	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/kdump      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
