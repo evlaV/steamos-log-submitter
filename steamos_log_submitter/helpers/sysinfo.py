@@ -153,7 +153,7 @@ def collect() -> bool:
     os.makedirs(sls.data.data_root, exist_ok=True)
     known = {}
     try:
-        with open(f'{sls.data.data_root}/peripherals.json') as f:
+        with open(f'{sls.data.data_root}/sysinfo-pending.json') as f:
             known = json.load(f)
     except FileNotFoundError:
         pass
@@ -168,7 +168,7 @@ def collect() -> bool:
                 devs.add(json.dumps(dev))
         known[section] = [json.loads(dev) for dev in devs]
 
-    with open(f'{sls.data.data_root}/peripherals.json', 'w') as f:
+    with open(f'{sls.data.data_root}/sysinfo-pending.json', 'w') as f:
         json.dump(known, f)
 
     now = time.time()
@@ -177,7 +177,7 @@ def collect() -> bool:
     if timestamp is not None:
         if now - timestamp >= config.get('interval', 60 * 60 * 24 * 7):
             # If last submitted over a week ago, submit now
-            os.rename(f'{sls.data.data_root}/peripherals.json', f'{sls.pending}/peripherals/{now:.0f}.json')
+            os.rename(f'{sls.data.data_root}/sysinfo-pending.json', f'{sls.pending}/sysinfo/{now:.0f}.json')
             new_file = True
 
     if not timestamp or new_file:
@@ -200,6 +200,6 @@ def submit(fname: str) -> HelperResult:
         'stack': '',
         'note': '',
     }
-    if upload_crash(product='peripherals', info=info, dump=fname):
+    if upload_crash(product='sysinfo', info=info, dump=fname):
         return HelperResult()
     return HelperResult(HelperResult.TRANSIENT_ERROR)

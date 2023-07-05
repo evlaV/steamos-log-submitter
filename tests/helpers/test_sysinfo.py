@@ -10,7 +10,7 @@ import os
 import subprocess
 import time
 import steamos_log_submitter as sls
-import steamos_log_submitter.helpers.peripherals as helper
+import steamos_log_submitter.helpers.sysinfo as helper
 from steamos_log_submitter.helpers import HelperResult
 from .. import always_raise, open_shim, setup_categories, unreachable
 from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
@@ -276,36 +276,36 @@ def test_collect_filesystems_clean(monkeypatch):
 
 
 def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [],
     })
 
     assert not helper.collect()
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         output = json.load(f)
     assert output == {'usb': []}
 
 
 def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [],
     })
 
-    with open(f'{data_directory}/peripherals.json', 'w') as f:
+    with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         f.write('not json')
 
     assert not helper.collect()
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         output = json.load(f)
     assert output == {'usb': []}
 
 
 def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {})
     monkeypatch.setattr(time, 'time', lambda: 1000)
@@ -327,30 +327,30 @@ def test_collect_small_interval(monkeypatch, data_directory, helper_directory, m
 
 
 def test_collect_large_interval(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {})
     monkeypatch.setattr(time, 'time', lambda: 1000000)
 
     helper.data['timestamp'] = 1
     assert helper.collect()
-    assert os.access(f'{helper_directory}/pending/peripherals/1000000.json', os.F_OK)
+    assert os.access(f'{helper_directory}/pending/sysinfo/1000000.json', os.F_OK)
     assert helper.data['timestamp'] == 1000000
 
 
 def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
     })
 
-    with open(f'{data_directory}/peripherals.json', 'w') as f:
+    with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
 
     assert not helper.collect()
 
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
 
     assert len(cache['usb']) == 1
@@ -358,19 +358,19 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
 
 
 def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
         'monitors': lambda: [],
     })
 
-    with open(f'{data_directory}/peripherals.json', 'w') as f:
+    with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [], 'monitors': [{'edid': '00'}]}, f)
 
     assert not helper.collect()
 
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
 
     assert len(cache['usb']) == 1
@@ -378,18 +378,18 @@ def test_collect_append(monkeypatch, data_directory, helper_directory, mock_conf
 
 
 def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
     })
 
-    with open(f'{data_directory}/peripherals.json', 'w') as f:
+    with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
 
     assert not helper.collect()
 
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
 
     assert len(cache['usb']) == 2
@@ -398,19 +398,19 @@ def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_con
 
 
 def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock_config):
-    setup_categories(['peripherals'])
+    setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {
         'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
         'monitors': lambda: [],
     })
 
-    with open(f'{data_directory}/peripherals.json', 'w') as f:
+    with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'monitors': []}, f)
 
     assert not helper.collect()
 
-    with open(f'{data_directory}/peripherals.json') as f:
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
 
     assert 'monitors' in cache
