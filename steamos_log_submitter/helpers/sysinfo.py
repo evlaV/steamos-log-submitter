@@ -11,7 +11,7 @@ import os
 import re
 import subprocess
 import time
-from typing import Optional
+from typing import Any, Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.crash import upload as upload_crash
 from steamos_log_submitter.dbus import DBusObject
@@ -33,7 +33,7 @@ def read_file(path, binary=False) -> Optional[str]:
         return None
 
 
-def list_usb() -> list[dict]:
+def list_usb() -> list[dict[str, Any]]:
     usb = '/sys/bus/usb/devices'
     devices = []
     for dev in os.listdir(usb):
@@ -60,7 +60,7 @@ def list_usb() -> list[dict]:
     return devices
 
 
-def list_monitors() -> list[dict]:
+def list_monitors() -> list[dict[str, Any]]:
     drm = '/sys/class/drm'
     devices = []
     for dev in os.listdir(drm):
@@ -73,7 +73,7 @@ def list_monitors() -> list[dict]:
     return devices
 
 
-def list_bluetooth() -> list[dict]:
+def list_bluetooth() -> list[dict[str, Any]]:
     bus = 'org.bluez'
     bluez = DBusObject(bus, '/org/bluez')
     adapters = bluez.list_children()
@@ -108,7 +108,7 @@ def list_bluetooth() -> list[dict]:
     return devices
 
 
-def list_filesystems() -> list[dict]:
+def list_filesystems() -> list[dict[str, Any]]:
     bus = 'org.freedesktop.UDisks2'
     try:
         findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size,used', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
@@ -140,11 +140,24 @@ def list_filesystems() -> list[dict]:
     return filesystems
 
 
+def list_system() -> list[tuple[str, Any]]:
+    sysinfo = [
+        ('branch', sls.steam.get_steamos_branch()),
+        ('release', sls.util.get_build_id()),
+    ]
+    try:
+        sysinfo.append(('devmode', os.access('/usr/share/steamos/devmode-enabled', os.F_OK)))
+    except OSError:
+        sysinfo.append(('devmode', False))
+    return sysinfo
+
+
 device_types = {
     'usb': list_usb,
     'bluetooth': list_bluetooth,
     'monitors': list_monitors,
     'filesystems': list_filesystems,
+    'system': list_system,
 }
 
 
@@ -161,12 +174,18 @@ def collect() -> bool:
         logger.warning('Parsing error loading cache file')
 
     for section in devices.keys():
-        # Use a set to easily deduplicate identical dicts
-        devs = set(json.dumps(collections.OrderedDict(sorted(dev.items()))) for dev in devices[section])
+        # Use an ordered dict to easily deduplicate identical entries
+        # while making sure to maintain the order they were added in
+        devs = collections.OrderedDict()
         if section in known:
             for dev in known[section]:
-                devs.add(json.dumps(dev))
-        known[section] = [json.loads(dev) for dev in devs]
+                devs[json.dumps(dev)] = True
+        for dev in devices[section]:
+            if type(dev) in (dict, collections.OrderedDict):
+                devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
+            if type(dev) == tuple:
+                devs[json.dumps(dev)] = True
+        known[section] = [json.loads(dev) for dev in devs.keys()]
 
     with open(f'{sls.data.data_root}/sysinfo-pending.json', 'w') as f:
         json.dump(known, f)

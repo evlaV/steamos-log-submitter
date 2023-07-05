@@ -275,6 +275,18 @@ def test_collect_filesystems_clean(monkeypatch):
     assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
 
 
+def test_collect_system(monkeypatch):
+    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+
+    assert dict(helper.list_system()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+    }
+
+
 def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
@@ -355,6 +367,34 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
 
     assert len(cache['usb']) == 1
     assert list(cache['usb'][0].keys()) == ['pid', 'vid']
+
+
+def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {
+        'system': lambda: [('branch', 'rel'), ('release', '20230703')],
+    })
+
+    assert not helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 2
+    assert cache['system'] == [['branch', 'rel'], ['release', '20230703']]
+
+    monkeypatch.setattr(helper, 'device_types', {
+        'system': lambda: [('branch', 'main'), ('release', '20230704')],
+    })
+
+    assert not helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 4
+    assert cache['system'] == [['branch', 'rel'], ['release', '20230703'], ['branch', 'main'], ['release', '20230704']]
 
 
 def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
