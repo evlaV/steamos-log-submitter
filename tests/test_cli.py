@@ -151,6 +151,13 @@ def test_enable_helpers2(monkeypatch, user_config):
         assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
 
 
+def test_enable_invalid_helper(monkeypatch, user_config):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+    assert not cli.set_helper_enabled(['test2'], True)
+    with open(user_config.name) as f:
+        assert not f.read().strip()
+
+
 def test_disable_helpers(monkeypatch, user_config):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
     assert cli.set_helper_enabled(['test', 'test2'], False)

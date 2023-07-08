@@ -52,14 +52,19 @@ def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
     if not user_config:
         return False
 
+    did_anything = False
     for helper in helpers:
         if helper not in sls.helpers.list_helpers():
             print(f'Helper {helper} not found')
+            continue
 
         if not user_config.has_section(f'helpers.{helper}'):
             user_config.add_section(f'helpers.{helper}')
         user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')
+        did_anything = True
 
+    if not did_anything:
+        return False
     return save_user_config(user_config)
 
 
