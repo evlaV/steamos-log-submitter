@@ -81,6 +81,4 @@ def submit(fname: str) -> HelperResult:
         'stack': stack,
         'note': note,
     }
-    if upload_crash(product='holo', info=info, dump=fname):
-        return HelperResult()
-    return HelperResult(HelperResult.TRANSIENT_ERROR)
+    return HelperResult.check(upload_crash(product='holo', info=info, dump=fname))

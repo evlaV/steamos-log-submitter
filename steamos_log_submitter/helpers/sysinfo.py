@@ -219,6 +219,4 @@ def submit(fname: str) -> HelperResult:
         'stack': '',
         'note': '',
     }
-    if upload_crash(product='sysinfo', info=info, dump=fname):
-        return HelperResult()
-    return HelperResult(HelperResult.TRANSIENT_ERROR)
+    return HelperResult.check(upload_crash(product='sysinfo', info=info, dump=fname))

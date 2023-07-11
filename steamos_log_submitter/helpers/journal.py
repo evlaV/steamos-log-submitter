@@ -187,6 +187,4 @@ def submit(fname: str) -> HelperResult:
                     tags=tags,
                     fingerprint=fingerprint,
                     message=unit)
-    if ok:
-        return HelperResult()
-    return HelperResult(HelperResult.TRANSIENT_ERROR)
+    return HelperResult.check(ok)

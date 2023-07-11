@@ -61,7 +61,4 @@ def submit(fname: str) -> HelperResult:
         except requests.exceptions.JSONDecodeError:
             pass
 
-    if post.status_code == 200:
-        return HelperResult()
-    else:
-        return HelperResult(HelperResult.TRANSIENT_ERROR)
+    return HelperResult.check(post.status_code == 200)

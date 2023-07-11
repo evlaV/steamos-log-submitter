@@ -25,6 +25,12 @@ class HelperResult:
         super(HelperResult, self).__init__()
         self.code = code
 
+    @staticmethod
+    def check(result, *, true_code=OK, false_code=TRANSIENT_ERROR):
+        if result:
+            return HelperResult(true_code)
+        return HelperResult(false_code)
+
 
 def create_helper(category):
     try:
