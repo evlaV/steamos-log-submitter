@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import shutil
+import subprocess
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
@@ -38,6 +39,11 @@ try:
         executable = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
         log['executable'] = executable
     except OSError:
+        pass
+    try:
+        mesa = subprocess.run(['pacman', '-Q', 'mesa'], capture_output=True, errors='replace', check=True)
+        log['mesa'] = mesa.stdout.strip.split(' ')[1]
+    except (OSError, subprocess.SubprocessError):
         pass
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
