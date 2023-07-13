@@ -6,7 +6,8 @@
 import configparser
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from . import unreachable, count_hits  # NOQA: F401
+from . import awaitable, unreachable
+from . import count_hits  # NOQA: F401
 
 
 def setup_conf(monkeypatch, enable=None):
@@ -49,23 +50,23 @@ def test_config_invalid(monkeypatch, count_hits):
 
 def test_config_on(monkeypatch, count_hits):
     setup_conf(monkeypatch, 'on')
-    monkeypatch.setattr(sls, 'collect', count_hits)
-    monkeypatch.setattr(sls, 'submit', count_hits)
+    monkeypatch.setattr(sls, 'collect', awaitable(count_hits))
+    monkeypatch.setattr(sls, 'submit', awaitable(count_hits))
     sls.trigger()
     assert count_hits.hits == 2
 
 
 def test_config_unhandled_collect(monkeypatch, count_hits):
     setup_conf(monkeypatch, 'on')
-    monkeypatch.setattr(sls, 'collect', unreachable)
-    monkeypatch.setattr(sls, 'submit', count_hits)
+    monkeypatch.setattr(sls, 'collect', awaitable(unreachable))
+    monkeypatch.setattr(sls, 'submit', awaitable(count_hits))
     sls.trigger()
     assert count_hits.hits == 1
 
 
 def test_config_unhandled_submit(monkeypatch, count_hits):
     setup_conf(monkeypatch, 'on')
-    monkeypatch.setattr(sls, 'collect', count_hits)
-    monkeypatch.setattr(sls, 'submit', unreachable)
+    monkeypatch.setattr(sls, 'collect', awaitable(count_hits))
+    monkeypatch.setattr(sls, 'submit', awaitable(unreachable))
     sls.trigger()
     assert count_hits.hits == 1
