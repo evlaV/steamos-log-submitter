@@ -5,10 +5,10 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import datetime
 import gzip
+import httpx
 import io
 import json
 import logging
-import requests
 import urllib.parse
 import uuid
 from typing import Any, Dict, List, Optional
@@ -70,7 +70,7 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[
     envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
     auth = f'Sentry sentry_version=7, sentry_key={dsn_parsed.username}'
 
-    store_post = requests.post(store_endpoint, json=event, headers={
+    store_post = httpx.post(store_endpoint, json=event, headers={
         'X-Sentry-Auth': auth,
         'User-Agent': 'SteamOS Log Submitter',
     })
@@ -99,7 +99,7 @@ def send_event(dsn: str, *, appid: Optional[int] = None, attachments: List[Dict[
 
         envelope.close()
 
-        envelope_post = requests.post(envelope_endpoint, data=raw_envelope.getvalue(), headers={
+        envelope_post = httpx.post(envelope_endpoint, data=raw_envelope.getvalue(), headers={
             'Content-Type': 'application/x-sentry-envelope',
             'Content-Encoding': 'gzip',
             'X-Sentry-Auth': auth,

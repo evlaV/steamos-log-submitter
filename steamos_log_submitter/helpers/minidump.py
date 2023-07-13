@@ -3,9 +3,10 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import httpx
+import json
 import logging
 import os
-import requests
 import steamos_log_submitter as sls
 from . import HelperResult
 
@@ -48,7 +49,7 @@ def submit(fname: str) -> HelperResult:
             logger.warning(f'Failed to get {attr} xattr on minidump.')
 
     logger.debug(f'Uploading minidump with metadata {metadata}')
-    post = requests.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
+    post = httpx.post(dsn, files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
     if post.status_code != 200:
         logger.error(f'Attempting to upload minidump {name} failed with status {post.status_code}')
@@ -58,7 +59,7 @@ def submit(fname: str) -> HelperResult:
             if data.get('detail') == 'invalid minidump':
                 logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
                 return HelperResult(HelperResult.PERMANENT_ERROR)
-        except requests.exceptions.JSONDecodeError:
+        except json.decoder.JSONDecodeError:
             pass
 
     return HelperResult.check(post.status_code == 200)

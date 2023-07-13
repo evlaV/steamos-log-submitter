@@ -4,11 +4,11 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import grp
+import httpx
 import logging
 import os
 import pwd
 import re
-import requests
 import time
 from types import TracebackType
 from typing import Optional, Type, Union
@@ -81,7 +81,7 @@ def check_network() -> bool:
     max_checks = 5
     for _ in range(max_checks):
         try:
-            r = requests.head('http://test.steampowered.com/204', allow_redirects=False, timeout=1)
+            r = httpx.head('http://test.steampowered.com/204', follow_redirects=False, timeout=1)
             if r.status_code == 204:
                 return True
         except Exception:

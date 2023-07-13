@@ -4,12 +4,12 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
+import httpx
 import importlib
 import io
 import os
 import pwd
 import pytest
-import requests
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
@@ -45,18 +45,13 @@ def open_eacces(fname, *args, **kwargs):
 
 def fake_request(status_code):
     def ret(*args, **kwargs):
-        r = requests.Response()
-        r.status_code = status_code
-        return r
+        return httpx.Response(status_code)
     return ret
 
 
 def fake_response(body):
     def ret(*args, **kwargs):
-        r = requests.Response()
-        r.status_code = 200
-        r._content = body.encode()
-        return r
+        return httpx.Response(200, content=body.encode())
     return ret
 
 
