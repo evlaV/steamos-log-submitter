@@ -13,6 +13,7 @@ import pytest
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
+from typing import Any, Awaitable, Callable
 
 
 def open_shim(text):
@@ -172,3 +173,10 @@ def custom_dsn(section: str, dsn: str = ''):
         mock_config.set(section, 'dsn', dsn)
 
     return dsn_fixture
+
+
+def awaitable(fn: Callable[..., Any]) -> Awaitable[Any]:
+    async def afn(*args, **kwargs):
+        return fn(*args, **kwargs)
+
+    return afn

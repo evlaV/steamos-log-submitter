@@ -11,6 +11,7 @@ import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
 
+import asyncio
 import logging as _logging
 import os
 
@@ -54,18 +55,18 @@ def trigger():
     if base_config['enable'] == 'on':
         logger.info('Routine collection/submission triggered')
         try:
-            collect()
+            asyncio.run(collect())
         except Exception as e:
             logger.critical('Unhandled exception while collecting logs', exc_info=e)
         try:
-            submit()
+            asyncio.run(submit())
         except Exception as e:
             logger.critical('Unhandled exception while submitting logs', exc_info=e)
     else:
         logger.debug('Routine collection/submission is disabled')
 
 
-def collect():
+async def collect():
     logger.info('Starting log collection')
     for category in helpers.list_helpers():
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
@@ -86,7 +87,7 @@ def collect():
     logger.info('Finished log collection')
 
 
-def submit():
+async def submit():
     logger.info('Starting log submission')
     if not util.check_network():
         logger.info('Network is offline, bailing out')
