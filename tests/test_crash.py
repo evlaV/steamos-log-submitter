@@ -3,8 +3,8 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import httpx
 import json
-import requests
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
@@ -13,7 +13,7 @@ from . import fake_request, unreachable
 
 def test_bad_start(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(requests, 'post', fake_request(400))
+    monkeypatch.setattr(httpx, 'post', fake_request(400))
     assert not crash.upload('holo', version=0, info={})
 
 
@@ -26,16 +26,11 @@ def test_no_file(monkeypatch):
             attempt += 1
             if attempt == 1:
                 assert url == crash.start_url
-                r = requests.Response()
-                r.status_code = 200
-                r._content = body.encode()
-                return r
+                return httpx.Response(200, content=body.encode())
             if attempt == 2:
                 assert url == crash.finish_url
                 assert data and data.get('gid') == 111
-                r = requests.Response()
-                r.status_code = 204
-                return r
+                return httpx.Response(204)
             assert False
         return ret
 
@@ -47,14 +42,14 @@ def test_no_file(monkeypatch):
         'gid': 111
     }})
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(requests, 'post', fake_response(response))
+    monkeypatch.setattr(httpx, 'post', fake_response(response))
     assert crash.upload('holo', version=0, info={})
     assert attempt == 2
 
 
 def test_no_account(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
-    monkeypatch.setattr(requests, 'post', unreachable)
+    monkeypatch.setattr(httpx, 'post', unreachable)
     assert not crash.upload('holo', version=0, info={})
 
 
@@ -67,16 +62,11 @@ def test_bad_end(monkeypatch):
             attempt += 1
             if attempt == 1:
                 assert url == crash.start_url
-                r = requests.Response()
-                r.status_code = 200
-                r._content = body.encode()
-                return r
+                return httpx.Response(200, content=body.encode())
             if attempt == 2:
                 assert url == crash.finish_url
                 assert data and data.get('gid') == 111
-                r = requests.Response()
-                r.status_code = 400
-                return r
+                return httpx.Response(400)
             assert False
         return ret
 
@@ -88,7 +78,7 @@ def test_bad_end(monkeypatch):
         'gid': 111
     }})
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(requests, 'post', fake_response(response))
+    monkeypatch.setattr(httpx, 'post', fake_response(response))
     assert not crash.upload('holo', version=0, info={})
     assert attempt == 2
 
@@ -102,23 +92,16 @@ def test_file(monkeypatch):
             attempt += 1
             if attempt == 1:
                 assert url == crash.start_url
-                r = requests.Response()
-                r.status_code = 200
-                r._content = body.encode()
-                return r
+                return httpx.Response(200, content=body.encode())
             if attempt == 2:
                 assert url == json.loads(body)['response']['url']
                 assert data is not None
                 assert data.read
-                r = requests.Response()
-                r.status_code = 204
-                return r
+                return httpx.Response(204)
             if attempt == 3:
                 assert url == crash.finish_url
                 assert data and data.get('gid') == 111
-                r = requests.Response()
-                r.status_code = 204
-                return r
+                return httpx.Response(204)
             assert False
         return ret
 
@@ -132,8 +115,8 @@ def test_file(monkeypatch):
     file = __file__
     respond = fake_response(response)
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(requests, 'post', respond)
-    monkeypatch.setattr(requests, 'put', respond)
+    monkeypatch.setattr(httpx, 'post', respond)
+    monkeypatch.setattr(httpx, 'put', respond)
     assert crash.upload('holo', version=0, info={}, dump=file)
     assert attempt == 3
 
@@ -147,10 +130,7 @@ def test_rate_limit(monkeypatch):
             attempt += 1
             if attempt == 1:
                 assert url == crash.start_url
-                r = requests.Response()
-                r.status_code = 200
-                r._content = body.encode()
-                return r
+                return httpx.Response(200, content=body.encode())
             assert False
         return ret
 
@@ -158,8 +138,8 @@ def test_rate_limit(monkeypatch):
     file = __file__
     respond = fake_response(response)
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(requests, 'post', respond)
-    monkeypatch.setattr(requests, 'put', respond)
+    monkeypatch.setattr(httpx, 'post', respond)
+    monkeypatch.setattr(httpx, 'put', respond)
     try:
         crash.upload('holo', version=0, info={}, dump=file)
         assert False

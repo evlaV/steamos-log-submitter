@@ -4,8 +4,8 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import gzip
+import httpx
 import json
-import requests
 import steamos_log_submitter.sentry as sentry
 
 
@@ -16,11 +16,9 @@ def test_bad_start(monkeypatch):
         nonlocal attempt
         assert attempt == 0
         attempt += 1
-        r = requests.Response()
-        r.status_code = 400
-        return r
+        return httpx.Response(400)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert not sentry.send_event('', attachments=[{'data': b''}])
 
 
@@ -28,44 +26,36 @@ def test_dsn_parsing(monkeypatch):
     def fake_response(url, headers, *args, **kwargs):
         assert url == 'https://fake@dsn/api/0/store/'
         assert headers.get('X-Sentry-Auth') == 'Sentry sentry_version=7, sentry_key=fake'
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0')
 
 
 def test_tags(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('tags') == {'alma-mater': 'MIT'}
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', tags={'alma-mater': 'MIT'})
 
 
 def test_fingerprint(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('fingerprint') == ['gordon', 'freeman']
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', fingerprint=['gordon', 'freeman'])
 
 
 def test_message(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('message') == 'Rise and shine, Mr. Freeman'
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', message='Rise and shine, Mr. Freeman')
 
 
@@ -73,11 +63,9 @@ def test_appid(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', appid=1234)
 
 
@@ -85,11 +73,9 @@ def test_appid_fingerprint_dupe(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', appid=1234, fingerprint=['appid:1234'])
 
 
@@ -97,11 +83,9 @@ def test_appid_tag_dupe(monkeypatch):
     def fake_response(url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', appid=1234, tags={'appid': '4321'})
 
 
@@ -128,11 +112,9 @@ def test_envelope(monkeypatch):
             assert data[len(attachment):] == b'\n'
         else:
             assert False
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', attachments=[{
         'data': b'headcrab zombie',
         'filename': 'enemy.txt',
@@ -166,11 +148,9 @@ def test_envelope_multiple_attachments(monkeypatch):
                 attachment_num += 1
         else:
             assert False
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', attachments=[
         {
             'data': b'crowbar',
@@ -192,9 +172,7 @@ def test_envelope_timestamp(monkeypatch):
             assert isinstance(header.get('sent_at'), str)
         else:
             assert False
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
-    monkeypatch.setattr(requests, 'post', fake_response)
+    monkeypatch.setattr(httpx, 'post', fake_response)
     assert sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachments=[{'data': b''}])

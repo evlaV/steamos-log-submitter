@@ -3,9 +3,9 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import httpx
 import logging
 import os
-import requests
 import steamos_log_submitter as sls
 
 __all__ = [
@@ -39,7 +39,7 @@ def upload(product, *, build=None, version=None, info, dump=None) -> bool:
         info['dump_file_size'] = os.stat(dump).st_size
     logger.debug(f'Crash log info dict:\n{info}')
 
-    start = requests.post(start_url, data=info)
+    start = httpx.post(start_url, data=info)
     if start.status_code // 100 != 2:
         logger.warning(f'Crash log StartCrashUpload returned {start.status_code}')
         return False
@@ -52,13 +52,13 @@ def upload(product, *, build=None, version=None, info, dump=None) -> bool:
 
     if dump:
         headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}
-        put = requests.put(response['url'], headers=headers, data=open(dump, 'rb'))
+        put = httpx.put(response['url'], headers=headers, data=open(dump, 'rb'))
         if put.status_code // 100 != 2:
             logger.warning(f'Crash log bucket PUT returned {put.status_code}')
             return False
         logger.debug(f'Crash log bucket PUT returned {put.status_code}')
 
-    finish = requests.post(finish_url, data={'gid': response['gid']})
+    finish = httpx.post(finish_url, data={'gid': response['gid']})
     if finish.status_code // 100 != 2:
         logger.warning(f'Crash log FinishCrashUpload returned {finish.status_code}')
         return False

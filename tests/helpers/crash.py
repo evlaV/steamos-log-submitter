@@ -3,8 +3,8 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import httpx
 import json
-import requests
 
 
 class FakeResponse:
@@ -24,23 +24,16 @@ class FakeResponse:
         def ret(url, data=None, *args, **kwargs):
             self.attempt += 1
             if self.attempt == 1:
-                r = requests.Response()
-                r.status_code = 200
                 body = json.dumps({'response': response})
-                r._content = body.encode()
-                return r
+                return httpx.Response(200, content=body.encode())
             if self.attempt == 2:
                 assert url == response['url']
                 assert data is not None
                 assert data.read
-                r = requests.Response()
-                r.status_code = 204
-                return r
+                return httpx.Response(204)
             if self.attempt == 3:
                 assert data and data.get('gid') == response['gid']
-                r = requests.Response()
-                r.status_code = 204
-                return r
+                return httpx.Response(204)
             assert False
-        monkeypatch.setattr(requests, 'post', ret)
-        monkeypatch.setattr(requests, 'put', ret)
+        monkeypatch.setattr(httpx, 'post', ret)
+        monkeypatch.setattr(httpx, 'put', ret)

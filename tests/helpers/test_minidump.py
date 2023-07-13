@@ -4,8 +4,8 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
+import httpx
 import os
-import requests
 import tempfile
 import steamos_log_submitter.helpers.minidump as helper
 import steamos_log_submitter.util as util
@@ -24,13 +24,11 @@ def test_submit_metadata(monkeypatch):
         assert data.get('sentry[tags][appid]') == 456
         assert data.get('sentry[tags][build_id]') == '20220202.202'
         assert data.get('sentry[environment]') == 'rel'
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: 'rel')
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake-0-456.dmp').code == HelperResult.OK
@@ -45,13 +43,11 @@ def test_no_metadata(monkeypatch):
         assert 'sentry[tags][comm]' not in data
         assert 'sentry[tags][path]' not in data
         assert 'sentry[environment]' not in data
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: None)
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake.dmp').code == HelperResult.OK
@@ -63,12 +59,10 @@ def test_no_xattrs(monkeypatch):
         assert data.get('sentry[tags][executable]') == b'exe'
         assert data.get('sentry[tags][comm]') == b'comm'
         assert data.get('sentry[tags][path]') == b'/fake/exe'
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
 
     mdmp = tempfile.NamedTemporaryFile(suffix='.dmp', dir=os.getcwd())  # tmpfs doesn't support user xattrs for some reason
     mdmp.write(b'MDMP')
@@ -85,12 +79,10 @@ def test_partial_xattrs(monkeypatch):
         assert data.get('sentry[tags][executable]') == b'exe'
         assert 'sentry[tags][comm]' not in data
         assert data.get('sentry[tags][path]') == b'/fake/exe'
-        r = requests.Response()
-        r.status_code = 200
-        return r
+        return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
 
     mdmp = tempfile.NamedTemporaryFile(suffix='.dmp', dir=os.getcwd())  # tmpfs doesn't support user xattrs for some reason
     mdmp.write(b'MDMP')
@@ -102,13 +94,10 @@ def test_partial_xattrs(monkeypatch):
 
 def test_400_corrupted(monkeypatch):
     def post(*args, **kwargs):
-        r = requests.Response()
-        r._content = b'{"detail":"invalid minidump"}'
-        r.status_code = 400
-        return r
+        return httpx.Response(400, content=b'{"detail":"invalid minidump"}')
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake.dmp').code == HelperResult.PERMANENT_ERROR
@@ -116,12 +105,10 @@ def test_400_corrupted(monkeypatch):
 
 def test_400_not_corrupted(monkeypatch):
     def post(*args, **kwargs):
-        r = requests.Response()
-        r.status_code = 400
-        return r
+        return httpx.Response(400)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(requests, 'post', post)
+    monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert helper.submit('fake.dmp').code == HelperResult.TRANSIENT_ERROR
