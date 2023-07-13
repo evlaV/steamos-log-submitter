@@ -9,10 +9,7 @@ import pkgutil
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.lockfile as lockfile
-
-
-class HelperError(NotImplementedError):
-    pass
+from steamos_log_submitter.exceptions import HelperError
 
 
 class HelperResult:

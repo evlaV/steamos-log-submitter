@@ -6,16 +6,9 @@
 import logging
 import os
 import time
+from steamos_log_submitter.exceptions import LockHeldError, LockNotHeldError
 
 logger = logging.getLogger(__name__)
-
-
-class LockHeldError(RuntimeError):
-    pass
-
-
-class LockNotHeldError(RuntimeError):
-    pass
 
 
 class Lockfile:

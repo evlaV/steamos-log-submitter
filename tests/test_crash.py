@@ -163,6 +163,6 @@ def test_rate_limit(monkeypatch):
     try:
         crash.upload('holo', version=0, info={}, dump=file)
         assert False
-    except sls.RateLimitingError:
+    except sls.exceptions.RateLimitingError:
         pass
     assert attempt == 1

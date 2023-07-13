@@ -6,6 +6,7 @@
 from steamos_log_submitter.config import get_config
 from steamos_log_submitter.lockfile import LockHeldError
 from steamos_log_submitter.logging import reconfigure_logging
+import steamos_log_submitter.exceptions as exceptions
 import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
@@ -25,6 +26,8 @@ __all__ = [
     'submit',
     'trigger',
     # Submodules
+    'helpers',
+    'exceptions',
     'steam',
     'util',
 ]
@@ -45,10 +48,6 @@ logger = logging.getLogger(__name__)
 
 # This needs to be imported late so that sls.base is populated
 from steamos_log_submitter.data import get_data  # NOQA: E402
-
-
-class RateLimitingError(RuntimeError):
-    pass
 
 
 def trigger():
