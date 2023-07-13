@@ -28,5 +28,9 @@ lint:
     - docker
     - linux
   script:
-    - pacman -Sy --noconfirm flake8
-    - flake8
+    - pacman -Sy --noconfirm archlinux-keyring
+    - pacman -Sy --noconfirm --needed python-pip
+    - python -m venv --system-site-packages venv
+    - . venv/bin/activate
+    - pip install flake8
+    - flake8 --exclude venv
