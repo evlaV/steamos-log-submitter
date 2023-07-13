@@ -9,14 +9,7 @@ run_pytest:
     - docker
     - linux
   script:
-    # Terrible workaround block below
-    - sed -i.bak '/^faked-system-time/d' /etc/pacman.d/gnupg/gpg.conf
-    - pacman-key --init
-    - pacman-key --populate
-    - pacman -Sy --noconfirm archlinux-keyring
-    # Remove above after holo-main/base is unbroken
     - pacman -Sy --noconfirm --needed dbus-python python-pip
-    - pacman -S --noconfirm openssl
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
     - pip install .[test]
@@ -28,7 +21,6 @@ lint:
     - docker
     - linux
   script:
-    - pacman -Sy --noconfirm archlinux-keyring
     - pacman -Sy --noconfirm --needed python-pip
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
