@@ -4,8 +4,10 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import importlib
+import logging
 import os
 import pkgutil
+import sys
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.lockfile as lockfile
@@ -29,14 +31,34 @@ class HelperResult:
         return HelperResult(false_code)
 
 
+class MetaHelper(type):
+    def __new__(cls, name, bases, dct):
+        newcls = super().__new__(cls, name, bases, dct)
+        newcls.config = sls.get_config(newcls.__module__)
+        newcls.data = sls.get_data(newcls.__module__, defaults=dct.get('defaults'))
+        newcls.logger = logging.getLogger(newcls.__module__)
+        sys.modules[newcls.__module__].helper = newcls
+        return newcls
+
+
+class Helper(metaclass=MetaHelper):
+    @classmethod
+    def collect(cls) -> bool:
+        return False
+
+    @classmethod
+    def submit(cls, fname: str) -> HelperResult:
+        raise NotImplementedError
+
+
 def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
-        if not hasattr(helper, 'submit'):
+        if not hasattr(helper, 'helper'):
             raise HelperError('Helper module does not contain submit function')
     except ModuleNotFoundError as e:
         raise HelperError from e
-    return helper
+    return helper.helper
 
 
 def list_helpers():

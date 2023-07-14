@@ -90,6 +90,7 @@ def helper_directory(monkeypatch, patch_module):
 
     def import_module(name, package=None):
         if name.startswith('steamos_log_submitter.helpers.test'):
+            patch_module.helper = patch_module
             return patch_module
         return original_import_module(name, package)
     monkeypatch.setattr(importlib, 'import_module', import_module)

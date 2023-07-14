@@ -9,8 +9,8 @@ import os
 import pytest
 import subprocess
 import steamos_log_submitter as sls
-import steamos_log_submitter.helpers.journal as helper
-from steamos_log_submitter.helpers import HelperResult
+import steamos_log_submitter.sentry as sentry
+from steamos_log_submitter.helpers import create_helper, HelperResult
 from .. import always_raise, unreachable
 from .. import data_directory, count_hits, drop_root, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
@@ -18,6 +18,8 @@ from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 bus = 'org.freedesktop.systemd1'
 iface = 'org.freedesktop.systemd1.Unit'
 base = '/org/freedesktop/systemd1/unit'
+
+helper = create_helper('journal')
 
 
 @pytest.fixture
@@ -264,7 +266,7 @@ def test_submit_params(helper_directory, mock_config, monkeypatch):
         assert 'unit:abc_def' in fingerprint
         return HelperResult()
 
-    monkeypatch.setattr(helper, 'send_event', fake_submit)
+    monkeypatch.setattr(sentry, 'send_event', fake_submit)
     mock_config.add_section('helpers.journal')
     mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
 
