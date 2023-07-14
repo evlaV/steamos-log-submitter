@@ -6,6 +6,7 @@
 import builtins
 import httpx
 import os
+import pytest
 import tempfile
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
@@ -17,11 +18,13 @@ dsn = custom_dsn('helpers.minidump')
 helper = create_helper('minidump')
 
 
-def test_submit_bad_name():
-    assert helper.submit('not-a-dmp.txt').code == HelperResult.PERMANENT_ERROR
+@pytest.mark.asyncio
+async def test_submit_bad_name():
+    assert (await helper.submit('not-a-dmp.txt')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_submit_metadata(monkeypatch):
+@pytest.mark.asyncio
+async def test_submit_metadata(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][appid]') == 456
@@ -34,10 +37,11 @@ def test_submit_metadata(monkeypatch):
     monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake-0-456.dmp').code == HelperResult.OK
+    assert (await helper.submit('fake-0-456.dmp')).code == HelperResult.OK
 
 
-def test_no_metadata(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_metadata(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
         assert 'sentry[tags][appid]' not in data
@@ -53,10 +57,11 @@ def test_no_metadata(monkeypatch):
     monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake.dmp').code == HelperResult.OK
+    assert (await helper.submit('fake.dmp')).code == HelperResult.OK
 
 
-def test_no_xattrs(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_xattrs(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][executable]') == b'exe'
@@ -73,10 +78,11 @@ def test_no_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.comm', b'comm')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert helper.submit(mdmp.name).code == HelperResult.OK
+    assert (await helper.submit(mdmp.name)).code == HelperResult.OK
 
 
-def test_partial_xattrs(monkeypatch):
+@pytest.mark.asyncio
+async def test_partial_xattrs(monkeypatch):
     def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][executable]') == b'exe'
@@ -92,10 +98,11 @@ def test_partial_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.executable', b'exe')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert helper.submit(mdmp.name).code == HelperResult.OK
+    assert (await helper.submit(mdmp.name)).code == HelperResult.OK
 
 
-def test_400_corrupted(monkeypatch):
+@pytest.mark.asyncio
+async def test_400_corrupted(monkeypatch):
     def post(*args, **kwargs):
         return httpx.Response(400, content=b'{"detail":"invalid minidump"}')
 
@@ -103,10 +110,11 @@ def test_400_corrupted(monkeypatch):
     monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake.dmp').code == HelperResult.PERMANENT_ERROR
+    assert (await helper.submit('fake.dmp')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_400_not_corrupted(monkeypatch):
+@pytest.mark.asyncio
+async def test_400_not_corrupted(monkeypatch):
     def post(*args, **kwargs):
         return httpx.Response(400)
 
@@ -114,4 +122,4 @@ def test_400_not_corrupted(monkeypatch):
     monkeypatch.setattr(httpx, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
-    assert helper.submit('fake.dmp').code == HelperResult.TRANSIENT_ERROR
+    assert (await helper.submit('fake.dmp')).code == HelperResult.TRANSIENT_ERROR

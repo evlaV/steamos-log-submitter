@@ -159,7 +159,7 @@ class SysinfoHelper(Helper):
     ]
 
     @classmethod
-    def collect(cls) -> bool:
+    async def collect(cls) -> bool:
         devices = {type: getattr(cls, f'list_{type}')() for type in cls.device_types}
         os.makedirs(sls.data.data_root, exist_ok=True)
         known = {}
@@ -207,7 +207,7 @@ class SysinfoHelper(Helper):
         return new_file
 
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
         if ext != '.json':
             return HelperResult(HelperResult.PERMANENT_ERROR)

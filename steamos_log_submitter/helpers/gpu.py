@@ -10,7 +10,7 @@ from . import HelperResult, SentryHelper
 
 class GPUHelper(SentryHelper):
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
         if ext != '.json':
             return HelperResult(HelperResult.PERMANENT_ERROR)

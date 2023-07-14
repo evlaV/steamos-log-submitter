@@ -12,7 +12,7 @@ from . import Helper, HelperResult
 
 class MinidumpHelper(Helper):
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
         if ext not in ('.md', '.dmp'):
             return HelperResult(HelperResult.PERMANENT_ERROR)

@@ -44,11 +44,11 @@ class MetaHelper(type):
 
 class Helper(metaclass=MetaHelper):
     @classmethod
-    def collect(cls) -> bool:
+    async def collect(cls) -> bool:
         return False
 
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         raise NotImplementedError
 
 
