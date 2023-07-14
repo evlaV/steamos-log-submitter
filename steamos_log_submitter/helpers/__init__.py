@@ -54,8 +54,8 @@ class Helper(metaclass=MetaHelper):
 
 class SentryHelper(Helper):
     @classmethod
-    def send_event(cls, **kwargs):
-        ok = sls.sentry.send_event(cls.config['dsn'], **kwargs)
+    async def send_event(cls, **kwargs):
+        ok = await sls.sentry.send_event(cls.config['dsn'], **kwargs)
         return HelperResult.check(ok)
 
 

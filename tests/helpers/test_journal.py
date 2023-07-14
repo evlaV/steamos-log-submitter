@@ -271,7 +271,7 @@ async def test_submit_bad_name():
 
 @pytest.mark.asyncio
 async def test_submit_params(helper_directory, mock_config, monkeypatch):
-    def fake_submit(dsn, *, attachments, tags, fingerprint, message):
+    async def fake_submit(dsn, *, attachments, tags, fingerprint, message):
         assert len(attachments) == 1
         assert attachments[0]['mime-type'] == 'application/json'
         assert attachments[0]['filename'] == 'abc_5fdef.json'

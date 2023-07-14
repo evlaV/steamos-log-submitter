@@ -178,7 +178,7 @@ class JournalHelper(SentryHelper):
             'filename': os.path.basename(fname),
             'data': attachment
         }]
-        return cls.send_event(attachments=attachments,
-                              tags=tags,
-                              fingerprint=fingerprint,
-                              message=unit)
+        return await cls.send_event(attachments=attachments,
+                                    tags=tags,
+                                    fingerprint=fingerprint,
+                                    message=unit)

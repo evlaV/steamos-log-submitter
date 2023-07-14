@@ -36,7 +36,7 @@ async def test_bad_file(monkeypatch):
 async def test_no_timestamp(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['timestamp'] is None
@@ -53,7 +53,7 @@ async def test_no_timestamp(monkeypatch):
 async def test_bad_timestamp(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['timestamp'] is None
@@ -70,7 +70,7 @@ async def test_bad_timestamp(monkeypatch):
 async def test_timestamp(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['timestamp'] == 1234
@@ -87,7 +87,7 @@ async def test_timestamp(monkeypatch):
 async def test_no_appid(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['appid'] is None
@@ -105,7 +105,7 @@ async def test_no_appid(monkeypatch):
 async def test_bad_appid(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['appid'] is None
@@ -123,7 +123,7 @@ async def test_bad_appid(monkeypatch):
 async def test_appid(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['appid'] == 1234
@@ -141,7 +141,7 @@ async def test_appid(monkeypatch):
 async def test_exe(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['tags']['executable'] == 'hl2.exe'
@@ -160,7 +160,7 @@ async def test_exe(monkeypatch):
 async def test_kernel(monkeypatch):
     hit = False
 
-    def check_now(dsn, **kwargs):
+    async def check_now(dsn, **kwargs):
         nonlocal hit
         hit = True
         assert kwargs['tags']['kernel'] == '4.20.69-valve1'

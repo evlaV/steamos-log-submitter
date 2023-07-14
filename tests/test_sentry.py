@@ -5,99 +5,109 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import gzip
 import httpx
+import pytest
 import json
 import steamos_log_submitter.sentry as sentry
 
 
-def test_bad_start(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_start(monkeypatch):
     attempt = 0
 
-    def fake_response(url, *args, **kwargs):
+    async def fake_response(url, *args, **kwargs):
         nonlocal attempt
         assert attempt == 0
         attempt += 1
         return httpx.Response(400)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert not sentry.send_event('', attachments=[{'data': b''}])
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert not await sentry.send_event('', attachments=[{'data': b''}])
 
 
-def test_dsn_parsing(monkeypatch):
-    def fake_response(url, headers, *args, **kwargs):
+@pytest.mark.asyncio
+async def test_dsn_parsing(monkeypatch):
+    async def fake_response(self, url, headers, *args, **kwargs):
         assert url == 'https://fake@dsn/api/0/store/'
         assert headers.get('X-Sentry-Auth') == 'Sentry sentry_version=7, sentry_key=fake'
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0')
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0')
 
 
-def test_tags(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_tags(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('tags') == {'alma-mater': 'MIT'}
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', tags={'alma-mater': 'MIT'})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', tags={'alma-mater': 'MIT'})
 
 
-def test_fingerprint(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_fingerprint(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['gordon', 'freeman']
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', fingerprint=['gordon', 'freeman'])
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', fingerprint=['gordon', 'freeman'])
 
 
-def test_message(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_message(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('message') == 'Rise and shine, Mr. Freeman'
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', message='Rise and shine, Mr. Freeman')
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', message='Rise and shine, Mr. Freeman')
 
 
-def test_appid(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_appid(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', appid=1234)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', appid=1234)
 
 
-def test_appid_fingerprint_dupe(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_appid_fingerprint_dupe(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', appid=1234, fingerprint=['appid:1234'])
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', appid=1234, fingerprint=['appid:1234'])
 
 
-def test_appid_tag_dupe(monkeypatch):
-    def fake_response(url, json, **kwargs):
+@pytest.mark.asyncio
+async def test_appid_tag_dupe(monkeypatch):
+    async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', appid=1234, tags={'appid': '4321'})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', appid=1234, tags={'appid': '4321'})
 
 
-def test_envelope(monkeypatch):
+@pytest.mark.asyncio
+async def test_envelope(monkeypatch):
     event_id = None
 
-    def fake_response(url, **kwargs):
+    async def fake_response(self, url, **kwargs):
         nonlocal event_id
         if url == 'https://fake@dsn/api/0/store/':
             event_id = kwargs['json']['event_id']
         elif url == 'https://fake@dsn/api/0/envelope/':
-            data = gzip.decompress(kwargs['data'])
+            data = gzip.decompress(kwargs['content'])
             line, data = data.split(b'\n', 1)
             header = json.loads(line)
             assert header.get('dsn') == 'https://fake@dsn/0'
@@ -114,23 +124,24 @@ def test_envelope(monkeypatch):
             assert False
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', attachments=[{
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', attachments=[{
         'data': b'headcrab zombie',
         'filename': 'enemy.txt',
         'mime-type': 'text/plain',
     }])
 
 
-def test_envelope_multiple_attachments(monkeypatch):
+@pytest.mark.asyncio
+async def test_envelope_multiple_attachments(monkeypatch):
     event_id = None
 
-    def fake_response(url, **kwargs):
+    async def fake_response(self, url, **kwargs):
         nonlocal event_id
         if url == 'https://fake@dsn/api/0/store/':
             pass
         elif url == 'https://fake@dsn/api/0/envelope/':
-            data = gzip.decompress(kwargs['data'])
+            data = gzip.decompress(kwargs['content'])
             line, data = data.split(b'\n', 1)
             attachment_num = 0
             while len(data):
@@ -150,8 +161,8 @@ def test_envelope_multiple_attachments(monkeypatch):
             assert False
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', attachments=[
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', attachments=[
         {
             'data': b'crowbar',
         },
@@ -161,12 +172,13 @@ def test_envelope_multiple_attachments(monkeypatch):
     ])
 
 
-def test_envelope_timestamp(monkeypatch):
-    def fake_response(url, **kwargs):
+@pytest.mark.asyncio
+async def test_envelope_timestamp(monkeypatch):
+    async def fake_response(self, url, **kwargs):
         if url == 'https://fake@dsn/api/0/store/':
             assert kwargs['json']['timestamp'] == 0.0
         elif url == 'https://fake@dsn/api/0/envelope/':
-            data = gzip.decompress(kwargs['data'])
+            data = gzip.decompress(kwargs['content'])
             line, data = data.split(b'\n', 1)
             header = json.loads(line)
             assert isinstance(header.get('sent_at'), str)
@@ -174,5 +186,5 @@ def test_envelope_timestamp(monkeypatch):
             assert False
         return httpx.Response(200)
 
-    monkeypatch.setattr(httpx, 'post', fake_response)
-    assert sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachments=[{'data': b''}])
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachments=[{'data': b''}])
