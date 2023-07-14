@@ -7,11 +7,14 @@ import builtins
 import httpx
 import os
 import tempfile
-import steamos_log_submitter.helpers.minidump as helper
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
-from steamos_log_submitter.helpers import HelperResult
-from .. import open_shim
+from steamos_log_submitter.helpers import create_helper, HelperResult
+from .. import custom_dsn, open_shim
+from .. import mock_config  # NOQA: F401
+
+dsn = custom_dsn('helpers.minidump')
+helper = create_helper('minidump')
 
 
 def test_submit_bad_name():

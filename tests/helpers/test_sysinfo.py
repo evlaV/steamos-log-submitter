@@ -10,11 +10,12 @@ import os
 import subprocess
 import time
 import steamos_log_submitter as sls
-import steamos_log_submitter.helpers.sysinfo as helper
-from steamos_log_submitter.helpers import HelperResult
+from steamos_log_submitter.helpers import create_helper, HelperResult
 from .. import always_raise, open_shim, setup_categories, unreachable
 from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
+
+helper = create_helper('sysinfo')
 
 
 def make_usb_devs(monkeypatch, devs):
@@ -290,9 +291,8 @@ def test_collect_system(monkeypatch):
 def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
 
     assert not helper.collect()
     with open(f'{data_directory}/sysinfo-pending.json') as f:
@@ -303,9 +303,8 @@ def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
 def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [])
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         f.write('not json')
@@ -319,7 +318,7 @@ def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_c
 def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {})
+    monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     assert helper.data.get('timestamp') is None
@@ -329,7 +328,7 @@ def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, moc
 
 def test_collect_small_interval(monkeypatch, data_directory, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {})
+    monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     helper.data['timestamp'] = 999
@@ -341,7 +340,7 @@ def test_collect_small_interval(monkeypatch, data_directory, helper_directory, m
 def test_collect_large_interval(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {})
+    monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000000)
 
     helper.data['timestamp'] = 1
@@ -353,9 +352,8 @@ def test_collect_large_interval(monkeypatch, data_directory, helper_directory, m
 def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
@@ -372,9 +370,8 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
 def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'system': lambda: [('branch', 'rel'), ('release', '20230703')],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['system'])
+    monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'rel'), ('release', '20230703')])
 
     assert not helper.collect()
 
@@ -384,9 +381,7 @@ def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, moc
     assert len(cache['system']) == 2
     assert cache['system'] == [['branch', 'rel'], ['release', '20230703']]
 
-    monkeypatch.setattr(helper, 'device_types', {
-        'system': lambda: [('branch', 'main'), ('release', '20230704')],
-    })
+    monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'main'), ('release', '20230704')])
 
     assert not helper.collect()
 
@@ -400,10 +395,9 @@ def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, moc
 def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
-        'monitors': lambda: [],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [], 'monitors': [{'edid': '00'}]}, f)
@@ -420,9 +414,8 @@ def test_collect_append(monkeypatch, data_directory, helper_directory, mock_conf
 def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
@@ -440,10 +433,9 @@ def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_con
 def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
-    monkeypatch.setattr(helper, 'device_types', {
-        'usb': lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])],
-        'monitors': lambda: [],
-    })
+    monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
+    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'monitors': []}, f)

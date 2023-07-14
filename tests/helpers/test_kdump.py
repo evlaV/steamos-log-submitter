@@ -5,13 +5,13 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
 import steamos_log_submitter.crash as crash
-import steamos_log_submitter.helpers.kdump as helper
 import steamos_log_submitter.steam as steam
-from steamos_log_submitter.helpers import HelperResult
+from steamos_log_submitter.helpers import create_helper, HelperResult
 from .crash import FakeResponse
 from .. import fake_pwuid  # NOQA: F401
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
+helper = create_helper('kdump')
 
 
 def test_dmesg_parse():

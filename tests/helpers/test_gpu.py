@@ -4,13 +4,13 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
-import steamos_log_submitter.helpers.gpu as helper
-from steamos_log_submitter.helpers import HelperResult
+import steamos_log_submitter.sentry as sentry
+from steamos_log_submitter.helpers import create_helper, HelperResult
 from .. import custom_dsn, open_shim, unreachable
 from .. import mock_config  # NOQA: F401
 
-
 dsn = custom_dsn('helpers.gpu')
+helper = create_helper('gpu')
 
 
 def test_submit_bad_name():
@@ -22,7 +22,7 @@ def test_collect_none():
 
 
 def test_bad_file(monkeypatch):
-    monkeypatch.setattr(helper, 'send_event', unreachable)
+    monkeypatch.setattr(sentry, 'send_event', unreachable)
     monkeypatch.setattr(builtins, 'open', open_shim(b'!'))
 
     assert helper.submit('fake.json').code == HelperResult.PERMANENT_ERROR
@@ -37,7 +37,7 @@ def test_no_timestamp(monkeypatch):
         assert kwargs['timestamp'] is None
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -53,7 +53,7 @@ def test_bad_timestamp(monkeypatch):
         assert kwargs['timestamp'] is None
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":"fake"}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -69,7 +69,7 @@ def test_timestamp(monkeypatch):
         assert kwargs['timestamp'] == 1234
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":1234.0}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -86,7 +86,7 @@ def test_no_appid(monkeypatch):
         assert kwargs['message'] == 'GPU reset'
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -103,7 +103,7 @@ def test_bad_appid(monkeypatch):
         assert kwargs['message'] == 'GPU reset'
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":null}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -120,7 +120,7 @@ def test_appid(monkeypatch):
         assert kwargs['message'] == 'GPU reset (1234)'
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":1234}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -138,7 +138,7 @@ def test_exe(monkeypatch):
         assert kwargs['message'] == 'GPU reset (hl2.exe)'
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"executable":"hl2.exe"}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
@@ -155,7 +155,7 @@ def test_kernel(monkeypatch):
         assert 'kernel:4.20.69-valve1' in kwargs['fingerprint']
         return True
 
-    monkeypatch.setattr(helper, 'send_event', check_now)
+    monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"kernel":"4.20.69-valve1"}'))
 
     assert helper.submit('fake.json').code == HelperResult.OK
