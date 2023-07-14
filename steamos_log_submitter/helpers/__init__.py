@@ -10,7 +10,8 @@ import pkgutil
 import sys
 import tempfile
 import steamos_log_submitter as sls
-import steamos_log_submitter.lockfile as lockfile
+import steamos_log_submitter.sentry
+import steamos_log_submitter.lockfile
 from steamos_log_submitter.exceptions import HelperError
 
 
@@ -51,6 +52,13 @@ class Helper(metaclass=MetaHelper):
         raise NotImplementedError
 
 
+class SentryHelper(Helper):
+    @classmethod
+    def send_event(cls, **kwargs):
+        ok = sls.sentry.send_event(cls.config['dsn'], **kwargs)
+        return HelperResult.check(ok)
+
+
 def create_helper(category):
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
@@ -66,7 +74,7 @@ def list_helpers():
 
 
 def lock(helper):
-    return lockfile.Lockfile(f'{sls.pending}/{helper}/.lock')
+    return sls.lockfile.Lockfile(f'{sls.pending}/{helper}/.lock')
 
 
 class StagingFile:

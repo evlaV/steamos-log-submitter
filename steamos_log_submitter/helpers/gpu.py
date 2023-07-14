@@ -5,11 +5,10 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import os
-import steamos_log_submitter.sentry as sentry
-from . import Helper, HelperResult
+from . import HelperResult, SentryHelper
 
 
-class GPUHelper(Helper):
+class GPUHelper(SentryHelper):
     @classmethod
     def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
@@ -66,11 +65,9 @@ class GPUHelper(Helper):
             'filename': os.path.basename(fname),
             'data': attachment
         }]
-        ok = sentry.send_event(cls.config['dsn'],
-                               attachments=attachments,
-                               appid=appid,
-                               timestamp=timestamp,
-                               tags=tags,
-                               fingerprint=fingerprint,
-                               message=message)
-        return HelperResult.check(ok)
+        return cls.send_event(attachments=attachments,
+                              appid=appid,
+                              timestamp=timestamp,
+                              tags=tags,
+                              fingerprint=fingerprint,
+                              message=message)
