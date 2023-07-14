@@ -9,12 +9,11 @@ import os
 import subprocess
 from typing import Optional
 import steamos_log_submitter as sls
-import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.dbus import DBusObject
-from . import Helper, HelperResult
+from . import HelperResult, SentryHelper
 
 
-class JournalHelper(Helper):
+class JournalHelper(SentryHelper):
     units = [
         'gpu-trace.service',
         'jupiter-biosupdate.service',
@@ -179,9 +178,7 @@ class JournalHelper(Helper):
             'filename': os.path.basename(fname),
             'data': attachment
         }]
-        ok = sentry.send_event(cls.config['dsn'],
-                               attachments=attachments,
-                               tags=tags,
-                               fingerprint=fingerprint,
-                               message=unit)
-        return HelperResult.check(ok)
+        return cls.send_event(attachments=attachments,
+                              tags=tags,
+                              fingerprint=fingerprint,
+                              message=unit)
