@@ -22,7 +22,7 @@ async def collect():
         try:
             with sls.helpers.lock(category):
                 helper = sls.helpers.create_helper(category)
-                helper.collect()
+                await helper.collect()
         except LockHeldError:
             # Another process is currently working on this directory
             logger.warning(f'Lock already held trying to collect logs for {category}')
@@ -62,7 +62,7 @@ async def submit():
                         if log.startswith('.'):
                             continue
                         logger.debug(f'Found log {category}/{log}')
-                        result = helper.submit(f'{sls.pending}/{category}/{log}')
+                        result = await helper.submit(f'{sls.pending}/{category}/{log}')
                         if result.code == sls.helpers.HelperResult.OK:
                             logger.debug(f'Succeeded in submitting {category}/{log}')
                             os.replace(f'{sls.pending}/{category}/{log}', f'{sls.uploaded}/{category}/{log}')

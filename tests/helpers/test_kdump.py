@@ -4,6 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
+import pytest
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
 from steamos_log_submitter.helpers import create_helper, HelperResult
@@ -25,27 +26,32 @@ def test_dmesg_parse():
     assert stack == stack_expected
 
 
-def test_submit_bad_name():
-    assert helper.submit('not-a-zip.txt').code == HelperResult.PERMANENT_ERROR
+@pytest.mark.asyncio
+async def test_submit_bad_name():
+    assert (await helper.submit('not-a-zip.txt')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_submit_succeed(monkeypatch):
+@pytest.mark.asyncio
+async def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     response = FakeResponse()
     response.success(monkeypatch)
-    assert helper.submit(f'{file_base}/dmesg.zip').code == HelperResult.OK
+    assert (await helper.submit(f'{file_base}/dmesg.zip')).code == HelperResult.OK
     assert response.attempt == 3
 
 
-def test_submit_empty(monkeypatch):
+@pytest.mark.asyncio
+async def test_submit_empty(monkeypatch):
     monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
-    assert helper.submit(f'{file_base}/empty.zip').code == HelperResult.PERMANENT_ERROR
+    assert (await helper.submit(f'{file_base}/empty.zip')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_submit_bad_zip(monkeypatch):
+@pytest.mark.asyncio
+async def test_submit_bad_zip(monkeypatch):
     monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
-    assert helper.submit(f'{file_base}/bad.zip').code == HelperResult.PERMANENT_ERROR
+    assert (await helper.submit(f'{file_base}/bad.zip')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_collect_none():
-    assert not helper.collect()
+@pytest.mark.asyncio
+async def test_collect_none():
+    assert not await helper.collect()

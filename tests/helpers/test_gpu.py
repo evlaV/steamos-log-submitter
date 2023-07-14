@@ -4,6 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import builtins
+import pytest
 import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.helpers import create_helper, HelperResult
 from .. import custom_dsn, open_shim, unreachable
@@ -13,22 +14,26 @@ dsn = custom_dsn('helpers.gpu')
 helper = create_helper('gpu')
 
 
-def test_submit_bad_name():
-    assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR
+@pytest.mark.asyncio
+async def test_submit_bad_name():
+    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_collect_none():
-    assert not helper.collect()
+@pytest.mark.asyncio
+async def test_collect_none():
+    assert not await helper.collect()
 
 
-def test_bad_file(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_file(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', unreachable)
     monkeypatch.setattr(builtins, 'open', open_shim(b'!'))
 
-    assert helper.submit('fake.json').code == HelperResult.PERMANENT_ERROR
+    assert (await helper.submit('fake.json')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_no_timestamp(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_timestamp(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -40,11 +45,12 @@ def test_no_timestamp(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_bad_timestamp(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_timestamp(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -56,11 +62,12 @@ def test_bad_timestamp(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":"fake"}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_timestamp(monkeypatch):
+@pytest.mark.asyncio
+async def test_timestamp(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -72,11 +79,12 @@ def test_timestamp(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":1234.0}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_no_appid(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_appid(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -89,11 +97,12 @@ def test_no_appid(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_bad_appid(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_appid(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -106,11 +115,12 @@ def test_bad_appid(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":null}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_appid(monkeypatch):
+@pytest.mark.asyncio
+async def test_appid(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -123,11 +133,12 @@ def test_appid(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":1234}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_exe(monkeypatch):
+@pytest.mark.asyncio
+async def test_exe(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -141,11 +152,12 @@ def test_exe(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"executable":"hl2.exe"}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
-def test_kernel(monkeypatch):
+@pytest.mark.asyncio
+async def test_kernel(monkeypatch):
     hit = False
 
     def check_now(dsn, **kwargs):
@@ -158,5 +170,5 @@ def test_kernel(monkeypatch):
     monkeypatch.setattr(sentry, 'send_event', check_now)
     monkeypatch.setattr(builtins, 'open', open_shim(b'{"kernel":"4.20.69-valve1"}'))
 
-    assert helper.submit('fake.json').code == HelperResult.OK
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit

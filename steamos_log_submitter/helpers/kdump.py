@@ -48,7 +48,7 @@ class KdumpHelper(Helper):
         return crash_summary, call_trace
 
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
         if ext != '.zip':
             return HelperResult(HelperResult.PERMANENT_ERROR)

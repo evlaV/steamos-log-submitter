@@ -100,7 +100,7 @@ class JournalHelper(SentryHelper):
         return ''.join(unescaped)
 
     @classmethod
-    def collect(cls) -> bool:
+    async def collect(cls) -> bool:
         bus = 'org.freedesktop.systemd1'
         updated = False
         for unit in cls.units:
@@ -153,7 +153,7 @@ class JournalHelper(SentryHelper):
         return updated
 
     @classmethod
-    def submit(cls, fname: str) -> HelperResult:
+    async def submit(cls, fname: str) -> HelperResult:
         name, ext = os.path.splitext(os.path.basename(fname))
         if ext != '.json':
             return HelperResult(HelperResult.PERMANENT_ERROR)

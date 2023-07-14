@@ -8,7 +8,7 @@ import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from steamos_log_submitter.runner import collect
-from . import unreachable
+from . import awaitable, unreachable
 from . import count_hits, helper_directory, patch_module, setup_categories  # NOQA: F401
 
 
@@ -49,7 +49,7 @@ async def test_module(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
 
     patch_module.submit = submit
-    patch_module.collect = count_hits
+    patch_module.collect = awaitable(count_hits)
     await collect()
 
     assert count_hits.hits
@@ -60,7 +60,7 @@ async def test_lock(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
 
     patch_module.submit = submit
-    patch_module.collect = count_hits
+    patch_module.collect = awaitable(count_hits)
 
     lock = sls.lockfile.Lockfile(f'{sls.pending}/test/.lock')
     lock.lock()
@@ -76,7 +76,7 @@ async def test_lock(helper_directory, monkeypatch, patch_module, count_hits):
 
 @pytest.mark.asyncio
 async def test_error_continue(helper_directory, monkeypatch, patch_module, count_hits):
-    def fail_count(*args, **kwargs):
+    async def fail_count(*args, **kwargs):
         count_hits()
         assert count_hits.hits != 1
         return False

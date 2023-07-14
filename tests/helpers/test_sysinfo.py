@@ -7,6 +7,7 @@ import builtins
 import collections
 import json
 import os
+import pytest
 import subprocess
 import time
 import steamos_log_submitter as sls
@@ -288,19 +289,21 @@ def test_collect_system(monkeypatch):
     }
 
 
-def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
     monkeypatch.setattr(helper, 'list_usb', lambda: [])
 
-    assert not helper.collect()
+    assert not await helper.collect()
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         output = json.load(f)
     assert output == {'usb': []}
 
 
-def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
@@ -309,47 +312,51 @@ def test_collect_malformed(monkeypatch, data_directory, helper_directory, mock_c
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         f.write('not json')
 
-    assert not helper.collect()
+    assert not await helper.collect()
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         output = json.load(f)
     assert output == {'usb': []}
 
 
-def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_no_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     assert helper.data.get('timestamp') is None
-    assert not helper.collect()
+    assert not await helper.collect()
     assert helper.data.get('timestamp') == 1000
 
 
-def test_collect_small_interval(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_small_interval(monkeypatch, data_directory, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000)
 
     helper.data['timestamp'] = 999
-    assert not helper.collect()
+    assert not await helper.collect()
     assert helper.data.get('timestamp') == 999
     assert not os.access(f'{data_directory}/1000.json', os.F_OK)
 
 
-def test_collect_large_interval(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_large_interval(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', [])
     monkeypatch.setattr(time, 'time', lambda: 1000000)
 
     helper.data['timestamp'] = 1
-    assert helper.collect()
+    assert await helper.collect()
     assert os.access(f'{helper_directory}/pending/sysinfo/1000000.json', os.F_OK)
     assert helper.data['timestamp'] == 1000000
 
 
-def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
@@ -358,7 +365,7 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -367,13 +374,14 @@ def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_confi
     assert list(cache['usb'][0].keys()) == ['pid', 'vid']
 
 
-def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['system'])
     monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'rel'), ('release', '20230703')])
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -383,7 +391,7 @@ def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, moc
 
     monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'main'), ('release', '20230704')])
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -392,7 +400,8 @@ def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, moc
     assert cache['system'] == [['branch', 'rel'], ['release', '20230703'], ['branch', 'main'], ['release', '20230704']]
 
 
-def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
@@ -402,7 +411,7 @@ def test_collect_append(monkeypatch, data_directory, helper_directory, mock_conf
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [], 'monitors': [{'edid': '00'}]}, f)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -411,7 +420,8 @@ def test_collect_append(monkeypatch, data_directory, helper_directory, mock_conf
     assert len(cache['monitors']) == 1
 
 
-def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
@@ -420,7 +430,7 @@ def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_con
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -430,7 +440,8 @@ def test_collect_append2(monkeypatch, data_directory, helper_directory, mock_con
     assert {'vid': '5678', 'pid': '1234'} in cache['usb']
 
 
-def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock_config):
+@pytest.mark.asyncio
+async def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
@@ -440,7 +451,7 @@ def test_collect_new_section(monkeypatch, data_directory, helper_directory, mock
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'monitors': []}, f)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
@@ -466,5 +477,6 @@ def test_read_file_none(monkeypatch):
     assert helper.read_file('') is None
 
 
-def test_submit_bad_name():
-    assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR
+@pytest.mark.asyncio
+async def test_submit_bad_name():
+    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR

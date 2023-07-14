@@ -32,7 +32,8 @@ def mock_unit(monkeypatch, mock_dbus):
     monkeypatch.setattr(helper, 'units', ['unit.service'])
 
 
-def test_collect_no_failed(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_no_failed(monkeypatch, mock_dbus):
     mock_dbus.add_bus(bus)
     service = MockDBusObject(bus, f'{base}/unit_2eservice', mock_dbus)
     service.properties[iface] = {
@@ -41,23 +42,25 @@ def test_collect_no_failed(monkeypatch, mock_dbus):
     monkeypatch.setattr(helper, 'units', ['unit.service'])
     monkeypatch.setattr(helper, 'read_journal', unreachable)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
 
-def test_collect_dbus_exception(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_dbus_exception(monkeypatch, mock_dbus):
     mock_dbus.add_bus(bus)
     monkeypatch.setattr(helper, 'units', ['unit.service'])
     monkeypatch.setattr(helper, 'read_journal', unreachable)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
 
-def test_collect_success(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_success(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    assert helper.collect()
+    assert await helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
@@ -67,14 +70,15 @@ def test_collect_success(monkeypatch, mock_dbus, data_directory, count_hits, hel
     assert log == ['log']
 
 
-def test_collect_append(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_append(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
     with open(f'{sls.pending}/journal/unit_2eservice.json', 'wt') as f:
         json.dump(['old'], f)
-    assert helper.collect()
+    assert await helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
@@ -84,14 +88,15 @@ def test_collect_append(monkeypatch, mock_dbus, data_directory, count_hits, help
     assert log == ['old', 'log']
 
 
-def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
     with open(f'{sls.pending}/journal/unit_2eservice.json', 'w') as f:
         f.write('definitely not json!')
-    assert helper.collect()
+    assert await helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
@@ -101,7 +106,8 @@ def test_collect_corrupted(monkeypatch, mock_dbus, data_directory, count_hits, h
     assert log == ['log']
 
 
-def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -112,12 +118,13 @@ def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_root, c
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     if os.access(f'{sls.pending}/journal/unit_2eservice.json', os.R_OK):
         pytest.skip('File is readable, are we running as root?')
-    assert not helper.collect()
+    assert not await helper.collect()
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json', os.R_OK)
 
 
-def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -128,18 +135,19 @@ def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, 
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     if os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK):
         pytest.skip('File is readable, are we running as root?')
-    assert not helper.collect()
+    assert not await helper.collect()
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK)
 
 
-def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', count_hits)
     monkeypatch.setattr(sls.config, 'write_config', always_raise(FileNotFoundError))
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 
-    assert helper.collect()
+    assert await helper.collect()
     assert count_hits.hits == 1
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
@@ -149,14 +157,16 @@ def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, he
     assert log == ['log']
 
 
-def test_journal_error(monkeypatch, mock_dbus, mock_unit):
+@pytest.mark.asyncio
+async def test_journal_error(monkeypatch, mock_dbus, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', lambda *args: (None, None))
     monkeypatch.setattr(builtins, 'open', unreachable)
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
 
-def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_unit):
+@pytest.mark.asyncio
+async def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_unit):
     configured_cursor = 'Passport'
 
     def check_cursor(unit, cursor=None):
@@ -167,10 +177,11 @@ def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_unit):
 
     helper.data['unit_2eservice.cursor'] = configured_cursor
 
-    assert not helper.collect()
+    assert not await helper.collect()
 
 
-def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+@pytest.mark.asyncio
+async def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = [json.dumps({'__CURSOR': str(x)}) for x in range(20)]
@@ -182,14 +193,15 @@ def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, mock_unit
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    assert helper.collect()
+    assert await helper.collect()
 
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'foo'
 
 
-def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+@pytest.mark.asyncio
+async def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = []
@@ -208,14 +220,15 @@ def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_u
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    assert helper.collect()
+    assert await helper.collect()
 
     with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
     assert len(log) == 2
 
 
-def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+@pytest.mark.asyncio
+async def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         lines = []
@@ -234,7 +247,7 @@ def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_u
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    assert helper.collect()
+    assert await helper.collect()
 
     with open(f'{sls.pending}/journal/unit_2eservice.json', 'rt') as f:
         log = json.load(f)
@@ -251,11 +264,13 @@ def test_unescape():
     assert helper.unescape('abc_xdef_5f') == 'abcef_'
 
 
-def test_submit_bad_name():
-    assert helper.submit('not-a-log.bin').code == HelperResult.PERMANENT_ERROR
+@pytest.mark.asyncio
+async def test_submit_bad_name():
+    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR
 
 
-def test_submit_params(helper_directory, mock_config, monkeypatch):
+@pytest.mark.asyncio
+async def test_submit_params(helper_directory, mock_config, monkeypatch):
     def fake_submit(dsn, *, attachments, tags, fingerprint, message):
         assert len(attachments) == 1
         assert attachments[0]['mime-type'] == 'application/json'
@@ -272,11 +287,12 @@ def test_submit_params(helper_directory, mock_config, monkeypatch):
 
     with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
         f.write('{}')
-    assert helper.submit(f'{helper_directory}/abc_5fdef.json').code == HelperResult.OK
+    assert (await helper.submit(f'{helper_directory}/abc_5fdef.json')).code == HelperResult.OK
 
 
-def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+@pytest.mark.asyncio
+async def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError()))
 
-    assert not helper.collect()
+    assert not await helper.collect()
