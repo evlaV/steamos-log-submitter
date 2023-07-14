@@ -65,9 +65,9 @@ class GPUHelper(SentryHelper):
             'filename': os.path.basename(fname),
             'data': attachment
         }]
-        return cls.send_event(attachments=attachments,
-                              appid=appid,
-                              timestamp=timestamp,
-                              tags=tags,
-                              fingerprint=fingerprint,
-                              message=message)
+        return await cls.send_event(attachments=attachments,
+                                    appid=appid,
+                                    timestamp=timestamp,
+                                    tags=tags,
+                                    fingerprint=fingerprint,
+                                    message=message)
