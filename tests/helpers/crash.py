@@ -21,19 +21,21 @@ class FakeResponse:
         }
         self.attempt = 0
 
-        def ret(url, data=None, *args, **kwargs):
+        async def ret(_, url, data=None, content=None, *args, **kwargs):
             self.attempt += 1
             if self.attempt == 1:
                 body = json.dumps({'response': response})
                 return httpx.Response(200, content=body.encode())
             if self.attempt == 2:
                 assert url == response['url']
-                assert data is not None
-                assert data.read
+                assert data is None
+                assert content is not None
+                assert isinstance(content, bytes)
                 return httpx.Response(204)
             if self.attempt == 3:
+                assert content is None
                 assert data and data.get('gid') == response['gid']
                 return httpx.Response(204)
             assert False
-        monkeypatch.setattr(httpx, 'post', ret)
-        monkeypatch.setattr(httpx, 'put', ret)
+        monkeypatch.setattr(httpx.AsyncClient, 'post', ret)
+        monkeypatch.setattr(httpx.AsyncClient, 'put', ret)

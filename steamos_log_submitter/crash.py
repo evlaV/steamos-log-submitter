@@ -18,7 +18,7 @@ finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload
 logger = logging.getLogger(__name__)
 
 
-def upload(product, *, build=None, version=None, info, dump=None) -> bool:
+async def upload(product, *, build=None, version=None, info, dump=None) -> bool:
     logger.info(f'Uploading crash log for {product} (build: {build}, version: {version})')
     account = sls.steam.get_steam_account_id()
     if account is None:
@@ -39,29 +39,31 @@ def upload(product, *, build=None, version=None, info, dump=None) -> bool:
         info['dump_file_size'] = os.stat(dump).st_size
     logger.debug(f'Crash log info dict:\n{info}')
 
-    start = httpx.post(start_url, data=info)
-    if start.status_code // 100 != 2:
-        logger.warning(f'Crash log StartCrashUpload returned {start.status_code}')
-        return False
-    logger.debug(f'Crash log StartCrashUpload returned {start.status_code}')
-
-    response = start.json()['response']
-    if not response:
-        logger.warning('Got empty response from StartCrashUpload -- are we being rate-limited?')
-        raise sls.exceptions.RateLimitingError()
-
-    if dump:
-        headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}
-        put = httpx.put(response['url'], headers=headers, data=open(dump, 'rb'))
-        if put.status_code // 100 != 2:
-            logger.warning(f'Crash log bucket PUT returned {put.status_code}')
+    async with httpx.AsyncClient() as client:
+        start = await client.post(start_url, data=info)
+        if start.status_code // 100 != 2:
+            logger.warning(f'Crash log StartCrashUpload returned {start.status_code}')
             return False
-        logger.debug(f'Crash log bucket PUT returned {put.status_code}')
+        logger.debug(f'Crash log StartCrashUpload returned {start.status_code}')
 
-    finish = httpx.post(finish_url, data={'gid': response['gid']})
-    if finish.status_code // 100 != 2:
-        logger.warning(f'Crash log FinishCrashUpload returned {finish.status_code}')
-        return False
-    logger.debug(f'Crash log FinishCrashUpload returned {finish.status_code}')
+        response = start.json()['response']
+        if not response:
+            logger.warning('Got empty response from StartCrashUpload -- are we being rate-limited?')
+            raise sls.exceptions.RateLimitingError()
+
+        if dump:
+            headers = {pair['name']: pair['value'] for pair in response['headers']['pairs']}
+            with open(dump, 'rb') as f:
+                put = await client.put(response['url'], headers=headers, content=f.read())
+            if put.status_code // 100 != 2:
+                logger.warning(f'Crash log bucket PUT returned {put.status_code}')
+                return False
+            logger.debug(f'Crash log bucket PUT returned {put.status_code}')
+
+        finish = await client.post(finish_url, data={'gid': response['gid']})
+        if finish.status_code // 100 != 2:
+            logger.warning(f'Crash log FinishCrashUpload returned {finish.status_code}')
+            return False
+        logger.debug(f'Crash log FinishCrashUpload returned {finish.status_code}')
 
     return True

@@ -9,6 +9,7 @@ import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
 from steamos_log_submitter.helpers import create_helper, HelperResult
 from .crash import FakeResponse
+from .. import awaitable
 from .. import fake_pwuid  # NOQA: F401
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
@@ -42,13 +43,13 @@ async def test_submit_succeed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_submit_empty(monkeypatch):
-    monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
+    monkeypatch.setattr(crash, 'upload', awaitable(lambda **kwargs: False))
     assert (await helper.submit(f'{file_base}/empty.zip')).code == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
 async def test_submit_bad_zip(monkeypatch):
-    monkeypatch.setattr(crash, 'upload', lambda **kwargs: False)
+    monkeypatch.setattr(crash, 'upload', awaitable(lambda **kwargs: False))
     assert (await helper.submit(f'{file_base}/bad.zip')).code == HelperResult.PERMANENT_ERROR
 
 
