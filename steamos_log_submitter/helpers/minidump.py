@@ -42,7 +42,8 @@ class MinidumpHelper(Helper):
                 cls.logger.warning(f'Failed to get {attr} xattr on minidump.')
 
         cls.logger.debug(f'Uploading minidump with metadata {metadata}')
-        post = httpx.post(cls.config['dsn'], files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
+        async with httpx.AsyncClient() as client:
+            post = await client.post(cls.config['dsn'], files={'upload_file_minidump': open(fname, 'rb')}, data=metadata)
 
         if post.status_code != 200:
             cls.logger.error(f'Attempting to upload minidump {name} failed with status {post.status_code}')
