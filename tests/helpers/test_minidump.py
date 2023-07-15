@@ -25,7 +25,7 @@ async def test_submit_bad_name():
 
 @pytest.mark.asyncio
 async def test_submit_metadata(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][appid]') == 456
         assert data.get('sentry[tags][build_id]') == '20220202.202'
@@ -34,7 +34,7 @@ async def test_submit_metadata(monkeypatch):
 
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: 'rel')
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert (await helper.submit('fake-0-456.dmp')).code == HelperResult.OK
@@ -42,7 +42,7 @@ async def test_submit_metadata(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_no_metadata(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         data = kwargs['data']
         assert 'sentry[tags][appid]' not in data
         assert 'sentry[tags][build_id]' not in data
@@ -54,7 +54,7 @@ async def test_no_metadata(monkeypatch):
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: None)
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.OK
@@ -62,7 +62,7 @@ async def test_no_metadata(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_no_xattrs(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][executable]') == b'exe'
         assert data.get('sentry[tags][comm]') == b'comm'
@@ -70,7 +70,7 @@ async def test_no_xattrs(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
 
     mdmp = tempfile.NamedTemporaryFile(suffix='.dmp', dir=os.getcwd())  # tmpfs doesn't support user xattrs for some reason
     mdmp.write(b'MDMP')
@@ -83,7 +83,7 @@ async def test_no_xattrs(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_partial_xattrs(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][executable]') == b'exe'
         assert 'sentry[tags][comm]' not in data
@@ -91,7 +91,7 @@ async def test_partial_xattrs(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
 
     mdmp = tempfile.NamedTemporaryFile(suffix='.dmp', dir=os.getcwd())  # tmpfs doesn't support user xattrs for some reason
     mdmp.write(b'MDMP')
@@ -103,11 +103,11 @@ async def test_partial_xattrs(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_400_corrupted(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         return httpx.Response(400, content=b'{"detail":"invalid minidump"}')
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.PERMANENT_ERROR
@@ -115,11 +115,11 @@ async def test_400_corrupted(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_400_not_corrupted(monkeypatch):
-    def post(*args, **kwargs):
+    async def post(*args, **kwargs):
         return httpx.Response(400)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
-    monkeypatch.setattr(httpx, 'post', post)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.TRANSIENT_ERROR
