@@ -217,4 +217,4 @@ class SysinfoHelper(Helper):
             'stack': '',
             'note': '',
         }
-        return HelperResult.check(crash.upload(product='sysinfo', info=info, dump=fname))
+        return HelperResult.check(await crash.upload(product='sysinfo', info=info, dump=fname))

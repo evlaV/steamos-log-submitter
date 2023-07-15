@@ -7,8 +7,8 @@ import io
 import os
 import time
 import zipfile
+import steamos_log_submitter.crash as crash
 from typing import TextIO
-from steamos_log_submitter.crash import upload as upload_crash
 from . import Helper, HelperResult
 
 
@@ -76,4 +76,4 @@ class KdumpHelper(Helper):
             'stack': stack,
             'note': note,
         }
-        return HelperResult.check(upload_crash(product='holo', info=info, dump=fname))
+        return HelperResult.check(await crash.upload(product='holo', info=info, dump=fname))

@@ -5,23 +5,26 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import httpx
 import json
+import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.steam as steam
-from . import fake_request, unreachable
+from . import awaitable, fake_request, unreachable
 
 
-def test_bad_start(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_start(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(httpx, 'post', fake_request(400))
-    assert not crash.upload('holo', version=0, info={})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', awaitable(fake_request(400)))
+    assert not await crash.upload('holo', version=0, info={})
 
 
-def test_no_file(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_file(monkeypatch):
     attempt = 0
 
     def fake_response(body):
-        def ret(url, data=None, *args, **kwargs):
+        async def ret(self, url, data=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
@@ -42,22 +45,24 @@ def test_no_file(monkeypatch):
         'gid': 111
     }})
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(httpx, 'post', fake_response(response))
-    assert crash.upload('holo', version=0, info={})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response(response))
+    assert await crash.upload('holo', version=0, info={})
     assert attempt == 2
 
 
-def test_no_account(monkeypatch):
+@pytest.mark.asyncio
+async def test_no_account(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: None)
     monkeypatch.setattr(httpx, 'post', unreachable)
-    assert not crash.upload('holo', version=0, info={})
+    assert not await crash.upload('holo', version=0, info={})
 
 
-def test_bad_end(monkeypatch):
+@pytest.mark.asyncio
+async def test_bad_end(monkeypatch):
     attempt = 0
 
     def fake_response(body):
-        def ret(url, data=None, *args, **kwargs):
+        async def ret(self, url, data=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
@@ -78,16 +83,17 @@ def test_bad_end(monkeypatch):
         'gid': 111
     }})
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(httpx, 'post', fake_response(response))
-    assert not crash.upload('holo', version=0, info={})
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response(response))
+    assert not await crash.upload('holo', version=0, info={})
     assert attempt == 2
 
 
-def test_file(monkeypatch):
+@pytest.mark.asyncio
+async def test_file(monkeypatch):
     attempt = 0
 
     def fake_response(body):
-        def ret(url, data=None, *args, **kwargs):
+        async def ret(self, url, data=None, content=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
@@ -95,11 +101,13 @@ def test_file(monkeypatch):
                 return httpx.Response(200, content=body.encode())
             if attempt == 2:
                 assert url == json.loads(body)['response']['url']
-                assert data is not None
-                assert data.read
+                assert data is None
+                assert content is not None
+                assert isinstance(content, bytes)
                 return httpx.Response(204)
             if attempt == 3:
                 assert url == crash.finish_url
+                assert content is None
                 assert data and data.get('gid') == 111
                 return httpx.Response(204)
             assert False
@@ -115,17 +123,18 @@ def test_file(monkeypatch):
     file = __file__
     respond = fake_response(response)
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(httpx, 'post', respond)
-    monkeypatch.setattr(httpx, 'put', respond)
-    assert crash.upload('holo', version=0, info={}, dump=file)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', respond)
+    monkeypatch.setattr(httpx.AsyncClient, 'put', respond)
+    assert await crash.upload('holo', version=0, info={}, dump=file)
     assert attempt == 3
 
 
-def test_rate_limit(monkeypatch):
+@pytest.mark.asyncio
+async def test_rate_limit(monkeypatch):
     attempt = 0
 
     def fake_response(body):
-        def ret(url, data=None, *args, **kwargs):
+        async def ret(self, url, data=None, *args, **kwargs):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
@@ -138,10 +147,10 @@ def test_rate_limit(monkeypatch):
     file = __file__
     respond = fake_response(response)
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
-    monkeypatch.setattr(httpx, 'post', respond)
-    monkeypatch.setattr(httpx, 'put', respond)
+    monkeypatch.setattr(httpx.AsyncClient, 'post', respond)
+    monkeypatch.setattr(httpx.AsyncClient, 'put', respond)
     try:
-        crash.upload('holo', version=0, info={}, dump=file)
+        await crash.upload('holo', version=0, info={}, dump=file)
         assert False
     except sls.exceptions.RateLimitingError:
         pass
