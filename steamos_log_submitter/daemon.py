@@ -11,6 +11,7 @@ import os
 import time
 
 import steamos_log_submitter as sls
+import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 import steamos_log_submitter.helpers as helpers
 
@@ -161,7 +162,7 @@ class Daemon:
             loop.stop()
 
     async def trigger(self):
-        sls.trigger()
+        await sls.runner.trigger()
 
     async def _enable(self, state: bool) -> Reply:
         if type(state) != bool:

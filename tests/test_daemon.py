@@ -10,6 +10,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
+import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from . import awaitable
 from . import count_hits, mock_config  # NOQA: F401
@@ -307,3 +308,17 @@ async def test_periodic_before_startup(monkeypatch, count_hits, mock_config):
     assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.04
 
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_trigger_called(test_daemon, monkeypatch, count_hits, mock_config):
+    daemon, reader, writer = await test_daemon
+    monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
+    monkeypatch.setattr(sls.runner, 'submit', awaitable(count_hits))
+
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
+
+    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert count_hits.hits == 2
