@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import os
@@ -11,6 +11,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.steam
+from . import awaitable
 from . import count_hits, mock_config  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
@@ -239,11 +240,8 @@ async def test_set_steam_info(test_daemon, mock_config):
 
 @pytest.mark.asyncio
 async def test_periodic(monkeypatch, count_hits, mock_config):
-    async def trigger():
-        count_hits()
-
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', trigger)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
     monkeypatch.setattr(daemon, '_interval', 0.04)
     await daemon.start()
@@ -265,11 +263,8 @@ async def test_periodic(monkeypatch, count_hits, mock_config):
 
 @pytest.mark.asyncio
 async def test_periodic_after_startup(monkeypatch, count_hits, mock_config):
-    async def trigger():
-        count_hits()
-
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', trigger)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
     monkeypatch.setattr(daemon, '_interval', 0.04)
 
@@ -292,11 +287,8 @@ async def test_periodic_after_startup(monkeypatch, count_hits, mock_config):
 
 @pytest.mark.asyncio
 async def test_periodic_before_startup(monkeypatch, count_hits, mock_config):
-    async def trigger():
-        count_hits()
-
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', trigger)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.02)
     monkeypatch.setattr(daemon, '_interval', 0.1)
 
