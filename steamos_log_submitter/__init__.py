@@ -11,7 +11,6 @@ import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
 
 import asyncio
-import logging as _logging
 
 __all__ = [
     # Constants
@@ -42,8 +41,6 @@ failed = f'{base}/failed'
 
 reconfigure_logging()
 
-logger = _logging.getLogger(__name__)
-
 # This needs to be imported late so that sls.base is populated
 from steamos_log_submitter.data import get_data  # NOQA: E402
 
@@ -52,15 +49,4 @@ import steamos_log_submitter.helpers as helpers  # NOQA: E402
 
 
 def trigger():
-    if base_config['enable'] == 'on':
-        logger.info('Routine collection/submission triggered')
-        try:
-            asyncio.run(runner.collect())
-        except Exception as e:
-            logger.critical('Unhandled exception while collecting logs', exc_info=e)
-        try:
-            asyncio.run(runner.submit())
-        except Exception as e:
-            logger.critical('Unhandled exception while submitting logs', exc_info=e)
-    else:
-        logger.debug('Routine collection/submission is disabled')
+    asyncio.run(runner.trigger())

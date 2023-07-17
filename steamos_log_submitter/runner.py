@@ -90,3 +90,18 @@ async def submit():
     if tasks:
         await asyncio.wait(tasks)
     logger.info('Finished log submission')
+
+
+async def trigger():
+    if sls.base_config['enable'] == 'on':
+        logger.info('Routine collection/submission triggered')
+        try:
+            await collect()
+        except Exception as e:
+            logger.critical('Unhandled exception while collecting logs', exc_info=e)
+        try:
+            await submit()
+        except Exception as e:
+            logger.critical('Unhandled exception while submitting logs', exc_info=e)
+    else:
+        logger.debug('Routine collection/submission is disabled')
