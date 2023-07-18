@@ -30,7 +30,6 @@ class JournalHelper(SentryHelper):
         'steamos-install-grub.service',
         'steamos-install-steamcl.service',
         'steamos-log-submitter.service',
-        'steamos-log-submitter.timer',
         'steamos-mkvarboot.service',
         'steamos-offload.target',
         'steamos-settings-importer.service',
