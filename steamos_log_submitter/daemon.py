@@ -17,6 +17,7 @@ import steamos_log_submitter.helpers as helpers
 
 config = sls.config.get_config(__name__)
 logger = logging.getLogger(__name__)
+socket = f'{sls.base}/steamos-log-submitter.socket'
 
 
 class Serializable:
@@ -67,8 +68,6 @@ class Reply(Serializable):
 
 
 class Daemon:
-    socket = 'steamos-log-submitter.socket'
-
     _startup = 20
     _interval = 3600
 
@@ -140,12 +139,12 @@ class Daemon:
         self._conns.remove((reader, writer))
 
     async def start(self) -> None:
-        if os.access(self.socket, os.F_OK):
-            os.unlink(self.socket)
+        if os.access(socket, os.F_OK):
+            os.unlink(socket)
 
         self._serving = True
-        self._server = await asyncio.start_unix_server(self._conn_cb, path=self.socket)
-        os.chmod(self.socket, 0o660)
+        self._server = await asyncio.start_unix_server(self._conn_cb, path=socket)
+        os.chmod(socket, 0o660)
 
         self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
@@ -155,7 +154,7 @@ class Daemon:
         self._periodic_task.cancel()
         self._server.close()
         await self._server.wait_closed()
-        os.unlink(self.socket)
+        os.unlink(socket)
 
         if self._exit_on_shutdown:  # pragma: no cover
             loop = asyncio.get_event_loop()
@@ -223,5 +222,5 @@ if __name__ == '__main__':  # pragma: no cover
     finally:
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
-        if os.access(Daemon.socket, os.F_OK):
-            os.unlink(Daemon.socket)
+        if os.access(socket, os.F_OK):
+            os.unlink(socket)
