@@ -102,7 +102,7 @@ async def test_invalid_format(test_daemon):
 
     reply = await reader.readline()
     assert reply
-    return sls.daemon.Reply.deserialize(reply)
+    reply = sls.daemon.Reply.deserialize(reply)
     assert reply.status == sls.daemon.Reply.INVALID_DATA
     await daemon.shutdown()
 
@@ -115,7 +115,7 @@ async def test_invalid_json(test_daemon):
 
     reply = await reader.readline()
     assert reply
-    return sls.daemon.Reply.deserialize(reply)
+    reply = sls.daemon.Reply.deserialize(reply)
     assert reply.status == sls.daemon.Reply.INVALID_DATA
     await daemon.shutdown()
 
