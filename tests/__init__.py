@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
 import httpx
@@ -11,7 +11,9 @@ import os
 import pwd
 import pytest
 import tempfile
+import time
 import steamos_log_submitter as sls
+import steamos_log_submitter.daemon
 import steamos_log_submitter.helpers
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -189,3 +191,14 @@ def awaitable(fn: Callable[..., Any]) -> Awaitable[Any]:
         return fn(*args, **kwargs)
 
     return afn
+
+
+@pytest.fixture
+def fake_socket(monkeypatch):
+    prefix = int((time.time() % 1) * 0x400000)
+    fakesocket = f'{prefix:06x}.socket'
+    monkeypatch.setattr(sls.daemon, 'socket', fakesocket)
+    yield fakesocket
+
+    if os.access(fakesocket, os.F_OK):
+        os.unlink(fakesocket)

@@ -13,7 +13,7 @@ import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from . import awaitable
-from . import count_hits, mock_config  # NOQA: F401
+from . import count_hits, fake_socket, mock_config  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -25,17 +25,6 @@ async def transact(command: sls.daemon.Command, reader: asyncio.StreamReader, wr
     reply = await reader.readline()
     assert reply
     return sls.daemon.Reply.deserialize(reply)
-
-
-@pytest.fixture
-def fake_socket(monkeypatch):
-    prefix = int((time.time() % 1) * 0x400000)
-    fakesocket = f'{prefix:06x}.socket'
-    monkeypatch.setattr(sls.daemon, 'socket', fakesocket)
-    yield fakesocket
-
-    if os.access(fakesocket, os.F_OK):
-        os.unlink(fakesocket)
 
 
 @pytest.fixture
