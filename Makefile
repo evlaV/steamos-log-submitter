@@ -33,7 +33,6 @@ clean:
 install: all $(infiles)
 	install -D -m0644 systemd/var-lib-steamos-log-submitter.mount $(DESTDIR)$(systemdunitsdir)/var-lib-steamos\\x2dlog\\x2dsubmitter.mount
 	install -D -m0644 systemd/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service
-	install -D -m0644 systemd/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer
 	install -D -m0644 systemd/sysusers.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf
 	install -D -m0644 systemd/tmpfiles.conf $(DESTDIR)$(tmpfilesdir)/steamos-log-submitter.conf
 	install -D -m0644 systemd/crash-hook.sysctl $(DESTDIR)$(sysctldir)/60-crash-hook.conf
