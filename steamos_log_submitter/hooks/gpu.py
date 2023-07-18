@@ -14,7 +14,9 @@ import time
 from typing import Union
 
 import steamos_log_submitter as sls
+import steamos_log_submitter.client
 import steamos_log_submitter.helpers
+from steamos_log_submitter.hooks import trigger
 from steamos_log_submitter.logging import reconfigure_logging
 from steamos_log_submitter.types import JSONEncodable
 
@@ -63,5 +65,6 @@ if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging(f'{sls.base}/gpu-crash.log')
     try:
         run()
+        trigger()
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)
