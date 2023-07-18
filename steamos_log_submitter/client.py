@@ -4,16 +4,18 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import logging
+import socket
 from typing import Any, Optional
 
-import steamos_log_submitter as sls
-from steamos_log_submitter.daemon import Command, Reply
+import steamos_log_submitter.daemon as daemon
 
 logger = logging.getLogger(__name__)
 
 
 class ClientError(RuntimeError):
-    pass
+    def __init__(self, reply=None):
+        super().__init__()
+        self.reply = reply
 
 
 class UnknownError(ClientError):
@@ -33,44 +35,58 @@ class InvalidArgumentsError(ClientError):
 
 
 exception_map = {
-    Reply.UNKNOWN_ERROR: UnknownError,
-    Reply.INVALID_COMMAND: InvalidCommandError,
-    Reply.INVALID_DATA: InvalidDataError,
-    Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
+    daemon.Reply.UNKNOWN_ERROR: UnknownError,
+    daemon.Reply.INVALID_COMMAND: InvalidCommandError,
+    daemon.Reply.INVALID_DATA: InvalidDataError,
+    daemon.Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
 }
 
 
 class Client:
+    def __init__(self, sock=None, *, path=None):
+        if sock:
+            self._socket = sock
+        else:
+            self._socket = socket.socket(family=socket.AF_UNIX)
+            self._socket.connect(path or daemon.socket)
+
     def _transact(self, command: str, args: Optional[dict[str, Any]] = None) -> Any:
-        command_obj = Command(command, args)
-        self._socket.write(command_obj.serialize())
-        reply = Reply.deserialize(self._socket.readline())
-        if reply.status == Reply.OK:
+        command_obj = daemon.Command(command, args)
+        self._socket.send(command_obj.serialize())
+        reply = self._socket.recv(4096)
+        reply = daemon.Reply.deserialize(reply)
+        if reply.status == daemon.Reply.OK:
             return reply.data
         exc = exception_map[reply.status]
         raise exc(reply)
 
     def enable(self, state: bool = True):
-        self._transact('enable', {'state': 'on' if state else 'off'})
+        self._transact('enable', {'state': state})
 
     def disable(self):
         self.enable(False)
 
-    def enable_helpers(self, helpers: list[str], state: bool = True):
-        pass
+    def enable_helpers(self, helpers: list[str]):
+        self.set_helpers_enabled({helper: True for helper in helpers})
 
     def disable_helpers(self, helpers: list[str]):
-        self.enable_helpers(helpers, False)
+        self.set_helpers_enabled({helper: False for helper in helpers})
+
+    def set_helpers_enabled(self, helpers: dict[str, bool]):
+        self._transact('enable-helpers', {'helpers': helpers})
 
     def status(self) -> bool:
         reply = self._transact('status')
-        return reply.get('status') == 'on'
+        return reply['enabled']
+
+    def list(self) -> list[str]:
+        return self._transact('list')
 
     def set_steam_info(self, key: str, value: Any):
-        pass
+        self._transact('set-steam-info', {'key': key, 'value': value})
 
     def shutdown(self):
-        pass
+        self._transact('shutdown')
 
     def trigger(self):
-        pass
+        self._transact('trigger')
