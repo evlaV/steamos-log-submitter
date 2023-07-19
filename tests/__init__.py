@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
+import concurrent.futures
 import configparser
 import httpx
 import importlib
@@ -12,6 +14,7 @@ import pwd
 import pytest
 import tempfile
 import time
+import threading
 import steamos_log_submitter as sls
 import steamos_log_submitter.daemon
 import steamos_log_submitter.helpers
@@ -202,3 +205,38 @@ def fake_socket(monkeypatch):
 
     if os.access(fakesocket, os.F_OK):
         os.unlink(fakesocket)
+
+
+def daemon_runner(ev):
+    daemon = sls.daemon.Daemon(exit_on_shutdown=True)
+
+    async def start():
+        await daemon.start()
+        ev.set()
+    loop = asyncio.new_event_loop()
+    loop.create_task(start())
+    loop.run_forever()
+
+
+class SyncClient:
+    def __init__(self):
+        self.pool = concurrent.futures.ThreadPoolExecutor()
+        self.client = None
+
+    def start(self):
+        ev = threading.Event()
+        self.pool.submit(daemon_runner, ev)
+        ev.wait()
+        self.client = sls.client.Client()
+
+    def __getattr__(self, attr):
+        return getattr(self.client, attr)
+
+
+@pytest.fixture
+def sync_client(fake_socket, mock_config, monkeypatch):
+    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+    client = SyncClient()
+    yield client
+    if client.client:
+        client.shutdown()

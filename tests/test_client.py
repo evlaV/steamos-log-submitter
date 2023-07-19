@@ -3,43 +3,11 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import asyncio
-import concurrent.futures
-import pytest
-import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 from . import awaitable
-from . import count_hits, fake_socket, mock_config  # NOQA: F401
-
-
-def daemon_runner():
-    daemon = sls.daemon.Daemon(exit_on_shutdown=True)
-    loop = asyncio.new_event_loop()
-    loop.create_task(daemon.start())
-    loop.run_forever()
-
-
-class SyncClient:
-    def __init__(self):
-        self.pool = concurrent.futures.ThreadPoolExecutor()
-
-    def start(self):
-        self.pool.submit(daemon_runner)
-        time.sleep(0.1)
-        self.client = sls.client.Client()
-
-    def __getattr__(self, attr):
-        return getattr(self.client, attr)
-
-
-@pytest.fixture
-def sync_client(fake_socket, mock_config, monkeypatch):
-    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
-    client = SyncClient()
-    yield client
-    client.shutdown()
+from . import count_hits, fake_socket, mock_config, sync_client  # NOQA: F401
 
 
 def test_client_status(sync_client):

@@ -1,22 +1,14 @@
-import os
-import pytest
-import tempfile
-import time
+import pwd
 import steamos_log_submitter.cli as cli
 import steamos_log_submitter.helpers as helpers
-import steamos_log_submitter.config as config
-from . import drop_root, mock_config  # NOQA: F401
+import steamos_log_submitter.steam as steam
+from . import always_raise
+from . import drop_root, fake_socket, mock_config, sync_client  # NOQA: F401
 
 
-@pytest.fixture
-def user_config(monkeypatch):
-    user_config = tempfile.NamedTemporaryFile(suffix='.cfg', dir=os.getcwd())
-    monkeypatch.setattr(config, 'user_config_path', user_config.name)
-    return user_config
-
-
-def test_status(capsys, mock_config):
+def test_status(capsys, mock_config, sync_client):
     mock_config.add_section('sls')
+    sync_client.start()
 
     mock_config.set('sls', 'enable', 'off')
     cli.main(['status'])
@@ -31,293 +23,150 @@ def test_status(capsys, mock_config):
     assert capsys.readouterr().out.strip().endswith('disabled')
 
 
-def test_list(capsys, monkeypatch):
+def test_list(capsys, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+    sync_client.start()
     cli.main(['list'])
     assert capsys.readouterr().out.strip() == 'test'
 
 
-def test_log_level(capsys, mock_config, monkeypatch, user_config):
+def test_log_level(capsys, mock_config, monkeypatch, sync_client):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'ERROR')
+    sync_client.start()
     cli.main(['log-level'])
     assert capsys.readouterr().out.strip() == 'ERROR'
 
 
-def test_set_log_level(mock_config, monkeypatch, user_config):
+def test_set_log_level(mock_config, monkeypatch, sync_client):
+    mock_config.add_section('logging')
+    sync_client.start()
     cli.main(['log-level', 'error'])
-    with open(user_config.name) as f:
-        assert f.read() == '[logging]\nlevel = ERROR\n\n'
+    assert mock_config.get('logging', 'level') == 'ERROR'
 
 
-def test_invalid_log_level(capsys, mock_config, monkeypatch, user_config):
+def test_invalid_log_level(capsys, mock_config, monkeypatch, sync_client):
+    mock_config.add_section('logging')
+    sync_client.start()
     cli.main(['log-level', 'foo'])
     assert capsys.readouterr().err.strip() == 'Please specify a valid log level'
 
 
-def test_enable(user_config):
-    assert cli.set_enabled(True)
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = on\n\n'
-
-    assert cli.set_enabled(False)
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = off\n\n'
-
-
-def test_enable2(user_config):
-    cli.main(['enable'])
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = on\n\n'
-
-    cli.main(['disable'])
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = off\n\n'
-
-
-def test_disable(user_config):
-    assert cli.set_enabled(False)
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = off\n\n'
-
-    assert cli.set_enabled(True)
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = on\n\n'
-
-
-def test_disable2(user_config):
-    cli.main(['disable'])
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = off\n\n'
+def test_enable(sync_client):
+    sync_client.start()
+    assert sync_client.status() is False
 
     cli.main(['enable'])
-    with open(user_config.name) as f:
-        assert f.read() == '[sls]\nenable = on\n\n'
+    assert sync_client.status() is True
 
 
-def test_enable_helper(monkeypatch, user_config):
+def test_disable(sync_client):
+    sync_client.start()
+    sync_client.enable()
+    assert sync_client.status() is True
+
+    cli.main(['disable'])
+    assert sync_client.status() is False
+
+
+def test_enable_helper(mock_config, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    assert cli.set_helper_enabled(['test'], True)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n'
-
-    assert cli.set_helper_enabled(['test'], False)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n'
-
-
-def test_enable_helper2(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    cli.main(['enable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n'
-
-    cli.main(['disable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n'
-
-
-def test_disable_helper(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    assert cli.set_helper_enabled(['test'], False)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n'
-
-    assert cli.set_helper_enabled(['test'], True)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n'
-
-
-def test_disable_helper2(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    cli.main(['disable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n'
+    sync_client.start()
+    sync_client.disable_helpers(['test'])
+    assert mock_config.has_section('helpers.test')
+    assert mock_config.get('helpers.test', 'enable') == 'off'
 
     cli.main(['enable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n'
+    assert mock_config.get('helpers.test', 'enable') == 'on'
 
 
-def test_enable_helpers(monkeypatch, user_config):
+def test_disable_helper(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+    sync_client.start()
+    sync_client.enable_helpers(['test'])
+    assert mock_config.has_section('helpers.test')
+    assert mock_config.get('helpers.test', 'enable') == 'on'
+
+    cli.main(['disable-helper', 'test'])
+    assert mock_config.get('helpers.test', 'enable') == 'off'
+
+
+def test_enable_helpers(mock_config, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
-    assert cli.set_helper_enabled(['test', 'test2'], True)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
-
-    assert cli.set_helper_enabled(['test'], False)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = on\n\n'
-
-    assert cli.set_helper_enabled(['test2'], False)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
-
-
-def test_enable_helpers2(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    sync_client.start()
+    sync_client.disable_helpers(['test', 'test2'])
+    assert mock_config.has_section('helpers.test')
+    assert mock_config.get('helpers.test', 'enable') == 'off'
+    assert mock_config.has_section('helpers.test2')
+    assert mock_config.get('helpers.test2', 'enable') == 'off'
     cli.main(['enable-helper', 'test', 'test2'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
-
-    cli.main(['disable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = on\n\n'
-
-    cli.main(['disable-helper', 'test2'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
+    assert mock_config.get('helpers.test', 'enable') == 'on'
+    assert mock_config.get('helpers.test2', 'enable') == 'on'
 
 
-def test_enable_invalid_helper(monkeypatch, user_config):
+def test_enable_invalid_helper(capsys, mock_config, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
-    assert not cli.set_helper_enabled(['test2'], True)
-    with open(user_config.name) as f:
-        assert not f.read().strip()
-
-
-def test_disable_helpers(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
-    assert cli.set_helper_enabled(['test', 'test2'], False)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
-
-    assert cli.set_helper_enabled(['test'], True)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = off\n\n'
-
-    assert cli.set_helper_enabled(['test2'], True)
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
-
-
-def test_disable_helpers2(monkeypatch, user_config):
-    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
-    cli.main(['disable-helper', 'test', 'test2'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = off\n\n[helpers.test2]\nenable = off\n\n'
-
-    cli.main(['enable-helper', 'test'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = off\n\n'
-
+    sync_client.start()
     cli.main(['enable-helper', 'test2'])
-    with open(user_config.name) as f:
-        assert f.read() == '[helpers.test]\nenable = on\n\n[helpers.test2]\nenable = on\n\n'
+    assert not mock_config.has_section('helpers.test2')
+    assert capsys.readouterr().err.strip() == 'Invalid helpers: test2'
 
 
-def test_no_config(monkeypatch):
-    monkeypatch.setattr(config, 'user_config_path', None)
-    assert not cli.set_enabled(True)
+def test_disable_helpers(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
+    sync_client.start()
+    sync_client.enable_helpers(['test', 'test2'])
+    assert mock_config.has_section('helpers.test')
+    assert mock_config.get('helpers.test', 'enable') == 'on'
+    assert mock_config.has_section('helpers.test2')
+    assert mock_config.get('helpers.test2', 'enable') == 'on'
+    cli.main(['disable-helper', 'test', 'test2'])
+    assert mock_config.get('helpers.test', 'enable') == 'off'
+    assert mock_config.get('helpers.test2', 'enable') == 'off'
 
 
-def test_create_file(monkeypatch):
-    prefix = int((time.time() % 1) * 0x400000)
-    user_config = f'{prefix:06x}.cfg'
-    assert not os.access(user_config, os.F_OK)
-    monkeypatch.setattr(config, 'user_config_path', user_config)
-    try:
-        assert cli.set_enabled(True)
-        with open(user_config) as f:
-            assert f.read() == '[sls]\nenable = on\n\n'
-    finally:
-        os.unlink(user_config)
-
-
-def test_update_file(monkeypatch):
-    prefix = int((time.time() % 1) * 0x400000)
-    user_config = f'{prefix:06x}.cfg'
-    with open(user_config, 'w') as f:
-        f.write('[test]\nempty = 0\n\n')
-    monkeypatch.setattr(config, 'user_config_path', user_config)
-    try:
-        assert cli.set_enabled(True)
-        with open(user_config) as f:
-            assert f.read() == '[test]\nempty = 0\n\n[sls]\nenable = on\n\n'
-    finally:
-        os.unlink(user_config)
-
-
-def test_clobber_file(monkeypatch):
-    prefix = int((time.time() % 1) * 0x400000)
-    user_config = f'{prefix:06x}.cfg'
-    with open(user_config, 'w') as f:
-        f.write('=invalid=')
-    monkeypatch.setattr(config, 'user_config_path', user_config)
-    try:
-        assert not cli.set_enabled(True)
-        with open(user_config) as f:
-            assert f.read() == '=invalid='
-    finally:
-        os.unlink(user_config)
-
-
-def test_inaccessible_config(drop_root, monkeypatch):
-    if os.access('/', os.W_OK):
-        pytest.skip('Directory is writable, are we running as root?')
-    monkeypatch.setattr(config, 'user_config_path', '/doesnotexist')
-    assert not cli.set_enabled(True)
-
-
-def test_set_steam_key_account_name(user_config):
-    assert cli.set_steam_info('account-name', 'gaben')
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\naccount_name = gaben\n\n'
-
-
-def test_set_steam_key_account_name2(user_config):
+def test_set_steam_key_account_name(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
+    sync_client.start()
     cli.main(['set-steam-info', 'account-name', 'gaben'])
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\naccount_name = gaben\n\n'
+    assert mock_config.has_section('steam')
+    assert mock_config.get('steam', 'account_name') == 'gaben'
+    assert steam.get_steam_account_name() == 'gaben'
 
 
-def test_set_steam_key_account_id(user_config):
-    assert cli.set_steam_info('account-id', '42')
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\naccount_id = 42\n\n'
-
-
-def test_set_steam_key_account_id2(user_config):
+def test_set_steam_key_account_id(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
+    sync_client.start()
     cli.main(['set-steam-info', 'account-id', '42'])
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\naccount_id = 42\n\n'
+    assert mock_config.has_section('steam')
+    assert mock_config.get('steam', 'account_id') == '42'
+    assert steam.get_steam_account_id() == 42
 
 
-def test_set_steam_key_account_id_invalid(user_config):
-    assert not cli.set_steam_info('account-id', 'gaben')
-    with open(user_config.name) as f:
-        assert f.read() == ''
-
-
-def test_set_steam_key_account_id_invalid2(user_config):
+def test_set_steam_key_account_id_invalid(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
+    sync_client.start()
+    assert not mock_config.has_section('steam')
     cli.main(['set-steam-info', 'account-id', 'gaben'])
-    with open(user_config.name) as f:
-        assert f.read() == ''
+    assert not mock_config.has_section('steam')
+    assert steam.get_steam_account_id() is None
 
 
-def test_set_steam_key_deck_serial(user_config):
-    assert cli.set_steam_info('deck-serial', 'AAAA0000')
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
-
-
-def test_set_steam_key_deck_serial2(user_config):
+def test_set_steam_key_deck_serial(mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
+    sync_client.start()
     cli.main(['set-steam-info', 'deck-serial', 'AAAA0000'])
-    with open(user_config.name) as f:
-        assert f.read() == '[steam]\ndeck_serial = AAAA0000\n\n'
+    assert mock_config.has_section('steam')
+    assert mock_config.get('steam', 'deck_serial') == 'AAAA0000'
+    assert steam.get_deck_serial() == 'AAAA0000'
 
 
-def test_set_steam_key_invalid(user_config):
-    assert not cli.set_steam_info('malicious_key', 'Breen')
-    with open(user_config.name) as f:
-        assert f.read() == ''
-
-
-def test_set_steam_key_invalid2(user_config):
+def test_set_steam_key_invalid(mock_config, sync_client):
+    sync_client.start()
+    assert not mock_config.has_section('steam')
     try:
         cli.main(['set-steam-info', 'malicious_key', 'Breen'])
         assert False
     except SystemExit:
         pass
-    with open(user_config.name) as f:
-        assert f.read() == ''
+    assert not mock_config.has_section('steam')

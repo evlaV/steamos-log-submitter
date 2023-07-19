@@ -1,78 +1,51 @@
 import argparse
-import configparser
 import sys
 import steamos_log_submitter as sls
-import steamos_log_submitter.config as config
+import steamos_log_submitter.client
 from collections.abc import Sequence
-from typing import Optional
 
 
-def load_user_config() -> Optional[configparser.ConfigParser]:
-    if not config.user_config_path:
-        print("No user configuration file path found", file=sys.stderr)
-        return None
-    user_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
-    try:
-        with open(config.user_config_path) as f:
-            user_config.read_file(f, source=config.user_config_path)
-    except FileNotFoundError:
-        pass
-    except OSError:
-        print("Couldn't open configuration file", file=sys.stderr)
-        return None
-    except configparser.Error:
-        print("Invalid config file. Please fix manually.", file=sys.stderr)
-        return None
-    return user_config
+class ClientWrapper:
+    def __enter__(self):
+        try:
+            client = sls.client.Client()
+            return client
+        except FileNotFoundError:
+            print("Can't connect to daemon. Is service running?", file=sys.stderr)
+            return None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return not exc_type
 
 
-def save_user_config(user_config: configparser.ConfigParser) -> bool:
-    if not config.user_config_path:
-        return False
-    try:
-        with open(config.user_config_path, 'w') as f:
-            user_config.write(f)
-    except OSError:
-        print("Couldn't open configuration file", file=sys.stderr)
-        return False
-    return True
+def set_enabled(enable: bool):
+    with ClientWrapper() as client:
+        if not client:
+            return
+        client.enable(enable)
 
 
-def set_enabled(enable: bool) -> bool:
-    user_config = load_user_config()
-    if not user_config:
-        return False
-
-    if not user_config.has_section('sls'):
-        user_config.add_section('sls')
-    user_config.set('sls', 'enable', 'on' if enable else 'off')
-
-    return save_user_config(user_config)
-
-
-def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
-    user_config = load_user_config()
-    if not user_config:
-        return False
-
-    did_anything = False
-    for helper in helpers:
-        if helper not in sls.helpers.list_helpers():
-            print(f'Helper {helper} not found', file=sys.stderr)
-            continue
-
-        if not user_config.has_section(f'helpers.{helper}'):
-            user_config.add_section(f'helpers.{helper}')
-        user_config.set(f'helpers.{helper}', 'enable', 'on' if enable else 'off')
-        did_anything = True
-
-    if not did_anything:
-        return False
-    return save_user_config(user_config)
+def set_helper_enabled(helpers: list[str], enable: bool):
+    with ClientWrapper() as client:
+        if not client:
+            return
+        valid_helpers = set(sls.helpers.list_helpers())
+        our_helpers = set(helpers)
+        invalid_helpers = our_helpers - valid_helpers
+        if invalid_helpers:
+            print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
+            helpers = list(our_helpers & valid_helpers)
+        if enable:
+            client.enable_helpers(helpers)
+        else:
+            client.disable_helpers(helpers)
 
 
 def do_status(args: argparse.Namespace) -> None:
-    print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
+    with ClientWrapper() as client:
+        if not client:
+            return
+        print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
 
 
 def do_list(args: argparse.Namespace) -> None:
@@ -81,19 +54,15 @@ def do_list(args: argparse.Namespace) -> None:
 
 
 def do_log_level(args: argparse.Namespace) -> None:
-    user_config = load_user_config()
-    if not user_config:
-        return
-
-    if args.level is None:
-        print(sls.logging.config.get('level', 'WARNING').upper())
-    elif sls.logging.valid_level(args.level):
-        if not user_config.has_section('logging'):
-            user_config.add_section('logging')
-        user_config.set('logging', 'level', args.level.upper())
-        save_user_config(user_config)
-    else:
-        print('Please specify a valid log level', file=sys.stderr)
+    with ClientWrapper() as client:
+        if not client:
+            return
+        if args.level is None:
+            print(client.log_level())
+        elif sls.logging.valid_level(args.level):
+            client.set_log_level(args.level)
+        else:
+            print('Please specify a valid log level', file=sys.stderr)
 
 
 def set_steam_info(key: str, value: str) -> bool:
@@ -107,15 +76,10 @@ def set_steam_info(key: str, value: str) -> bool:
             print('Account ID must be numeric', file=sys.stderr)
             return False
 
-    user_config = load_user_config()
-    if not user_config:
-        return False
-
-    if not user_config.has_section('steam'):
-        user_config.add_section('steam')
-    user_config.set('steam', key.replace('-', '_'), value)
-
-    return save_user_config(user_config)
+    with ClientWrapper() as client:
+        if not client:
+            return
+        client.set_steam_info(key.replace('-', '_'), value)
 
 
 def main(args: Sequence[str] = sys.argv[1:]) -> None:
