@@ -75,6 +75,7 @@ class Daemon:
         self._conns = []
         self._exit_on_shutdown = exit_on_shutdown
         self._periodic_task = None
+        self._serving = False
 
     async def _run_command(self, command: dict) -> Reply:
         if not command:
@@ -139,6 +140,8 @@ class Daemon:
         self._conns.remove((reader, writer))
 
     async def start(self) -> None:
+        if self._serving:
+            return
         if os.access(socket, os.F_OK):
             os.unlink(socket)
 
@@ -152,6 +155,10 @@ class Daemon:
         logger.info('Daemon shutting down')
         self._serving = False
         self._periodic_task.cancel()
+        try:
+            await self._periodic_task
+        except asyncio.CancelledError:
+            pass
         self._server.close()
         await self._server.wait_closed()
         os.unlink(socket)
