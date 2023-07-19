@@ -8,6 +8,7 @@ import configparser
 import io
 import os
 import pwd
+import tempfile
 import steamos_log_submitter.config as config
 from . import always_raise, fake_pwuid  # NOQA: F401
 
@@ -401,3 +402,156 @@ def test_reload_config_interpolation(monkeypatch):
     assert config.config.get('sls', 'base') == '/fake'
     assert config.config.get('sls', 'subdir') == '/fake/dir'
     assert config.config.get('section', 'gordon') == '/fake/freeman'
+
+
+def test_migrate_key(monkeypatch):
+    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+    base_config = configparser.ConfigParser()
+    base_config.add_section('sls')
+    base_config.set('sls', 'user-config', user_config_file.name)
+    base_config.set('sls', 'local-config', local_config_file.name)
+    base_config.write(base_config_file)
+    base_config_file.flush()
+    user_config = configparser.ConfigParser()
+    user_config.add_section('test')
+    user_config.set('test', 'subject', 'Chel')
+    user_config.write(user_config_file)
+    user_config_file.flush()
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == local_config_file.name
+
+    assert config.config.has_section('test')
+    assert config.config.get('test', 'subject') == 'Chel'
+    assert not config.local_config.has_section('test')
+
+    assert config.migrate_key('test', 'subject')
+    config.reload_config()
+
+    assert not config.config.has_section('test') or not config.config.has_option('test', 'subject')
+    assert config.local_config.has_section('test')
+    assert config.local_config.get('test', 'subject') == 'Chel'
+
+
+def test_migrate_key_missing_key(monkeypatch):
+    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+    base_config = configparser.ConfigParser()
+    base_config.add_section('sls')
+    base_config.set('sls', 'user-config', user_config_file.name)
+    base_config.set('sls', 'local-config', local_config_file.name)
+    base_config.write(base_config_file)
+    base_config_file.flush()
+    user_config = configparser.ConfigParser()
+    user_config.add_section('test')
+    user_config.write(user_config_file)
+    user_config_file.flush()
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == local_config_file.name
+
+    assert config.config.has_section('test')
+    assert not config.config.has_option('test', 'subject')
+    assert not config.local_config.has_section('test')
+
+    assert not config.migrate_key('test', 'subject')
+    config.reload_config()
+
+    assert not config.config.has_section('test') or not config.config.has_option('test', 'subject')
+    assert not config.local_config.has_section('test')
+
+
+def test_migrate_key_missing_section(monkeypatch):
+    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+    base_config = configparser.ConfigParser()
+    base_config.add_section('sls')
+    base_config.set('sls', 'user-config', user_config_file.name)
+    base_config.set('sls', 'local-config', local_config_file.name)
+    base_config.write(base_config_file)
+    base_config_file.flush()
+    user_config = configparser.ConfigParser()
+    user_config.write(user_config_file)
+    user_config_file.flush()
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == local_config_file.name
+
+    assert not config.config.has_section('test')
+    assert not config.local_config.has_section('test')
+
+    assert not config.migrate_key('test', 'subject')
+    config.reload_config()
+
+    assert not config.config.has_section('test')
+    assert not config.local_config.has_section('test')
+
+
+def test_migrate_key_duplicate(monkeypatch):
+    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+    base_config = configparser.ConfigParser()
+    base_config.add_section('sls')
+    base_config.set('sls', 'user-config', user_config_file.name)
+    base_config.set('sls', 'local-config', local_config_file.name)
+    base_config.write(base_config_file)
+    base_config_file.flush()
+    user_config = configparser.ConfigParser()
+    user_config.add_section('test')
+    user_config.set('test', 'subject', 'Chel')
+    user_config.write(user_config_file)
+    user_config_file.flush()
+    local_config = configparser.ConfigParser()
+    local_config.add_section('test')
+    local_config.set('test', 'subject', 'Wheatley')
+    local_config.write(local_config_file)
+    local_config_file.flush()
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.has_option('sls', 'user-config')
+    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.has_option('sls', 'local-config')
+    assert config.config.get('sls', 'local-config') == local_config_file.name
+
+    assert config.config.has_section('test')
+    assert config.config.get('test', 'subject') == 'Chel'
+    assert config.local_config.has_section('test')
+    assert config.local_config.get('test', 'subject') == 'Wheatley'
+
+    assert not config.migrate_key('test', 'subject')
+    config.reload_config()
+
+    assert config.config.has_section('test')
+    assert config.config.get('test', 'subject') == 'Chel'
+    assert config.local_config.has_section('test')
+    assert config.local_config.get('test', 'subject') == 'Wheatley'

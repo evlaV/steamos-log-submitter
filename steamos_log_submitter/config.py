@@ -120,4 +120,30 @@ def write_config() -> None:
         local_config.write(f)
 
 
+def migrate_key(section: str, key: str) -> bool:
+    if not user_config_path:
+        return False
+    user_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
+    try:
+        with open(user_config_path) as f:
+            user_config.read_file(f, source=user_config_path)
+    except OSError:
+        return False
+    if not user_config.has_section(section):
+        return False
+    if not user_config.has_option(section, key):
+        return False
+    value = user_config.get(section, key)
+    if not local_config.has_section(section):
+        local_config.add_section(section)
+    elif local_config.has_option(section, key):
+        return False
+    user_config.remove_option(section, key)
+    local_config.set(section, key, value)
+    write_config()
+    with open(user_config_path, 'w') as f:
+        user_config.write(f)
+    return True
+
+
 reload_config()
