@@ -113,6 +113,7 @@ class Daemon:
         while self._serving:
             next_interval = next_trigger - time.time()
             if next_interval > 0:
+                logger.debug(f'Sleeping for {next_interval:.3f} seconds')
                 await asyncio.sleep(next_interval)
             await self.trigger()
             last_trigger = time.time()
@@ -143,6 +144,7 @@ class Daemon:
     async def start(self) -> None:
         if self._serving:
             return
+        logger.info('Daemon starting up')
         sls.config.upgrade()
         if os.access(socket, os.F_OK):
             os.unlink(socket)
@@ -187,6 +189,7 @@ class Daemon:
         for helper, state in helpers.items():
             if type(state) != bool:
                 return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
+            logger.debug(f'Changing {helper} enable state to ' + ('on' if state else 'off'))
             sls.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
         sls.config.write_config()
         return Reply(Reply.OK)
@@ -215,8 +218,10 @@ class Daemon:
             'account_id',
             'account_name'
         ):
+            logger.warning(f'Got Steam info change for invalid key {key}')
             return Reply(Reply.INVALID_ARGUMENTS, data={'key': key})
 
+        logger.debug(f'Changing Steam info key {key} to {value}')
         sls.steam.config[key] = value
         sls.config.write_config()
         return Reply(Reply.OK)
