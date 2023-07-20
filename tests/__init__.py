@@ -240,3 +240,29 @@ def sync_client(fake_socket, mock_config, monkeypatch):
     yield client
     if client.client:
         client.shutdown()
+
+
+class CustomConfig:
+    def __init__(self, monkeypatch):
+        self.base_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+        self.user_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+        self.local_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+        monkeypatch.setattr(sls.config, 'base_config_path', self.base_file.name)
+        monkeypatch.setattr(sls.config, 'config', None)
+        monkeypatch.setattr(sls.config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+        self.base = configparser.ConfigParser()
+        self.base.add_section('sls')
+        self.base.set('sls', 'user-config', self.user_file.name)
+        self.base.set('sls', 'local-config', self.local_file.name)
+        self.user = configparser.ConfigParser()
+        self.local = configparser.ConfigParser()
+
+    def write(self):
+        self.base.write(self.base_file)
+        self.base_file.flush()
+
+        self.user.write(self.user_file)
+        self.user_file.flush()
+
+        self.local.write(self.local_file)
+        self.local_file.flush()

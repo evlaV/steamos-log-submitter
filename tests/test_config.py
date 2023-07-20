@@ -8,9 +8,9 @@ import configparser
 import io
 import os
 import pwd
-import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
+from . import CustomConfig
 from . import always_raise, fake_pwuid  # NOQA: F401
 
 file_base = f'{os.path.dirname(__file__)}/config'
@@ -406,30 +406,17 @@ def test_reload_config_interpolation(monkeypatch):
 
 
 def test_migrate_key(monkeypatch):
-    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
-    monkeypatch.setattr(config, 'config', None)
-    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
-    base_config = configparser.ConfigParser()
-    base_config.add_section('sls')
-    base_config.set('sls', 'user-config', user_config_file.name)
-    base_config.set('sls', 'local-config', local_config_file.name)
-    base_config.write(base_config_file)
-    base_config_file.flush()
-    user_config = configparser.ConfigParser()
-    user_config.add_section('test')
-    user_config.set('test', 'subject', 'Chel')
-    user_config.write(user_config_file)
-    user_config_file.flush()
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.user.add_section('test')
+    custom_config.user.set('test', 'subject', 'Chel')
+    custom_config.write()
 
     config.reload_config()
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'user-config')
-    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.get('sls', 'user-config') == custom_config.user_file.name
     assert config.config.has_option('sls', 'local-config')
-    assert config.config.get('sls', 'local-config') == local_config_file.name
+    assert config.config.get('sls', 'local-config') == custom_config.local_file.name
 
     assert config.config.has_section('test')
     assert config.config.get('test', 'subject') == 'Chel'
@@ -444,29 +431,16 @@ def test_migrate_key(monkeypatch):
 
 
 def test_migrate_key_missing_key(monkeypatch):
-    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
-    monkeypatch.setattr(config, 'config', None)
-    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
-    base_config = configparser.ConfigParser()
-    base_config.add_section('sls')
-    base_config.set('sls', 'user-config', user_config_file.name)
-    base_config.set('sls', 'local-config', local_config_file.name)
-    base_config.write(base_config_file)
-    base_config_file.flush()
-    user_config = configparser.ConfigParser()
-    user_config.add_section('test')
-    user_config.write(user_config_file)
-    user_config_file.flush()
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.user.add_section('test')
+    custom_config.write()
 
     config.reload_config()
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'user-config')
-    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.get('sls', 'user-config') == custom_config.user_file.name
     assert config.config.has_option('sls', 'local-config')
-    assert config.config.get('sls', 'local-config') == local_config_file.name
+    assert config.config.get('sls', 'local-config') == custom_config.local_file.name
 
     assert config.config.has_section('test')
     assert not config.config.has_option('test', 'subject')
@@ -480,28 +454,15 @@ def test_migrate_key_missing_key(monkeypatch):
 
 
 def test_migrate_key_missing_section(monkeypatch):
-    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
-    monkeypatch.setattr(config, 'config', None)
-    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
-    base_config = configparser.ConfigParser()
-    base_config.add_section('sls')
-    base_config.set('sls', 'user-config', user_config_file.name)
-    base_config.set('sls', 'local-config', local_config_file.name)
-    base_config.write(base_config_file)
-    base_config_file.flush()
-    user_config = configparser.ConfigParser()
-    user_config.write(user_config_file)
-    user_config_file.flush()
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.write()
 
     config.reload_config()
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'user-config')
-    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.get('sls', 'user-config') == custom_config.user_file.name
     assert config.config.has_option('sls', 'local-config')
-    assert config.config.get('sls', 'local-config') == local_config_file.name
+    assert config.config.get('sls', 'local-config') == custom_config.local_file.name
 
     assert not config.config.has_section('test')
     assert not config.local_config.has_section('test')
@@ -514,35 +475,19 @@ def test_migrate_key_missing_section(monkeypatch):
 
 
 def test_migrate_key_duplicate(monkeypatch):
-    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
-    monkeypatch.setattr(config, 'config', None)
-    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
-    base_config = configparser.ConfigParser()
-    base_config.add_section('sls')
-    base_config.set('sls', 'user-config', user_config_file.name)
-    base_config.set('sls', 'local-config', local_config_file.name)
-    base_config.write(base_config_file)
-    base_config_file.flush()
-    user_config = configparser.ConfigParser()
-    user_config.add_section('test')
-    user_config.set('test', 'subject', 'Chel')
-    user_config.write(user_config_file)
-    user_config_file.flush()
-    local_config = configparser.ConfigParser()
-    local_config.add_section('test')
-    local_config.set('test', 'subject', 'Wheatley')
-    local_config.write(local_config_file)
-    local_config_file.flush()
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.user.add_section('test')
+    custom_config.user.set('test', 'subject', 'Chel')
+    custom_config.local.add_section('test')
+    custom_config.local.set('test', 'subject', 'Wheatley')
+    custom_config.write()
 
     config.reload_config()
     assert config.config.has_section('sls')
     assert config.config.has_option('sls', 'user-config')
-    assert config.config.get('sls', 'user-config') == user_config_file.name
+    assert config.config.get('sls', 'user-config') == custom_config.user_file.name
     assert config.config.has_option('sls', 'local-config')
-    assert config.config.get('sls', 'local-config') == local_config_file.name
+    assert config.config.get('sls', 'local-config') == custom_config.local_file.name
 
     assert config.config.has_section('test')
     assert config.config.get('test', 'subject') == 'Chel'
@@ -560,31 +505,18 @@ def test_migrate_key_duplicate(monkeypatch):
 
 def test_upgrade(monkeypatch):
     monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
-    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
-    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
-    monkeypatch.setattr(config, 'config', None)
-    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
-    base_config = configparser.ConfigParser()
-    base_config.add_section('sls')
-    base_config.set('sls', 'user-config', user_config_file.name)
-    base_config.set('sls', 'local-config', local_config_file.name)
-    base_config.write(base_config_file)
-    base_config_file.flush()
-    user_config = configparser.ConfigParser()
-    user_config.add_section('sls')
-    user_config.set('sls', 'enable', 'on')
-    user_config.add_section('steam')
-    user_config.set('steam', 'account_id', '12345')
-    user_config.set('steam', 'account_name', 'my_luggage')
-    user_config.set('steam', 'deck_serial', 'druidia')
-    user_config.set('steam', 'egs', 'does not exist')
-    user_config.add_section('helpers.test')
-    user_config.set('helpers.test', 'enable', 'on')
-    user_config.set('helpers.test', 'foo', 'bar')
-    user_config.write(user_config_file)
-    user_config_file.flush()
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.user.add_section('sls')
+    custom_config.user.set('sls', 'enable', 'on')
+    custom_config.user.add_section('steam')
+    custom_config.user.set('steam', 'account_id', '12345')
+    custom_config.user.set('steam', 'account_name', 'my_luggage')
+    custom_config.user.set('steam', 'deck_serial', 'druidia')
+    custom_config.user.set('steam', 'egs', 'does not exist')
+    custom_config.user.add_section('helpers.test')
+    custom_config.user.set('helpers.test', 'enable', 'on')
+    custom_config.user.set('helpers.test', 'foo', 'bar')
+    custom_config.write()
 
     config.reload_config()
     assert config.config.has_section('sls')
