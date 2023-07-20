@@ -210,6 +210,7 @@ async def test_status(test_daemon, mock_config):
     reply = await transact(sls.daemon.Command("status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
     assert reply.data == {"enabled": False}
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -231,6 +232,7 @@ async def test_enable(test_daemon, mock_config):
 
     reply = await transact(sls.daemon.Command("enable"), reader, writer)
     assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -251,6 +253,7 @@ async def test_enable_helpers(test_daemon, mock_config, monkeypatch):
     reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test": "off"}}), reader, writer)
     assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
     assert reply.data == {'invalid-state': ['test', 'off']}
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -360,3 +363,4 @@ async def test_trigger_called(test_daemon, monkeypatch, count_hits, mock_config)
     reply = await transact(sls.daemon.Command("trigger"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
     assert count_hits.hits == 2
+    await daemon.shutdown()
