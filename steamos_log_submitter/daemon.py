@@ -199,6 +199,7 @@ class Daemon:
         if level is not None:
             if not sls.logging.valid_level(level):
                 return Reply(Reply.INVALID_ARGUMENTS, {'level', level})
+            sls.config.migrate_key('logging', 'level')
             sls.logging.config['level'] = level.upper()
             sls.config.write_config()
             sls.logging.reconfigure_logging()

@@ -12,7 +12,7 @@ import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from . import awaitable
+from . import awaitable, CustomConfig
 from . import count_hits, fake_socket, mock_config  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
@@ -164,6 +164,32 @@ async def test_set_log_level(test_daemon, mock_config):
     assert reply.status == sls.daemon.Reply.OK
     assert reply.data == {'level': 'WARNING'}
     assert mock_config.get('logging', 'level') == 'WARNING'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_set_log_level_migrate(test_daemon, monkeypatch):
+    custom_config = CustomConfig(monkeypatch)
+    custom_config.user.add_section('logging')
+    custom_config.user.set('logging', 'level', 'WARNING')
+    custom_config.write()
+
+    sls.config.reload_config()
+    assert sls.config.local_config_path == custom_config.local_file.name
+    assert sls.config.user_config_path == custom_config.user_file.name
+    assert sls.config.config.has_section('logging')
+    assert sls.config.config.get('logging', 'level') == 'WARNING'
+    assert not sls.config.local_config.has_section('logging')
+
+    daemon, reader, writer = await test_daemon
+    reply = await transact(sls.daemon.Command("log-level", {"level": "WARNING"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {'level': 'WARNING'}
+
+    sls.config.reload_config()
+    assert not sls.config.config.has_option('logging', 'level')
+    assert sls.config.local_config.has_section('logging')
+    assert sls.config.local_config.get('logging', 'level') == 'WARNING'
     await daemon.shutdown()
 
 
