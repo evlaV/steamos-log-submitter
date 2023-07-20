@@ -69,7 +69,11 @@ def always_raise(exc):
 @pytest.fixture
 def patch_module():
     class FakeModule:
-        pass
+        defaults = None
+
+        @classmethod
+        def _setup(cls):
+            pass
     return FakeModule()
 
 

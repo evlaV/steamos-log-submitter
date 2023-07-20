@@ -4,6 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import steamos_log_submitter as sls
+import steamos_log_submitter.helpers
 from steamos_log_submitter.lockfile import LockHeldError
 
 import asyncio
@@ -30,7 +31,7 @@ async def collect():
     logger.info('Starting log collection')
     tasks = []
     for category in sls.helpers.list_helpers():
-        cat_config = sls.get_config(f'steamos_log_submitter.helpers.{category}')
+        cat_config = sls.config.get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('collect', 'on') != 'on':
             continue
         tasks.append(asyncio.create_task(collect_category(category)))
@@ -73,7 +74,7 @@ async def submit():
 
     tasks = []
     for category in sls.helpers.list_helpers():
-        cat_config = sls.get_config(f'steamos_log_submitter.helpers.{category}')
+        cat_config = sls.config.get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
             continue
         logger.info(f'Submitting logs for {category}')
