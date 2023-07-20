@@ -16,8 +16,8 @@ import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 import steamos_log_submitter.helpers as helpers
 
-config = sls.config.get_config(__name__)
-logger = logging.getLogger(__name__)
+config = sls.config.get_config(__loader__.name)
+logger = logging.getLogger(__loader__.name)
 socket = f'{sls.base}/steamos-log-submitter.socket'
 
 
