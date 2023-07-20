@@ -8,8 +8,6 @@ import logging
 import os
 import steamos_log_submitter as sls
 
-data_root = f'{sls.base}/data'
-
 datastore = {}
 
 logger = logging.getLogger(__name__)
@@ -80,3 +78,8 @@ def get_data(name, defaults=None):
     elif defaults:
         datastore[name].add_defaults(defaults)
     return datastore[name]
+
+
+def _setup():
+    global data_root
+    data_root = f'{sls.base}/data'

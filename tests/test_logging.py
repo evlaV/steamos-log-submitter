@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def test_log_to_file():
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
-    sls.reconfigure_logging(f'{tmpdir.name}/log')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
 
     logger.error('foo')
 
@@ -31,7 +31,7 @@ def test_log_level(mock_config):
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'critical')
-    sls.reconfigure_logging(f'{tmpdir.name}/log')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
 
     logger.critical('foo')
     logger.error('foo')
@@ -48,7 +48,7 @@ def test_log_level_invalid(mock_config):
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'fake')
-    sls.reconfigure_logging(f'{tmpdir.name}/log')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
 
     logger.warning('foo')
     logger.info('foo')
@@ -66,7 +66,7 @@ def test_log_level_invalid2(mock_config, monkeypatch):
     logging.FAKE = 5
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'FAKE')
-    sls.reconfigure_logging(f'{tmpdir.name}/log')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
 
     logger.warning('foo')
     logger.info('foo')
@@ -87,5 +87,5 @@ def test_log_open_failure(capsys, drop_root):
         return
     except PermissionError:
         pass
-    sls.reconfigure_logging('/nonexistent')
+    sls.logging.reconfigure_logging('/nonexistent')
     assert capsys.readouterr().err.strip().endswith("Couldn't open log file")

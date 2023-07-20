@@ -9,6 +9,7 @@ import os
 import pkgutil
 import sys
 import tempfile
+from typing import Optional
 import steamos_log_submitter as sls
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
@@ -32,17 +33,19 @@ class HelperResult:
         return HelperResult(false_code)
 
 
-class MetaHelper(type):
-    def __new__(cls, name, bases, dct):
-        newcls = super().__new__(cls, name, bases, dct)
-        newcls.config = sls.get_config(newcls.__module__)
-        newcls.data = sls.get_data(newcls.__module__, defaults=dct.get('defaults'))
-        newcls.logger = logging.getLogger(newcls.__module__)
-        sys.modules[newcls.__module__].helper = newcls
-        return newcls
+class Helper:
+    defaults: Optional[dict[str, Optional[str]]] = None
 
+    @classmethod
+    def __init_subclass__(cls):
+        cls.logger = logging.getLogger(cls.__module__)
+        sys.modules[cls.__module__].helper = cls
 
-class Helper(metaclass=MetaHelper):
+    @classmethod
+    def _setup(cls):
+        cls.config = sls.config.get_config(cls.__module__)
+        cls.data = sls.data.get_data(cls.__module__, defaults=cls.defaults)
+
     @classmethod
     async def collect(cls) -> bool:
         return False
@@ -64,6 +67,7 @@ def create_helper(category):
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
         if not hasattr(helper, 'helper'):
             raise HelperError('Helper module does not contain submit function')
+        helper.helper._setup()
     except ModuleNotFoundError as e:
         raise HelperError from e
     return helper.helper

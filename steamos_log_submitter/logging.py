@@ -12,7 +12,7 @@ __all__ = [
     'reconfigure_logging',
 ]
 
-config = sls.get_config(__name__)
+config = sls.config.get_config(__name__)
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')

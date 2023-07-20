@@ -18,11 +18,15 @@ __all__ = [
 
 config = sls.config.get_config(__name__)
 logger = logging.getLogger(__name__)
+default_uid = 1000
 
-try:
-    default_uid = int(config.get('uid', '1000'))
-except ValueError:
-    default_uid = 1000
+
+def _setup():
+    global default_uid
+    try:
+        default_uid = int(config.get('uid', '1000'))
+    except ValueError:
+        default_uid = 1000
 
 
 def get_deck_serial(uid: int = default_uid) -> Optional[str]:
