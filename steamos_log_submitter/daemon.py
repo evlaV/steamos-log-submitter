@@ -144,6 +144,7 @@ class Daemon:
     async def start(self) -> None:
         if self._serving:
             return
+        sls.logging.reconfigure_logging(sls.logging.config.get('path'))
         logger.info('Daemon starting up')
         sls.config.upgrade()
         if os.access(socket, os.F_OK):
@@ -205,7 +206,7 @@ class Daemon:
             sls.config.migrate_key('logging', 'level')
             sls.logging.config['level'] = level.upper()
             sls.config.write_config()
-            sls.logging.reconfigure_logging()
+            sls.logging.reconfigure_logging(sls.logging.config.get('path'))
         return Reply(Reply.OK, {'level': sls.logging.config.get('level', 'WARNING').upper()})
 
     async def _status(self) -> Reply:
