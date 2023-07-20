@@ -101,7 +101,7 @@ class Daemon:
             return Reply(Reply.OK, data=reply)
         except Exception as e:
             logger.error('Exception hit when attempting to run command', exc_info=e)
-            return Reply(status=Reply.UNKNOWN_ERROR)
+            return Reply(status=Reply.UNKNOWN_ERROR, data={'exception': str(e)})
 
     async def _trigger_periodic(self):
         last_trigger = config.get('last_trigger')
