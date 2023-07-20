@@ -191,7 +191,7 @@ class Daemon:
             if type(state) != bool:
                 return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
             logger.debug(f'Changing {helper} enable state to ' + ('on' if state else 'off'))
-            sls.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
+            sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
         sls.config.write_config()
         return Reply(Reply.OK)
 
