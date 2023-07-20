@@ -67,7 +67,7 @@ def trigger():
 
 def collect():
     logger.info('Starting log collection')
-    for category in os.listdir(pending):
+    for category in helpers.list_helpers():
         cat_config = get_config(f'steamos_log_submitter.helpers.{category}')
         if cat_config.get('enable', 'on') != 'on' or cat_config.get('collect', 'on') != 'on':
             continue
