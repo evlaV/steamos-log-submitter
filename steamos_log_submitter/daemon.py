@@ -143,6 +143,7 @@ class Daemon:
     async def start(self) -> None:
         if self._serving:
             return
+        sls.config.upgrade()
         if os.access(socket, os.F_OK):
             os.unlink(socket)
 
