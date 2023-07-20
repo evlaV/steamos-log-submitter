@@ -56,6 +56,20 @@ def test_client_list(sync_client):
     assert sync_client.list() == ['test']
 
 
+def test_client_get_log_level(sync_client, mock_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'INFO')
+    sync_client.start()
+    assert sync_client.log_level() == 'INFO'
+
+
+def test_client_set_log_level(sync_client, mock_config):
+    sync_client.start()
+    assert sync_client.log_level() != 'ERROR'
+    sync_client.set_log_level('ERROR')
+    assert sync_client.log_level() == 'ERROR'
+
+
 def test_client_trigger(sync_client, mock_config, monkeypatch, count_hits):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     sync_client.start()

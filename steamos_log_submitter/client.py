@@ -82,6 +82,12 @@ class Client:
     def list(self) -> list[str]:
         return self._transact('list')
 
+    def log_level(self) -> str:
+        return self._transact('log-level')['level']
+
+    def set_log_level(self, level: str):
+        return self._transact('log-level', {'level': level})
+
     def set_steam_info(self, key: str, value: Any):
         self._transact('set-steam-info', {'key': key, 'value': value})
 

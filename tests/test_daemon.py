@@ -145,6 +145,29 @@ async def test_list(test_daemon, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_get_log_level(test_daemon, mock_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'INFO')
+    daemon, reader, writer = await test_daemon
+    reply = await transact(sls.daemon.Command("log-level"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {'level': 'INFO'}
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_set_log_level(test_daemon, mock_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'INFO')
+    daemon, reader, writer = await test_daemon
+    reply = await transact(sls.daemon.Command("log-level", {"level": "WARNING"}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {'level': 'WARNING'}
+    assert mock_config.get('logging', 'level') == 'WARNING'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_status(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("status"), reader, writer)
