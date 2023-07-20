@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import time
+from typing import Optional
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.runner
@@ -193,6 +194,15 @@ class Daemon:
         helper_list = helpers.list_helpers()
         return Reply(Reply.OK, data=helper_list)
 
+    async def _log_level(self, level: Optional[str] = None) -> Reply:
+        if level is not None:
+            if not sls.logging.valid_level(level):
+                return Reply(Reply.INVALID_ARGUMENTS, {'level', level})
+            sls.logging.config['level'] = level.upper()
+            sls.config.write_config()
+            sls.logging.reconfigure_logging()
+        return Reply(Reply.OK, {'level': sls.logging.config.get('level', 'WARNING').upper()})
+
     async def _status(self) -> Reply:
         enabled = sls.base_config.get('enable') == 'on'
         return Reply(Reply.OK, data={'enabled': enabled})
@@ -214,6 +224,7 @@ class Daemon:
         'enable-helpers': _enable_helpers,
         'status': _status,
         'list': _list,
+        'log-level': _log_level,
         'set-steam-info': _set_steam_info,
         'shutdown': shutdown,
         'trigger': trigger,
