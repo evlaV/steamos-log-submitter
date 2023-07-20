@@ -94,5 +94,5 @@ class Client:
     def shutdown(self):
         self._transact('shutdown')
 
-    def trigger(self):
-        self._transact('trigger')
+    def trigger(self, wait=True):
+        self._transact('trigger', {'wait': wait})
