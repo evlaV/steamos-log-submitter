@@ -39,7 +39,7 @@ def reconfigure_logging(path: str = None):
         path = config.get('path')
     if path:
         try:
-            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='W6', backupCount=4, encoding='utf-8'))
+            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='W6', backupCount=4, encoding='utf-8'), level)
         except OSError:
             logger.warning("Couldn't open log file")
     root_logger.setLevel(level)
