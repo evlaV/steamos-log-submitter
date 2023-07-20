@@ -40,8 +40,6 @@ def reconfigure_logging(path: Optional[str] = None) -> None:
         handler.close()
     add_handler(logging.StreamHandler(), level)
 
-    if path is None:
-        path = config.get('path')
     if path:
         try:
             add_handler(logging.handlers.TimedRotatingFileHandler(path, when='W6', backupCount=4, encoding='utf-8'), level)
