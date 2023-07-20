@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
+import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
@@ -43,6 +45,24 @@ def test_client_trigger(sync_client, mock_config, monkeypatch, count_hits):
     sync_client.start()
     sync_client.trigger()
     assert count_hits.hits == 1
+
+
+def test_client_trigger_wait(sync_client, mock_config, monkeypatch):
+    async def trigger():
+        await asyncio.sleep(0.1)
+
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+    sync_client.start()
+
+    start = time.time()
+    sync_client.trigger(False)
+    end = time.time()
+    assert end - start < 0.1
+
+    start = time.time()
+    sync_client.trigger(True)
+    end = time.time()
+    assert end - start >= 0.1
 
 
 def test_enable_helpers(sync_client):
