@@ -18,6 +18,10 @@ root_logger = logging.getLogger()
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
+def valid_level(level: str) -> bool:
+    return level.upper() in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+
+
 def add_handler(handler: logging.Handler, level: int):
     handler.setFormatter(formatter)
     handler.setLevel(level)
@@ -26,9 +30,9 @@ def add_handler(handler: logging.Handler, level: int):
 
 def reconfigure_logging(path: Optional[str] = None):
     level = config.get('level', 'WARNING').upper()
-    try:
+    if valid_level(level):
         level = getattr(logging, level)
-    except AttributeError:
+    else:
         level = logging.WARNING
 
     for handler in list(root_logger.handlers):

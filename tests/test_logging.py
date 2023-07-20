@@ -65,6 +65,26 @@ def test_log_level_invalid(mock_config):
     assert 'INFO' not in log
 
 
+def test_log_level_invalid2(mock_config, monkeypatch):
+    tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
+    logging.FAKE = 5
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'path', f'{tmpdir.name}/log')
+    mock_config.set('logging', 'level', 'FAKE')
+    sls.reconfigure_logging()
+
+    logger.warning('foo')
+    logger.info('foo')
+
+    del logging.FAKE
+    assert os.access(f'{tmpdir.name}/log', os.F_OK)
+    with open(f'{tmpdir.name}/log') as f:
+        log = f.read()
+
+    assert 'WARNING' in log
+    assert 'INFO' not in log
+
+
 def test_log_open_failure(capsys, drop_root):
     try:
         open('/nonexistent', 'w')
