@@ -172,8 +172,12 @@ class Daemon:
             loop = asyncio.get_event_loop()
             loop.stop()
 
-    async def trigger(self):
-        await sls.runner.trigger()
+    async def trigger(self, wait=True):
+        coro = sls.runner.trigger()
+        if wait:
+            await coro
+        else:
+            asyncio.create_task(coro)
 
     async def _enable(self, state: bool) -> Reply:
         if type(state) != bool:

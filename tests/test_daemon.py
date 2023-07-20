@@ -364,3 +364,24 @@ async def test_trigger_called(test_daemon, monkeypatch, count_hits, mock_config)
     assert reply.status == sls.daemon.Reply.OK
     assert count_hits.hits == 2
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_trigger_wait(test_daemon, monkeypatch, mock_config):
+    async def trigger():
+        await asyncio.sleep(0.1)
+
+    daemon, reader, writer = await test_daemon
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+
+    start = time.time()
+    reply = await transact(sls.daemon.Command("trigger", {"wait": False}), reader, writer)
+    end = time.time()
+    assert reply.status == sls.daemon.Reply.OK
+    assert end - start < 0.1
+
+    start = time.time()
+    reply = await transact(sls.daemon.Command("trigger", {"wait": True}), reader, writer)
+    end = time.time()
+    assert reply.status == sls.daemon.Reply.OK
+    assert end - start >= 0.1
