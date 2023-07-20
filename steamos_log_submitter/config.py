@@ -7,6 +7,7 @@ import configparser
 import logging
 import pwd
 from typing import Any, Optional
+import steamos_log_submitter as sls
 
 __all__ = [
     'get_config',
@@ -144,6 +145,21 @@ def migrate_key(section: str, key: str) -> bool:
     with open(user_config_path, 'w') as f:
         user_config.write(f)
     return True
+
+
+def upgrade() -> None:
+    reload_config()
+    migrations = [
+        ('sls', 'enable'),
+        ('steam', 'account_id'),
+        ('steam', 'account_name'),
+        ('steam', 'deck_serial'),
+    ]
+    for helper in sls.helpers.list_helpers():
+        migrations.append((f'helpers.{helper}', 'enable'))
+
+    if any([migrate_key(s, k) for s, k in migrations]):
+        reload_config()
 
 
 reload_config()

@@ -9,6 +9,7 @@ import io
 import os
 import pwd
 import tempfile
+import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
 from . import always_raise, fake_pwuid  # NOQA: F401
 
@@ -555,3 +556,72 @@ def test_migrate_key_duplicate(monkeypatch):
     assert config.config.get('test', 'subject') == 'Chel'
     assert config.local_config.has_section('test')
     assert config.local_config.get('test', 'subject') == 'Wheatley'
+
+
+def test_upgrade(monkeypatch):
+    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+    base_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    user_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    local_config_file = tempfile.NamedTemporaryFile(suffix='.cfg', mode='w+')
+    monkeypatch.setattr(config, 'base_config_path', base_config_file.name)
+    monkeypatch.setattr(config, 'config', None)
+    monkeypatch.setattr(config, 'local_config', configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation()))
+    base_config = configparser.ConfigParser()
+    base_config.add_section('sls')
+    base_config.set('sls', 'user-config', user_config_file.name)
+    base_config.set('sls', 'local-config', local_config_file.name)
+    base_config.write(base_config_file)
+    base_config_file.flush()
+    user_config = configparser.ConfigParser()
+    user_config.add_section('sls')
+    user_config.set('sls', 'enable', 'on')
+    user_config.add_section('steam')
+    user_config.set('steam', 'account_id', '12345')
+    user_config.set('steam', 'account_name', 'my_luggage')
+    user_config.set('steam', 'deck_serial', 'druidia')
+    user_config.set('steam', 'egs', 'does not exist')
+    user_config.add_section('helpers.test')
+    user_config.set('helpers.test', 'enable', 'on')
+    user_config.set('helpers.test', 'foo', 'bar')
+    user_config.write(user_config_file)
+    user_config_file.flush()
+
+    config.reload_config()
+    assert config.config.has_section('sls')
+    assert config.config.get('sls', 'enable') == 'on'
+    assert config.config.has_section('steam')
+    assert config.config.get('steam', 'account_id') == '12345'
+    assert config.config.get('steam', 'account_name') == 'my_luggage'
+    assert config.config.get('steam', 'deck_serial') == 'druidia'
+    assert config.config.get('steam', 'egs') == 'does not exist'
+    assert config.config.has_section('helpers.test')
+    assert config.config.get('helpers.test', 'enable') == 'on'
+    assert config.config.get('helpers.test', 'foo') == 'bar'
+
+    assert not config.local_config.has_section('sls')
+    assert not config.local_config.has_section('steam')
+    assert not config.local_config.has_section('helpers.test')
+
+    config.upgrade()
+
+    assert config.config.has_section('sls')
+    assert not config.config.has_option('sls', 'enable')
+    assert config.config.has_section('steam')
+    assert not config.config.has_option('steam', 'account_id')
+    assert not config.config.has_option('steam', 'account_name')
+    assert not config.config.has_option('steam', 'deck_serial')
+    assert config.config.get('steam', 'egs') == 'does not exist'
+    assert config.config.has_section('helpers.test')
+    assert not config.config.has_option('helpers.test', 'enable')
+    assert config.config.get('helpers.test', 'foo') == 'bar'
+
+    assert config.local_config.has_section('sls')
+    assert config.local_config.get('sls', 'enable') == 'on'
+    assert config.local_config.has_section('steam')
+    assert config.local_config.get('steam', 'account_id') == '12345'
+    assert config.local_config.get('steam', 'account_name') == 'my_luggage'
+    assert config.local_config.get('steam', 'deck_serial') == 'druidia'
+    assert not config.local_config.has_option('steam', 'egs')
+    assert config.local_config.has_section('helpers.test')
+    assert config.local_config.get('helpers.test', 'enable') == 'on'
+    assert not config.local_config.has_option('helpers.test', 'foo')
