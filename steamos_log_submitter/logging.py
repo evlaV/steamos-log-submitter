@@ -17,28 +17,29 @@ root_logger = logging.getLogger()
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
-def add_handler(handler: logging.Handler):
-    level = config.get('level', 'WARNING').upper()
-    try:
-        level = getattr(logging, level)
-    except AttributeError:
-        level = logging.WARNING
-
+def add_handler(handler: logging.Handler, level: int):
     handler.setFormatter(formatter)
     handler.setLevel(level)
     root_logger.addHandler(handler)
 
 
 def reconfigure_logging(path: str = None):
+    level = config.get('level', 'WARNING').upper()
+    try:
+        level = getattr(logging, level)
+    except AttributeError:
+        level = logging.WARNING
+
     for handler in list(root_logger.handlers):
         root_logger.removeHandler(handler)
         handler.close()
-    add_handler(logging.StreamHandler())
+    add_handler(logging.StreamHandler(), level)
 
     if path is None:
         path = config.get('path')
     if path:
         try:
-            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='midnight', interval=7, backupCount=4, encoding='utf-8'))
+            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='midnight', interval=7, backupCount=4, encoding='utf-8'), level)
         except OSError:
             logger.warning("Couldn't open log file")
+    root_logger.setLevel(level)
