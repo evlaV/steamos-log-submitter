@@ -1,10 +1,12 @@
 import json
 import pwd
 import steamos_log_submitter.cli as cli
+import steamos_log_submitter.daemon as daemon
 import steamos_log_submitter.helpers as helpers
+import steamos_log_submitter.runner as runner
 import steamos_log_submitter.steam as steam
-from . import always_raise
-from . import drop_root, fake_socket, mock_config, sync_client  # NOQA: F401
+from . import always_raise, awaitable
+from . import count_hits, drop_root, fake_socket, mock_config, sync_client  # NOQA: F401
 
 
 def test_status(capsys, mock_config, sync_client):
@@ -190,3 +192,26 @@ def test_set_steam_key_invalid(mock_config, sync_client):
     except SystemExit:
         pass
     assert not mock_config.has_section('steam')
+
+
+def test_trigger(count_hits, monkeypatch, sync_client):
+    monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
+    sync_client.start()
+    cli.main(['trigger'])
+    assert count_hits.hits == 1
+
+
+def test_trigger_wait(count_hits, monkeypatch, sync_client):
+    sync_client.start()
+    should_wait = None
+
+    async def trigger(_, wait):
+        nonlocal should_wait
+        assert wait is should_wait
+
+    monkeypatch.setattr(daemon.Daemon, 'trigger', trigger)
+
+    should_wait = True
+    cli.main(['trigger', '--wait'])
+    should_wait = False
+    cli.main(['trigger'])
