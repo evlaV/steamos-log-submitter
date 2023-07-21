@@ -71,9 +71,6 @@ def do_log_level(args: argparse.Namespace) -> None:
 
 
 def set_steam_info(key: str, value: str) -> bool:
-    if key not in ('account-name', 'account-id', 'deck-serial'):
-        print(f"'{key}' is not a valid Steam info key", file=sys.stderr)
-        return False
     if key == 'account-id':
         try:
             int(value)

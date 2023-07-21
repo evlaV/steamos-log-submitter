@@ -66,6 +66,7 @@ def test_set_log_level(mock_config, monkeypatch, sync_client):
 def test_invalid_log_level(capsys, mock_config, monkeypatch, sync_client):
     mock_config.add_section('logging')
     sync_client.start()
+    capsys.readouterr()
     cli.main(['log-level', 'foo'])
     assert capsys.readouterr().err.strip() == 'Please specify a valid log level'
 
@@ -125,6 +126,7 @@ def test_enable_helpers(mock_config, monkeypatch, sync_client):
 def test_enable_invalid_helper(capsys, mock_config, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     sync_client.start()
+    capsys.readouterr()
     cli.main(['enable-helper', 'test2'])
     assert not mock_config.has_section('helpers.test2')
     assert capsys.readouterr().err.strip() == 'Invalid helpers: test2'
