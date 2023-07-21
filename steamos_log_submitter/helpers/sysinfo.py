@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import collections
 import dbus
 import json
@@ -32,7 +33,7 @@ class SysinfoHelper(Helper):
             return None
 
     @classmethod
-    def list_usb(cls) -> list[dict[str, Any]]:
+    async def list_usb(cls) -> list[dict[str, Any]]:
         usb = '/sys/bus/usb/devices'
         devices = []
         for dev in os.listdir(usb):
@@ -59,7 +60,7 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    def list_monitors(cls) -> list[dict[str, Any]]:
+    async def list_monitors(cls) -> list[dict[str, Any]]:
         drm = '/sys/class/drm'
         devices = []
         for dev in os.listdir(drm):
@@ -72,7 +73,7 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    def list_bluetooth(cls) -> list[dict[str, Any]]:
+    async def list_bluetooth(cls) -> list[dict[str, Any]]:
         bus = 'org.bluez'
         bluez = DBusObject(bus, '/org/bluez')
         adapters = bluez.list_children()
@@ -107,7 +108,7 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    def list_filesystems(cls) -> list[dict[str, Any]]:
+    async def list_filesystems(cls) -> list[dict[str, Any]]:
         bus = 'org.freedesktop.UDisks2'
         try:
             findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
@@ -139,7 +140,7 @@ class SysinfoHelper(Helper):
         return filesystems
 
     @classmethod
-    def list_system(cls) -> dict[str, Any]:
+    async def list_system(cls) -> dict[str, Any]:
         sysinfo: dict[str, JSON] = {
             'branch': sls.steam.get_steamos_branch(),
             'release': sls.util.get_build_id(),
@@ -160,7 +161,8 @@ class SysinfoHelper(Helper):
 
     @classmethod
     async def collect(cls) -> bool:
-        devices = {type: getattr(cls, f'list_{type}')() for type in cls.device_types}
+        results = await asyncio.gather(*[getattr(cls, f'list_{type}')() for type in cls.device_types])
+        devices = {type: result for type, result in zip(cls.device_types, results)}
         os.makedirs(sls.data.data_root, exist_ok=True)
         known = {}
         try:

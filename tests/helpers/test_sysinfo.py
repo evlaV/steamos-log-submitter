@@ -12,7 +12,7 @@ import subprocess
 import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers import create_helper, HelperResult
-from .. import always_raise, open_shim, setup_categories, unreachable
+from .. import always_raise, awaitable, open_shim, setup_categories, unreachable
 from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
@@ -28,37 +28,41 @@ def make_usb_devs(monkeypatch, devs):
     monkeypatch.setattr(helper, 'read_file', read_file)
 
 
-def test_collect_usb_none(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
     monkeypatch.setattr(helper, 'read_file', unreachable)
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_usb_nondev(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_nondev(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['usb1'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_usb_bad_dev(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_bad_dev(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {}})
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_usb_vid_pid_only(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_vid_pid_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {
         'idVendor': '1234',
         'idProduct': '5678'
     }})
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
@@ -67,14 +71,15 @@ def test_collect_usb_vid_pid_only(monkeypatch):
     }
 
 
-def test_collect_usb_manufacturer(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_manufacturer(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {
         'idVendor': '1234',
         'idProduct': '5678',
         'manufacturer': 'Black Mesa'
     }})
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
@@ -84,14 +89,15 @@ def test_collect_usb_manufacturer(monkeypatch):
     }
 
 
-def test_collect_usb_product(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_product(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {
         'idVendor': '1234',
         'idProduct': '5678',
         'product': 'Hazardous Environment Suit'
     }})
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
@@ -101,7 +107,8 @@ def test_collect_usb_product(monkeypatch):
     }
 
 
-def test_collect_usb_all(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_usb_all(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {
         'idVendor': '1234',
@@ -109,7 +116,7 @@ def test_collect_usb_all(monkeypatch):
         'manufacturer': 'Black Mesa',
         'product': 'Hazardous Environment Suit'
     }})
-    devices = helper.list_usb()
+    devices = await helper.list_usb()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
@@ -120,28 +127,31 @@ def test_collect_usb_all(monkeypatch):
     }
 
 
-def test_collect_bluetooth_no_adapters(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_bluetooth_no_adapters(monkeypatch, mock_dbus):
     bus = 'org.bluez'
     mock_dbus.add_bus(bus)
     MockDBusObject(bus, '/org/bluez', mock_dbus)
 
-    devices = helper.list_bluetooth()
+    devices = await helper.list_bluetooth()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_bluetooth_empty_adapter(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_bluetooth_empty_adapter(monkeypatch, mock_dbus):
     bus = 'org.bluez'
     mock_dbus.add_bus(bus)
     MockDBusObject(bus, '/org/bluez', mock_dbus)
     MockDBusObject(bus, '/org/bluez/hci0', mock_dbus)
 
-    devices = helper.list_bluetooth()
+    devices = await helper.list_bluetooth()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
     bus = 'org.bluez'
     mock_dbus.add_bus(bus)
     MockDBusObject(bus, '/org/bluez', mock_dbus)
@@ -152,45 +162,50 @@ def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
         'Name': 'Crowbar'
     }
 
-    devices = helper.list_bluetooth()
+    devices = await helper.list_bluetooth()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {'address': '01:02:03:04:05', 'name': 'Crowbar', 'adapter': 'hci0'}
 
 
-def test_collect_monitors_none(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_monitors_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
     monkeypatch.setattr(helper, 'read_file', unreachable)
-    devices = helper.list_monitors()
+    devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_monitors_other_only(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_monitors_other_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['version'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
-    devices = helper.list_monitors()
+    devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_monitors_card_only(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_monitors_card_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
-    devices = helper.list_monitors()
+    devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_monitors_no_edid(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_monitors_no_edid(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
     monkeypatch.setattr(helper, 'read_file', lambda _, binary: None)
-    devices = helper.list_monitors()
+    devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert not len(devices)
 
 
-def test_collect_monitors_edid(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_monitors_edid(monkeypatch):
     def read_file(fname, binary):
         assert binary
         assert fname.endswith('card0-DP-1/edid')
@@ -198,18 +213,20 @@ def test_collect_monitors_edid(monkeypatch):
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
     monkeypatch.setattr(helper, 'read_file', read_file)
-    devices = helper.list_monitors()
+    devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0]['edid'] == '41414141'
 
 
-def test_collect_filesystems_raise(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_filesystems_raise(monkeypatch):
     monkeypatch.setattr(subprocess, 'run', always_raise(OSError))
-    assert helper.list_filesystems() == []
+    assert await helper.list_filesystems() == []
 
 
-def test_collect_filesystems_malformed(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_filesystems_malformed(monkeypatch):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = '!'
@@ -217,11 +234,12 @@ def test_collect_filesystems_malformed(monkeypatch):
 
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    fs = helper.list_filesystems()
+    fs = await helper.list_filesystems()
     assert fs == []
 
 
-def test_collect_filesystems_missing(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_filesystems_missing(monkeypatch):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = '{"wrong_things":"go_here"}'
@@ -229,11 +247,12 @@ def test_collect_filesystems_missing(monkeypatch):
 
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    fs = helper.list_filesystems()
+    fs = await helper.list_filesystems()
     assert fs == []
 
 
-def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
@@ -247,11 +266,12 @@ def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
         'Size': 0,
     }
 
-    fs = helper.list_filesystems()
+    fs = await helper.list_filesystems()
     assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
 
 
-def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
+@pytest.mark.asyncio
+async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
@@ -261,11 +281,12 @@ def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
     bus = 'org.freedesktop.UDisks2'
     mock_dbus.add_bus(bus)
 
-    fs = helper.list_filesystems()
+    fs = await helper.list_filesystems()
     assert fs == [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]
 
 
-def test_collect_filesystems_clean(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_filesystems_clean(monkeypatch):
     def fake_subprocess(*args, **kwargs):
         ret = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
@@ -273,16 +294,17 @@ def test_collect_filesystems_clean(monkeypatch):
 
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
 
-    fs = helper.list_filesystems()
+    fs = await helper.list_filesystems()
     assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
 
 
-def test_collect_system(monkeypatch):
+@pytest.mark.asyncio
+async def test_collect_system(monkeypatch):
     monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
 
-    assert dict(helper.list_system()) == {
+    assert dict(await helper.list_system()) == {
         'branch': 'main',
         'release': '20230704',
         'devmode': True,
@@ -294,7 +316,7 @@ async def test_collect(monkeypatch, data_directory, helper_directory, mock_confi
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: []))
 
     assert not await helper.collect()
     with open(f'{data_directory}/sysinfo-pending.json') as f:
@@ -307,7 +329,7 @@ async def test_collect_malformed(monkeypatch, data_directory, helper_directory, 
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: []))
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         f.write('not json')
@@ -360,7 +382,7 @@ async def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [collections.OrderedDict([('pid', '5678'), ('vid', '1234')])], 'monitors': []}, f)
@@ -379,7 +401,7 @@ async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_director
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['system'])
-    monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'rel'), ('release', '20230703')])
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: [('branch', 'rel'), ('release', '20230703')]))
 
     assert not await helper.collect()
 
@@ -389,7 +411,7 @@ async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_director
     assert len(cache['system']) == 2
     assert cache['system'] == [['branch', 'rel'], ['release', '20230703']]
 
-    monkeypatch.setattr(helper, 'list_system', lambda: [('branch', 'main'), ('release', '20230704')])
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: [('branch', 'main'), ('release', '20230704')]))
 
     assert not await helper.collect()
 
@@ -405,8 +427,8 @@ async def test_collect_append(monkeypatch, data_directory, helper_directory, moc
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    monkeypatch.setattr(helper, 'list_monitors', awaitable(lambda: []))
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [], 'monitors': [{'edid': '00'}]}, f)
@@ -425,7 +447,7 @@ async def test_collect_append2(monkeypatch, data_directory, helper_directory, mo
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'usb': [{'vid': '5678', 'pid': '1234'}]}, f)
@@ -445,8 +467,8 @@ async def test_collect_new_section(monkeypatch, data_directory, helper_directory
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', ['usb', 'monitors'])
-    monkeypatch.setattr(helper, 'list_usb', lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])])
-    monkeypatch.setattr(helper, 'list_monitors', lambda: [])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    monkeypatch.setattr(helper, 'list_monitors', awaitable(lambda: []))
 
     with open(f'{data_directory}/sysinfo-pending.json', 'w') as f:
         json.dump({'monitors': []}, f)
