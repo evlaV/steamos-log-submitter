@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus
+import dbus_next
 import json
 import os
 import subprocess
@@ -107,8 +107,8 @@ class JournalHelper(SentryHelper):
             try:
                 dbus_unit = DBusObject(bus, f'/org/freedesktop/systemd1/unit/{cls.escape(unit)}')
                 props = dbus_unit.properties('org.freedesktop.systemd1.Unit')
-                state = props['ActiveState']
-            except (dbus.exceptions.DBusException, KeyError) as e:
+                state = await props['ActiveState']
+            except (dbus_next.errors.DBusError, KeyError) as e:
                 cls.logger.warning(f'Exception getting state of unit {unit}', exc_info=e)
                 continue
             if state != 'failed':

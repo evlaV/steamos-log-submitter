@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
-import dbus
+import dbus_next
 import json
 import os
 import re
@@ -76,11 +76,11 @@ class SysinfoHelper(Helper):
     async def list_bluetooth(cls) -> list[dict[str, Any]]:
         bus = 'org.bluez'
         bluez = DBusObject(bus, '/org/bluez')
-        adapters = bluez.list_children()
+        adapters = await bluez.list_children()
         devices = []
         for adapter in adapters:
             adapter_object = DBusObject(bus, adapter)
-            known = adapter_object.list_children()
+            known = await adapter_object.list_children()
             for dev in known:
                 dev_object = DBusObject(bus, dev)
                 dev_dict = {}
@@ -99,7 +99,7 @@ class SysinfoHelper(Helper):
                     ('Trusted', bool)
                 ]:
                     try:
-                        dev_dict[name.lower()] = convert(dev_bluez[name])
+                        dev_dict[name.lower()] = convert(await dev_bluez[name])
                     except KeyError:
                         pass
                 dev_dict['adapter'] = adapter.split('/')[-1]
@@ -133,8 +133,8 @@ class SysinfoHelper(Helper):
                 try:
                     block_dev = DBusObject(bus, f'/org/freedesktop/UDisks2/block_devices/{node}')
                     dev_props = block_dev.properties('org.freedesktop.UDisks2.Block')
-                    fs['size'] = int(dev_props['Size'])
-                except (KeyError, dbus.exceptions.DBusException) as e:
+                    fs['size'] = int(await dev_props['Size'])
+                except (AttributeError, dbus_next.errors.DBusError) as e:
                     cls.logger.info(f'Failed to get size of device {source}', exc_info=e)
 
         return filesystems

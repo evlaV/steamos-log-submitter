@@ -3,34 +3,62 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus
-import xml.etree.ElementTree as et
+import dbus_next
+
+connected = False
+system_bus = None
 
 
-class DBusObject:
-    def __init__(self, bus_name, object_path, bus=None):
-        self.bus = bus or dbus.SystemBus()
-        self.bus_name = bus_name
-        self.object_path = object_path
-        self.object = self.bus.get_object(bus_name, object_path)
+async def connect():
+    global system_bus
+    global connected
+    if connected:
+        return
 
-    def properties(self, iface):
-        return DBusProperties(self.object, iface)
+    system_bus = dbus_next.aio.MessageBus(bus_type=dbus_next.BusType.SYSTEM)
 
-    def list_children(self):
-        root = et.fromstring(self.object.Introspect())
-        return [f'{self.object_path}/' + node.attrib['name'] for node in root.findall('node')]
+    await system_bus.connect()
+    connected = True
 
 
 class DBusProperties:
     def __init__(self, obj, iface):
-        self._properties_iface = dbus.Interface(obj, 'org.freedesktop.DBus.Properties')
+        self._properties_iface = None
+        self.obj = obj
         self.iface = iface
 
-    def __getitem__(self, name):
+    async def __getitem__(self, name):
+        if not self._properties_iface:
+            if not self.obj.object:
+                await self.obj._connect()
+            self._properties_iface = self.obj.object.get_interface('org.freedesktop.DBus.Properties')
         try:
-            return self._properties_iface.Get(self.iface, name)
-        except dbus.exceptions.DBusException as e:
-            if e.get_dbus_name() == 'org.freedesktop.DBus.Error.InvalidArgs':
-                raise KeyError(e.get_dbus_message()) from e
+            variant = await self._properties_iface.call_get(self.iface, name)
+            return variant.value
+        except OSError:
             raise
+
+
+class DBusObject:
+    def __init__(self, bus_name: str, object_path: str):
+        self.bus = system_bus
+        self.bus_name = bus_name
+        self.object_path = object_path
+        self.object = None
+
+    async def _connect(self):
+        if self.object:
+            return
+        if not connected:
+            await connect()
+        if not self.bus:
+            self.bus = system_bus
+        introspection = await self.bus.introspect(self.bus_name, self.object_path)
+        self.object = self.bus.get_proxy_object(self.bus_name, self.object_path, introspection)
+
+    def properties(self, iface: str) -> DBusProperties:
+        return DBusProperties(self, iface)
+
+    async def list_children(self):
+        await self._connect()
+        return self.object.child_paths
