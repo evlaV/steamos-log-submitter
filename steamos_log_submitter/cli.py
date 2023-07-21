@@ -79,6 +79,13 @@ def set_steam_info(key: str, value: str) -> bool:
         client.set_steam_info(key.replace('-', '_'), value)
 
 
+def do_trigger(args: argparse.Namespace) -> None:
+    with ClientWrapper() as client:
+        if not client:
+            return
+        client.trigger(args.wait)
+
+
 def main(args: Sequence[str] = sys.argv[1:]) -> None:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
@@ -128,6 +135,12 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
                                            help='Disable helper modules')
     disable_helper.add_argument('helper', nargs='+')
     disable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, False))
+
+    trigger = subparsers.add_parser('trigger',
+                                    description='Trigger an immediate log collection and submission',
+                                    help='Trigger collection/submission')
+    trigger.add_argument('--wait', action='store_true', help='Wait until complete')
+    trigger.set_defaults(func=do_trigger)
 
     set_steam = subparsers.add_parser('set-steam-info',
                                       description='''Set a value relating to the current Steam configuration.
