@@ -58,6 +58,16 @@ class MockDBusBus:
             node.attrib['name'] = name
             root.append(node)
 
+        obj = self.buses[bus_name]['path'][object_path]
+        for key, val in obj.interfaces.items():
+            iface = et.Element('interface')
+            iface.attrib['name'] = key
+            for name in val._methods.keys():
+                method = et.Element('method')
+                method.attrib['name'] = name
+                iface.append(method)
+            root.append(iface)
+
         return et.tostring(root)
 
     def get_proxy_object(self, bus_name, object_path, introspection):
@@ -71,10 +81,16 @@ class MockDBusProperties:
         except KeyError:
             raise dbus_next.errors.InterfaceNotFoundError(iface)
         self._iface = iface
+        self._obj = obj
 
     async def __getitem__(self, name):
         if name not in self.properties:
             raise AttributeError(name)
+        return self.properties[name]
+
+    def __setitem__(self, name, value):
+        properties_iface = self._obj.interfaces['org.freedesktop.DBus.Properties']
+        properties_iface.set(self._iface, name, value)
 
 
 class MockDBusObject:
@@ -91,45 +107,58 @@ class MockDBusObject:
     def get_interface(self, iface):
         return self.interfaces[iface]
 
+    def add_interface(self, iface):
+        self.interfaces[iface._iface] = iface
+
 
 class MockDBusInterface:
-    methods = {}
-
     def __init__(self, obj, iface):
-        self.iface = iface
-        self.object = obj
-
-    @classmethod
-    def method(cls, fn):
-        name = dbus_next.proxy_object.BaseProxyInterface._to_snake_case(fn.__name__)
-        cls.methods[name] = fn
-        return fn
+        self._methods = {}
+        self._iface = iface
+        self._object = obj
+        self._signals = {}
 
     def __getattr__(self, attr):
         type, name = attr.split('_', 1)
 
         async def call(*args, **kwargs):
-            method = self.methods[name]
-            return method(self, *args, **kwargs)
+            method = self._methods[name]
+            return method(*args, **kwargs)
 
         async def get():
-            properties_iface = self.object.interfaces['org.freedesktop.DBus.Properties']
-            return properties_iface.get(self.iface, name)
+            properties_iface = self._object.interfaces['org.freedesktop.DBus.Properties']
+            return properties_iface.get(self._iface, name)
+
+        def on(cb):
+            self._signals[name] = self._signals.get(name, [])
+            self._signals[name].append(cb)
 
         if type == 'call':
             return call
         if type == 'get':
             return get
+        if type == 'on':
+            return on
+
+    def signal(self, signal, *args):
+        name = dbus_next.proxy_object.BaseProxyInterface._to_snake_case(signal)
+        if name in self._signals:
+            for cb in self._signals[name]:
+                cb(*args)
 
 
 class MockDBusPropertiesInterface(MockDBusInterface):
     def __init__(self, obj):
         super().__init__(obj, 'org.freedesktop.DBus.Properties')
-        self.methods['Get'] = self.get
+        self._methods['get'] = self.get
+        self._methods['set'] = self.set
 
-    @MockDBusInterface.method
     def get(self, iface, name):
-        return MockDBusVariant(self.object.properties[iface][name])
+        return MockDBusVariant(self._object.properties[iface][name])
+
+    def set(self, iface, name, value):
+        self._object.properties[iface][name] = value
+        self.signal('PropertiesChanged', iface, {name: MockDBusVariant(value)}, [])
 
 
 class MockDBusVariant:
@@ -142,4 +171,5 @@ def mock_dbus(monkeypatch):
     bus = MockDBusBus()
     monkeypatch.setattr(dbus_next.aio, 'MessageBus', lambda bus_type: bus)
     monkeypatch.setattr(sls.dbus, 'system_bus', bus)
+    monkeypatch.setattr(sls.dbus, 'connected', True)
     return bus
