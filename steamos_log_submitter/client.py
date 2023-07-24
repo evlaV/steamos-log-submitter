@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class ClientError(RuntimeError):
     def __init__(self, reply=None):
-        super().__init__()
+        super().__init__(reply.data)
         self.reply = reply
 
 
