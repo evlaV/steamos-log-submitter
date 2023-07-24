@@ -12,6 +12,7 @@ import time
 from typing import Optional
 
 import steamos_log_submitter as sls
+import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 import steamos_log_submitter.helpers as helpers
@@ -77,6 +78,7 @@ class Daemon:
         self._exit_on_shutdown = exit_on_shutdown
         self._periodic_task = None
         self._serving = False
+        self._suspend = 'inactive'
 
     async def _run_command(self, command: dict) -> Reply:
         if not command:
@@ -141,6 +143,16 @@ class Daemon:
                 logger.error('Failed executing remote connection', exc_info=e)
         self._conns.remove((reader, writer))
 
+    async def _leave_suspend(self, iface: str, prop: str, value):
+        if value == self._suspend:
+            return
+        self._suspend = value
+        logger.debug(f'Suspend state changed to {value}')
+        if value == 'inactive':
+            logger.info('Woke up from suspend, attempting to submit logs')
+            await asyncio.sleep(5)
+            await self.trigger(wait=True)
+
     async def start(self) -> None:
         if self._serving:
             return
@@ -155,6 +167,10 @@ class Daemon:
         os.chmod(socket, 0o660)
 
         self._periodic_task = asyncio.create_task(self._trigger_periodic())
+
+        suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
+        suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
+        await suspend_props.subscribe('ActiveState', self._leave_suspend)
 
     async def shutdown(self):
         logger.info('Daemon shutting down')
