@@ -6,7 +6,9 @@ import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.runner as runner
 import steamos_log_submitter.steam as steam
 from . import always_raise, awaitable
-from . import count_hits, drop_root, fake_socket, mock_config, sync_client  # NOQA: F401
+from . import count_hits, drop_root, mock_config  # NOQA: F401
+from .daemon import fake_socket, sync_client, systemd_object  # NOQA: F401
+from .dbus import mock_dbus  # NOQA: F401
 
 
 def test_status(capsys, mock_config, sync_client):
