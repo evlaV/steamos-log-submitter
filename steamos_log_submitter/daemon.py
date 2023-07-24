@@ -79,6 +79,7 @@ class Daemon:
         self._periodic_task = None
         self._serving = False
         self._suspend = 'inactive'
+        self._trigger_active = False
 
     async def _run_command(self, command: dict) -> Reply:
         if not command:
@@ -149,6 +150,8 @@ class Daemon:
         self._suspend = value
         logger.debug(f'Suspend state changed to {value}')
         if value == 'inactive':
+            if self._trigger_active:
+                return
             logger.info('Woke up from suspend, attempting to submit logs')
             await asyncio.sleep(5)
             await self.trigger(wait=True)
@@ -189,9 +192,13 @@ class Daemon:
             loop.stop()
 
     async def trigger(self, wait=True):
+        if self._trigger_active:
+            return
         coro = sls.runner.trigger()
         if wait:
+            self._trigger_active = True
             await coro
+            self._trigger_active = False
         else:
             asyncio.create_task(coro)
 
