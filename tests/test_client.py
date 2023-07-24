@@ -9,7 +9,9 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 from . import awaitable
-from . import count_hits, fake_socket, mock_config, sync_client  # NOQA: F401
+from . import count_hits, mock_config  # NOQA: F401
+from .daemon import fake_socket, sync_client, systemd_object  # NOQA: F401
+from .dbus import mock_dbus  # NOQA: F401
 
 
 def test_client_status(sync_client):
