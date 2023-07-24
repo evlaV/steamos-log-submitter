@@ -207,13 +207,18 @@ def fake_socket(monkeypatch):
         os.unlink(fakesocket)
 
 
-def daemon_runner(ev):
+def daemon_runner(ev, box):
     daemon = sls.daemon.Daemon(exit_on_shutdown=True)
+    loop = asyncio.new_event_loop()
 
     async def start():
-        await daemon.start()
+        try:
+            await daemon.start()
+        except Exception as e:
+            box.append(e)
+            ev.set()
+            raise
         ev.set()
-    loop = asyncio.new_event_loop()
     loop.create_task(start())
     loop.run_forever()
 
@@ -225,8 +230,11 @@ class SyncClient:
 
     def start(self):
         ev = threading.Event()
-        self.pool.submit(daemon_runner, ev)
+        box = []
+        self.pool.submit(daemon_runner, ev, box)
         ev.wait()
+        if box:
+            raise box[0]
         self.client = sls.client.Client()
 
     def __getattr__(self, attr):
