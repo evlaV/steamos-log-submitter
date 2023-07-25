@@ -80,6 +80,7 @@ class Daemon:
         self._serving = False
         self._suspend = 'inactive'
         self._trigger_active = False
+        self._next_trigger = None
 
     async def _run_command(self, command: dict) -> Reply:
         if not command:
@@ -107,22 +108,14 @@ class Daemon:
             return Reply(status=Reply.UNKNOWN_ERROR, data={'exception': str(e)})
 
     async def _trigger_periodic(self):
-        last_trigger = config.get('last_trigger')
-        if last_trigger is not None:
-            next_trigger = float(last_trigger) + self._interval
-        else:
-            next_trigger = time.time() + self._startup
+        next_interval = self._next_trigger - time.time()
+        if next_interval > 0:
+            logger.debug(f'Sleeping for {next_interval:.3f} seconds')
+            await asyncio.sleep(next_interval)
 
-        while self._serving:
-            next_interval = next_trigger - time.time()
-            if next_interval > 0:
-                logger.debug(f'Sleeping for {next_interval:.3f} seconds')
-                await asyncio.sleep(next_interval)
-            await self.trigger()
-            last_trigger = time.time()
-            config['last_trigger'] = last_trigger
-            sls.config.write_config()
-            next_trigger = last_trigger + self._interval
+        if not self._serving:
+            return
+        await self.trigger(wait=True)
 
     async def _conn_cb(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self._conns.append((reader, writer))
@@ -169,6 +162,13 @@ class Daemon:
         self._server = await asyncio.start_unix_server(self._conn_cb, path=socket)
         os.chmod(socket, 0o660)
 
+        self._next_trigger = time.time() + self._startup
+        last_trigger = config.get('last_trigger')
+        if last_trigger is not None:
+            next_trigger = float(last_trigger) + self._interval
+            if next_trigger > self._next_trigger:
+                self._next_trigger = next_trigger
+
         self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
         suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
@@ -191,10 +191,23 @@ class Daemon:
             loop = asyncio.get_event_loop()
             loop.stop()
 
+    async def _trigger(self):
+        await sls.runner.trigger()
+        last_trigger = time.time()
+        config['last_trigger'] = last_trigger
+        sls.config.write_config()
+        self._next_trigger = last_trigger + self._interval
+        self._periodic_task.cancel()
+        try:
+            await self._periodic_task
+        except asyncio.CancelledError:
+            pass
+        self._periodic_task = asyncio.create_task(self._trigger_periodic())
+
     async def trigger(self, wait=True):
         if self._trigger_active:
             return
-        coro = sls.runner.trigger()
+        coro = self._trigger()
         if wait:
             self._trigger_active = True
             await coro

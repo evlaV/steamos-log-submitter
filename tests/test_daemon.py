@@ -285,7 +285,7 @@ async def test_set_steam_info(test_daemon, mock_config):
 @pytest.mark.asyncio
 async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config):
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
     monkeypatch.setattr(daemon, '_interval', 0.04)
     await daemon.start()
@@ -308,7 +308,7 @@ async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config):
 @pytest.mark.asyncio
 async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock_config):
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
     monkeypatch.setattr(daemon, '_interval', 0.04)
 
@@ -332,7 +332,7 @@ async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock
 @pytest.mark.asyncio
 async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, mock_config):
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.02)
     monkeypatch.setattr(daemon, '_interval', 0.1)
 
@@ -349,6 +349,35 @@ async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, moc
     await asyncio.sleep(0.06)
     assert count_hits.hits == 1
     assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.04
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config):
+    daemon = sls.daemon.Daemon()
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(daemon, '_startup', 0.05)
+    monkeypatch.setattr(daemon, '_interval', 0.05)
+
+    start = time.time()
+    await daemon.start()
+
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.06)
+    assert count_hits.hits == 1
+    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.05
+
+    await asyncio.sleep(0.03)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 2
+    end = float(mock_config.get('daemon', 'last_trigger'))
+    assert end - start > 0.08
+    assert end - start < 0.1
+
+    await asyncio.sleep(0.03)
+    assert count_hits.hits == 2
+    assert float(mock_config.get('daemon', 'last_trigger')) == end
 
     await daemon.shutdown()
 
