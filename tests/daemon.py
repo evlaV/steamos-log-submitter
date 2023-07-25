@@ -20,10 +20,12 @@ def fake_socket(monkeypatch):
     prefix = int((time.time() % 1) * 0x400000)
     fakesocket = f'{prefix:06x}.socket'
     monkeypatch.setattr(sls.daemon, 'socket', fakesocket)
-    yield fakesocket
 
-    if os.access(fakesocket, os.F_OK):
-        os.unlink(fakesocket)
+    try:
+        yield fakesocket
+    finally:
+        if os.access(fakesocket, os.F_OK):
+            os.unlink(fakesocket)
 
 
 @pytest.fixture(autouse=True)
