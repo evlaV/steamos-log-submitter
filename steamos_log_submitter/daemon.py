@@ -253,6 +253,20 @@ class Daemon:
         enabled = sls.base_config.get('enable') == 'on'
         return Reply(Reply.OK, data={'enabled': enabled})
 
+    async def _helper_status(self, helpers: list[str] = None) -> Reply:
+        if helpers is not None:
+            extant_helpers = set(sls.helpers.list_helpers())
+            requested_helpers = set(helpers)
+            if requested_helpers - extant_helpers:
+                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(requested_helpers - extant_helpers)})
+        else:
+            helpers = sls.helpers.list_helpers()
+        status = {}
+        for helper in helpers:
+            config = sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')
+            status[helper] = {'enabled': config.get('enable', 'off') == 'on'}
+        return Reply(Reply.OK, data=status)
+
     async def _set_steam_info(self, key: str, value) -> Reply:
         if key not in (
             'deck_serial',
@@ -271,6 +285,7 @@ class Daemon:
         'enable': _enable,
         'enable-helpers': _enable_helpers,
         'status': _status,
+        'helper-status': _helper_status,
         'list': _list,
         'log-level': _log_level,
         'set-steam-info': _set_steam_info,
