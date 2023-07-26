@@ -216,6 +216,39 @@ async def test_status(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_helper_status(test_daemon, mock_config, monkeypatch):
+    daemon, reader, writer = await test_daemon
+    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+
+    reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {"test": {"enabled": False}}
+
+    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {"test": {"enabled": False}}
+
+    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test2"]}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    assert reply.data == {"invalid-helper": ["test2"]}
+
+    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test", "test2"]}), reader, writer)
+    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
+    assert reply.data == {"invalid-helper": ["test2"]}
+
+    mock_config.add_section('helpers.test')
+    mock_config.set('helpers.test', 'enable', 'on')
+
+    reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {"test": {"enabled": True}}
+
+    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert reply.data == {"test": {"enabled": True}}
+
+
+@pytest.mark.asyncio
 async def test_enable(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("enable", {"state": True}), reader, writer)
