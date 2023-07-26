@@ -35,6 +35,8 @@ def get_appid(pid: int) -> Optional[int]:
             return None
 
         stat_match = stat_parse.match(stat)
+        if not stat_match:
+            return None
         comm = stat_match.group(1)
         ppid = int(stat_match.group(2))
 
@@ -46,9 +48,9 @@ def get_appid(pid: int) -> Optional[int]:
                 logger.error(f'Failed to read /proc/{pid}/cmdline', exc_info=e)
                 return None
 
-            cmdline = cmdline.split('\0')
+            cmdline_args = cmdline.split('\0')
             steam_launch = False
-            for arg in cmdline:
+            for arg in cmdline_args:
                 if arg == 'SteamLaunch':
                     steam_launch = True
                 elif arg.startswith('AppId=') and steam_launch:
@@ -90,15 +92,17 @@ def check_network() -> bool:
 
 class drop_root:
     def __init__(self, target_uid: Union[int, str] = 'steamos-log-submitter', target_gid: Union[int, str] = 'steamos-log-submitter'):
-        try:
-            self.target_uid = int(target_uid)
-        except ValueError:
-            self.target_uid = pwd.getpwnam(target_uid)[2]
+        if isinstance(target_uid, str):
+            try:
+                self.target_uid = int(target_uid)
+            except ValueError:
+                self.target_uid = pwd.getpwnam(target_uid)[2]
 
-        try:
-            self.target_gid = int(target_gid)
-        except ValueError:
-            self.target_gid = grp.getgrnam(target_gid)[2]
+        if isinstance(target_gid, str):
+            try:
+                self.target_gid = int(target_gid)
+            except ValueError:
+                self.target_gid = grp.getgrnam(target_gid)[2]
 
     def __enter__(self):
         self.uid = os.geteuid()

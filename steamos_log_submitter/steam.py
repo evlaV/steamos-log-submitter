@@ -7,7 +7,7 @@ import logging
 import pwd
 import subprocess
 import vdf
-import steamos_log_submitter.config as config
+import steamos_log_submitter as sls
 from typing import Optional
 
 __all__ = [
@@ -16,7 +16,7 @@ __all__ = [
     'get_steam_account_name',
 ]
 
-config = config.get_config(__name__)
+config = sls.config.get_config(__name__)
 logger = logging.getLogger(__name__)
 
 try:

@@ -6,6 +6,7 @@
 import logging
 import logging.handlers
 import steamos_log_submitter as sls
+from typing import Optional
 
 __all__ = [
     'reconfigure_logging',
@@ -23,7 +24,7 @@ def add_handler(handler: logging.Handler, level: int):
     root_logger.addHandler(handler)
 
 
-def reconfigure_logging(path: str = None):
+def reconfigure_logging(path: Optional[str] = None):
     level = config.get('level', 'WARNING').upper()
     try:
         level = getattr(logging, level)
