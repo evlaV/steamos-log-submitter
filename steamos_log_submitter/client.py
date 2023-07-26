@@ -79,6 +79,13 @@ class Client:
         reply = self._transact('status')
         return reply['enabled']
 
+    def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, Any]]:
+        if helpers is None:
+            reply = self._transact('helper-status')
+        else:
+            reply = self._transact('helper-status', {'helpers': helpers})
+        return reply
+
     def list(self) -> list[str]:
         return self._transact('list')
 
