@@ -62,8 +62,7 @@ class DBusProperties:
         async def do_cb(cb, iface: str, prop: str, value):
             if value is None:
                 value = await self._properties_iface.call_get(self._iface, prop)
-            else:
-                value = value.value
+            value = value.value
             await cb(iface, prop, value)
 
         for prop, value in changed.items():

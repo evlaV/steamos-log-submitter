@@ -91,26 +91,29 @@ async def test_interface(mock_dbus, count_hits):
 
 
 @pytest.mark.asyncio
-async def test_property_signaling(mock_dbus):
+async def test_property_signaling(mock_dbus, count_hits):
     mock_obj = MockDBusObject('com.valvesoftware', '/charging', mock_dbus)
     mock_obj.properties['com.valvesoftware.Props'] = {
         'Value': 0,
     }
     mock_props = MockDBusProperties(mock_obj, 'com.valvesoftware.Props')
+    iface = mock_obj.get_interface('org.freedesktop.DBus.Properties')
     obj = sls.dbus.DBusObject('com.valvesoftware', '/charging')
     props = obj.properties('com.valvesoftware.Props')
     assert await props['Value'] == 0
     assert await mock_props['Value'] == 0
-    hit = False
 
     async def test_full(iface, prop, value):
-        nonlocal hit
         assert iface == 'com.valvesoftware.Props'
         assert prop == 'Value'
         assert value == 1
-        hit = True
+        count_hits()
 
     await props.subscribe('Value', test_full)
+    iface.signal_invalid = False
     mock_props['Value'] = 1
     await asyncio.sleep(0)
-    assert hit
+    iface.signal_invalid = True
+    mock_props['Value'] = 1
+    await asyncio.sleep(0)
+    assert count_hits.hits == 2

@@ -152,13 +152,17 @@ class MockDBusPropertiesInterface(MockDBusInterface):
         super().__init__(obj, 'org.freedesktop.DBus.Properties')
         self._methods['get'] = self.get
         self._methods['set'] = self.set
+        self.signal_invalid = False
 
     def get(self, iface, name):
         return MockDBusVariant(self._object.properties[iface][name])
 
     def set(self, iface, name, value):
         self._object.properties[iface][name] = value
-        self.signal('PropertiesChanged', iface, {name: MockDBusVariant(value)}, [])
+        if self.signal_invalid:
+            self.signal('PropertiesChanged', iface, {}, [name])
+        else:
+            self.signal('PropertiesChanged', iface, {name: MockDBusVariant(value)}, [])
 
 
 class MockDBusVariant:
