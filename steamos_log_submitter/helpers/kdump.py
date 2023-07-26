@@ -71,7 +71,7 @@ def submit(fname: str) -> HelperResult:
     except zipfile.BadZipFile:
         return HelperResult(HelperResult.PERMANENT_ERROR)
     except OSError:
-        return HelperResult(HelperResult.TEMPORARY_ERROR)
+        return HelperResult(HelperResult.TRANSIENT_ERROR)
 
     if note is None or stack is None:
         return HelperResult(HelperResult.PERMANENT_ERROR)
