@@ -67,9 +67,22 @@ def test_client_trigger_wait(sync_client, mock_config, monkeypatch):
     assert end - start >= 0.1
 
 
+def test_helper_status(sync_client):
+    sync_client.start()
+    assert sync_client.helper_status() == {'test': {'enabled': False}}
+    assert sync_client.helper_status(['test']) == {'test': {'enabled': False}}
+    try:
+        assert sync_client.helper_status(['test2'])
+        assert False
+    except sls.client.InvalidArgumentsError:
+        pass
+
+
 def test_enable_helpers(sync_client):
     sync_client.start()
+    assert sync_client.helper_status() == {'test': {'enabled': False}}
     sync_client.enable_helpers(['test'])
+    assert sync_client.helper_status() == {'test': {'enabled': True}}
     try:
         sync_client.enable_helpers(['test2'])
         assert False
