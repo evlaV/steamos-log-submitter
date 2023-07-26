@@ -223,10 +223,9 @@ class Daemon:
         return Reply(Reply.OK)
 
     async def _enable_helpers(self, helpers: dict[str, bool]) -> Reply:
-        extant_helpers = set(sls.helpers.list_helpers())
-        requested_helpers = set(helpers.keys())
-        if requested_helpers - extant_helpers:
-            return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(requested_helpers - extant_helpers)})
+        _, invalid_helpers = sls.helpers.validate_helpers(helpers.keys())
+        if invalid_helpers:
+            return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': invalid_helpers})
         for helper, state in helpers.items():
             if type(state) != bool:
                 return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
@@ -255,10 +254,9 @@ class Daemon:
 
     async def _helper_status(self, helpers: list[str] = None) -> Reply:
         if helpers is not None:
-            extant_helpers = set(sls.helpers.list_helpers())
-            requested_helpers = set(helpers)
-            if requested_helpers - extant_helpers:
-                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(requested_helpers - extant_helpers)})
+            _, invalid_helpers = sls.helpers.validate_helpers(helpers)
+            if invalid_helpers:
+                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': invalid_helpers})
         else:
             helpers = sls.helpers.list_helpers()
         status = {}

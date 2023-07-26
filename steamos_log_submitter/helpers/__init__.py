@@ -120,6 +120,14 @@ def list_helpers() -> Iterable[str]:
     return (helper.name for helper in pkgutil.iter_modules(__path__))
 
 
+def validate_helpers(helpers: Iterable[str]) -> tuple[list[str], list[str]]:
+    all_helpers = set(list_helpers())
+    requested_helpers = set(helpers)
+    invalid_helpers = requested_helpers - all_helpers
+    valid_helpers = requested_helpers & all_helpers
+    return sorted(valid_helpers), sorted(invalid_helpers)
+
+
 class StagingFile:
     def __init__(self, category: str, name: str, mode: str = 'w+b'):
         self._final_name = f'{sls.pending}/{category}/{name}'

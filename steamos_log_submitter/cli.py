@@ -30,12 +30,9 @@ def set_helper_enabled(helpers: list[str], enable: bool):
     with ClientWrapper() as client:
         if not client:
             return
-        valid_helpers = set(sls.helpers.list_helpers())
-        our_helpers = set(helpers)
-        invalid_helpers = our_helpers - valid_helpers
+        helpers, invalid_helpers = sls.helpers.validate_helpers(helpers)
         if invalid_helpers:
             print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
-            helpers = list(our_helpers & valid_helpers)
         if enable:
             client.enable_helpers(helpers)
         else:
