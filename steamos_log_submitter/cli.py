@@ -42,7 +42,19 @@ def do_status(args: argparse.Namespace) -> None:
     with ClientWrapper() as client:
         if not client:
             return
-        print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
+        status = client.status()
+        helpers = None
+        if args.all:
+            helpers = client.helper_status()
+        elif args.helper:
+            valid_helpers, invalid_helpers = sls.helpers.validate_helpers(args.helper)
+            helpers = client.helper_status(valid_helpers)
+            if invalid_helpers:
+                print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
+        print('Log submission is currently ' + ('enabled' if status else 'disabled'))
+        if helpers:
+            for helper, status in helpers.items():
+                print(f'Helper {helper} is currently ' + ('enabled' if status['enabled'] else 'disabled'))
 
 
 def do_list(args: argparse.Namespace) -> None:
@@ -90,8 +102,11 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
     subparsers = parser.add_subparsers(required=True, metavar='command')
 
     status = subparsers.add_parser('status',
-                                   description='Display the current status of the log collection service.',
+                                   description='''Display the current status of the log
+                                                  collection service and helper modules.''',
                                    help='Current status')
+    status.add_argument('-a', '--all', action='store_true', help='Show the status of all helpers')
+    status.add_argument('helper', nargs='*', help='Which helpers to show the status of')
     status.set_defaults(func=do_status)
 
     list_cmd = subparsers.add_parser('list',

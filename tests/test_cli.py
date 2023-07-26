@@ -27,6 +27,57 @@ def test_status(capsys, mock_config, sync_client):
     assert capsys.readouterr().out.strip().endswith('disabled')
 
 
+def test_status_helpers(capsys, mock_config, monkeypatch, sync_client):
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+    mock_config.add_section('helpers.test')
+    sync_client.start()
+
+    cli.main(['status'])
+    assert len(capsys.readouterr().out.strip().split('\n')) == 1
+
+    cli.main(['status', '-a'])
+    assert len(capsys.readouterr().out.strip().split('\n')) == 2
+
+    cli.main(['status', 'test'])
+    assert len(capsys.readouterr().out.strip().split('\n')) == 2
+
+    cli.main(['status', 'test2'])
+    outerr = capsys.readouterr()
+    out = outerr.out.strip().split('\n')
+    err = outerr.err.strip().split('\n')
+    assert len(out) == 1
+    assert len(err) == 1
+    assert err[0] == 'Invalid helpers: test2'
+
+    cli.main(['status', 'test', 'test2'])
+    outerr = capsys.readouterr()
+    out = outerr.out.strip().split('\n')
+    err = outerr.err.strip().split('\n')
+    assert len(out) == 2
+    assert len(err) == 1
+    assert err[0] == 'Invalid helpers: test2'
+
+    mock_config.set('helpers.test', 'enable', 'off')
+    cli.main(['status', '-a'])
+    assert capsys.readouterr().out.strip().split('\n')[1].endswith('disabled')
+
+    mock_config.set('helpers.test', 'enable', 'on')
+    cli.main(['status', '-a'])
+    assert capsys.readouterr().out.strip().split('\n')[1].endswith('enabled')
+
+    mock_config.set('helpers.test', 'enable', 'off')
+    cli.main(['status', 'test'])
+    assert capsys.readouterr().out.strip().split('\n')[1].endswith('disabled')
+
+    mock_config.set('helpers.test', 'enable', 'on')
+    cli.main(['status', 'test'])
+    assert capsys.readouterr().out.strip().split('\n')[1].endswith('enabled')
+
+    mock_config.set('helpers.test', 'enable', 'on')
+    cli.main(['status', 'test', 'test2'])
+    assert capsys.readouterr().out.split('\n')[1].strip().endswith('enabled')
+
+
 def test_list(capsys, monkeypatch, sync_client):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
     sync_client.start()
