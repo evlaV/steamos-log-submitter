@@ -26,3 +26,16 @@ lint:
     - . venv/bin/activate
     - pip install flake8
     - flake8 --exclude venv
+
+mypy:
+  stage: test
+  tags:
+    - docker
+    - linux
+  script:
+    - pacman -Sy --noconfirm --needed python-pip
+    - python -m venv --system-site-packages venv
+    - . venv/bin/activate
+    - pip install mypy
+    - pip install .
+    - mypy -p steamos_log_submitter --disallow-untyped-defs --disallow-incomplete-defs
