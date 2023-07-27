@@ -115,6 +115,7 @@ class JournalHelper(SentryHelper):
                 continue
 
             cursor = cls.data.get(f'{cls.escape(unit)}.cursor')
+            assert cursor is None or isinstance(cursor, str)
             journal, cursor = cls.read_journal(unit, cursor)
 
             if not journal:

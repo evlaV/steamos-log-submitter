@@ -7,16 +7,19 @@ import json
 import logging
 import os
 import steamos_log_submitter as sls
+from typing import Optional
+from steamos_log_submitter.types import JSON
 
-datastore = {}
+datastore: dict[str, 'DataStore'] = {}
+data_root: str
 
 logger = logging.getLogger(__name__)
 
 
 class DataStore:
-    def __init__(self, name, *, defaults={}):
+    def __init__(self, name: str, *, defaults: Optional[dict[str, JSON]] = {}):
         self.name = name
-        self._defaults = defaults or {}
+        self._defaults: dict[str, JSON] = defaults or {}
         self._data = {}
         self._dirty = False
 
@@ -26,27 +29,27 @@ class DataStore:
         except FileNotFoundError:
             pass
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> JSON:
         if name in self._data:
             return self._data[name]
         if name in self._defaults:
             return self._defaults[name]
         raise KeyError(name)
 
-    def __setitem__(self, name, value):
+    def __setitem__(self, name: str, value: JSON) -> None:
         self._data[name] = value
         self._dirty = True
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         return name in self._data
 
-    def get(self, name, default=None):
+    def get(self, name: str, default: Optional[JSON] = None) -> Optional[JSON]:
         try:
             return self[name]
         except KeyError:
             return default
 
-    def write(self):
+    def write(self) -> None:
         if not self._dirty:
             return
         os.makedirs(data_root, mode=0o750, exist_ok=True)
@@ -54,11 +57,11 @@ class DataStore:
             json.dump(self._data, f)
         self._dirty = False
 
-    def add_defaults(self, defaults):
+    def add_defaults(self, defaults: dict[str, JSON]) -> None:
         self._defaults.update(defaults)
 
 
-def write_all():
+def write_all() -> None:
     os.makedirs(data_root, mode=0o750, exist_ok=True)
     for data in datastore.values():
         try:
@@ -67,7 +70,7 @@ def write_all():
             logger.error('Failed to write data to disk', exc_info=e)
 
 
-def get_data(name, defaults=None):
+def get_data(name: str, defaults: Optional[dict[str, JSON]] = None) -> DataStore:
     if name == 'steamos_log_submitter':
         name = 'sls'
     elif name.startswith('steamos_log_submitter.'):
@@ -80,6 +83,6 @@ def get_data(name, defaults=None):
     return datastore[name]
 
 
-def _setup():
+def _setup() -> None:
     global data_root
     data_root = f'{sls.base}/data'
