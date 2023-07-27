@@ -64,9 +64,9 @@ async def test_no_metadata(monkeypatch):
 async def test_no_xattrs(monkeypatch):
     async def post(*args, **kwargs):
         data = kwargs['data']
-        assert data.get('sentry[tags][executable]') == b'exe'
-        assert data.get('sentry[tags][comm]') == b'comm'
-        assert data.get('sentry[tags][path]') == b'/fake/exe'
+        assert data.get('sentry[tags][executable]') == 'exe'
+        assert data.get('sentry[tags][comm]') == 'comm'
+        assert data.get('sentry[tags][path]') == '/fake/exe'
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
@@ -85,9 +85,9 @@ async def test_no_xattrs(monkeypatch):
 async def test_partial_xattrs(monkeypatch):
     async def post(*args, **kwargs):
         data = kwargs['data']
-        assert data.get('sentry[tags][executable]') == b'exe'
+        assert data.get('sentry[tags][executable]') == 'exe'
         assert 'sentry[tags][comm]' not in data
-        assert data.get('sentry[tags][path]') == b'/fake/exe'
+        assert data.get('sentry[tags][path]') == '/fake/exe'
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
