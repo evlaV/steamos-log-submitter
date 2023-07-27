@@ -5,25 +5,30 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import inspect
+import importlib.machinery
 import json
 import logging
 import os
 import time
-from typing import Optional
+from typing import Any, Iterable, Optional, Self
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 import steamos_log_submitter.helpers as helpers
+from steamos_log_submitter.types import JSONEncodable
 
+__loader__: importlib.machinery.SourceFileLoader
 config = sls.config.get_config(__loader__.name)
 logger = logging.getLogger(__loader__.name)
 socket = f'{sls.base}/steamos-log-submitter.socket'
 
 
 class Serializable:
-    def serialize(self) -> str:
+    _fields: list[str] = []
+
+    def serialize(self) -> bytes:
         data = {}
         for field in self._fields:
             field_data = getattr(self, field)
@@ -33,7 +38,7 @@ class Serializable:
         return json.dumps(data).encode() + b'\n'
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: bytes) -> Optional[Self]:
         try:
             args = {}
             parsed_data = json.loads(data.decode())
@@ -50,7 +55,7 @@ class Serializable:
 class Command(Serializable):
     _fields = ['command', 'args']
 
-    def __init__(self, command, args=None):
+    def __init__(self, command: str, args: Optional[dict[str, Any]] = None):
         self.command = command
         self.args = args or {}
 
@@ -64,7 +69,7 @@ class Reply(Serializable):
 
     _fields = ['status', 'data']
 
-    def __init__(self, status, data=None):
+    def __init__(self, status: int, data: Optional[JSONEncodable] = None):
         self.status = status
         self.data = data
 
@@ -73,16 +78,16 @@ class Daemon:
     _startup = 20
     _interval = 3600
 
-    def __init__(self, *, exit_on_shutdown=False):
-        self._conns = []
+    def __init__(self, *, exit_on_shutdown: bool = False):
+        self._conns: list[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = []
         self._exit_on_shutdown = exit_on_shutdown
-        self._periodic_task = None
+        self._periodic_task: Optional[asyncio.Task[None]] = None
         self._serving = False
         self._suspend = 'inactive'
         self._trigger_active = False
-        self._next_trigger = None
+        self._next_trigger = 0.0
 
-    async def _run_command(self, command: dict) -> Reply:
+    async def _run_command(self, command: Command) -> Reply:
         if not command:
             logger.warning('Got invalid command data')
             return Reply(status=Reply.INVALID_DATA)
@@ -107,7 +112,7 @@ class Daemon:
             logger.error('Exception hit when attempting to run command', exc_info=e)
             return Reply(status=Reply.UNKNOWN_ERROR, data={'exception': str(e)})
 
-    async def _trigger_periodic(self):
+    async def _trigger_periodic(self) -> None:
         next_interval = self._next_trigger - time.time()
         if next_interval > 0:
             logger.debug(f'Sleeping for {next_interval:.3f} seconds')
@@ -130,14 +135,17 @@ class Daemon:
                 continue
             try:
                 command = Command.deserialize(line)
-                reply = await self._run_command(command)
+                if not command:
+                    reply = Reply(Reply.INVALID_DATA)
+                else:
+                    reply = await self._run_command(command)
                 writer.write(reply.serialize())
                 await writer.drain()
             except Exception as e:
                 logger.error('Failed executing remote connection', exc_info=e)
         self._conns.remove((reader, writer))
 
-    async def _leave_suspend(self, iface: str, prop: str, value):
+    async def _leave_suspend(self, iface: str, prop: str, value: str) -> None:
         if value == self._suspend:
             return
         self._suspend = value
@@ -175,14 +183,15 @@ class Daemon:
         suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
         await suspend_props.subscribe('ActiveState', self._leave_suspend)
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         logger.info('Daemon shutting down')
         self._serving = False
-        self._periodic_task.cancel()
-        try:
-            await self._periodic_task
-        except asyncio.CancelledError:
-            pass
+        if self._periodic_task:
+            self._periodic_task.cancel()
+            try:
+                await self._periodic_task
+            except asyncio.CancelledError:
+                pass
         self._server.close()
         await self._server.wait_closed()
         os.unlink(socket)
@@ -191,20 +200,21 @@ class Daemon:
             loop = asyncio.get_event_loop()
             loop.stop()
 
-    async def _trigger(self):
+    async def _trigger(self) -> None:
         await sls.runner.trigger()
         last_trigger = time.time()
         config['last_trigger'] = last_trigger
         sls.config.write_config()
         self._next_trigger = last_trigger + self._interval
-        self._periodic_task.cancel()
-        try:
-            await self._periodic_task
-        except asyncio.CancelledError:
-            pass
+        if self._periodic_task:
+            self._periodic_task.cancel()
+            try:
+                await self._periodic_task
+            except asyncio.CancelledError:
+                pass
         self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
-    async def trigger(self, wait=True):
+    async def trigger(self, wait: bool = True) -> None:
         if self._trigger_active:
             return
         coro = self._trigger()
@@ -236,12 +246,12 @@ class Daemon:
 
     async def _list(self) -> Reply:
         helper_list = helpers.list_helpers()
-        return Reply(Reply.OK, data=helper_list)
+        return Reply(Reply.OK, data=list(helper_list))
 
     async def _log_level(self, level: Optional[str] = None) -> Reply:
         if level is not None:
             if not sls.logging.valid_level(level):
-                return Reply(Reply.INVALID_ARGUMENTS, {'level', level})
+                return Reply(Reply.INVALID_ARGUMENTS, {'level': level})
             sls.config.migrate_key('logging', 'level')
             sls.logging.config['level'] = level.upper()
             sls.config.write_config()
@@ -252,20 +262,20 @@ class Daemon:
         enabled = sls.base_config.get('enable') == 'on'
         return Reply(Reply.OK, data={'enabled': enabled})
 
-    async def _helper_status(self, helpers: list[str] = None) -> Reply:
+    async def _helper_status(self, helpers: Optional[Iterable[str]] = None) -> Reply:
         if helpers is not None:
             _, invalid_helpers = sls.helpers.validate_helpers(helpers)
             if invalid_helpers:
-                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': invalid_helpers})
+                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(invalid_helpers)})
         else:
             helpers = sls.helpers.list_helpers()
-        status = {}
+        status: dict[str, JSONEncodable] = {}
         for helper in helpers:
             config = sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')
             status[helper] = {'enabled': config.get('enable', 'off') == 'on'}
         return Reply(Reply.OK, data=status)
 
-    async def _set_steam_info(self, key: str, value) -> Reply:
+    async def _set_steam_info(self, key: str, value: str) -> Reply:
         if key not in (
             'deck_serial',
             'account_id',
@@ -279,7 +289,7 @@ class Daemon:
         sls.config.write_config()
         return Reply(Reply.OK)
 
-    _commands = {
+    _commands: dict[str, Any] = {  # TODO: Improve signature
         'enable': _enable,
         'enable-helpers': _enable_helpers,
         'status': _status,
