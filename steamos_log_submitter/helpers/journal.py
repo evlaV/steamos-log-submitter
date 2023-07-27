@@ -40,7 +40,7 @@ class JournalHelper(SentryHelper):
     ]
 
     @classmethod
-    def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[list[dict], str]:
+    def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict]], Optional[str]]:
         cmd = ['journalctl', '-o', 'json', '-u', unit]
         if cursor is not None:
             cmd.extend(['--after-cursor', cursor])
@@ -50,7 +50,7 @@ class JournalHelper(SentryHelper):
             cls.logger.error('Failed to exec journalctl', exc_info=e)
             return None, None
 
-        invocations = {}
+        invocations: dict[str, list] = {}
         cursor = None
         for line in journal.stdout.decode().split('\n'):
             if not line:
@@ -74,15 +74,15 @@ class JournalHelper(SentryHelper):
 
     @classmethod
     def escape(cls, name: str) -> str:
-        alphanumeric = b'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-        alphanumeric = frozenset(b for b in alphanumeric)
-        name = name.encode()
-        return ''.join([chr(char) if char in alphanumeric else f'_{char:2x}' for char in name])
+        alphabet = b'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+        alphanumeric = frozenset(b for b in alphabet)
+        bname = name.encode()
+        return ''.join([chr(char) if char in alphanumeric else f'_{char:2x}' for char in bname])
 
     @classmethod
     def unescape(cls, escaped: str) -> str:
         unescaped = []
-        progress = None
+        progress: Optional[list[str]] = None
         for char in escaped:
             if progress is None:
                 if char != '_':
