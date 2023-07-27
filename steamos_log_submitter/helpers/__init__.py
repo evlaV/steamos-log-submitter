@@ -15,6 +15,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.exceptions import HelperError
+from steamos_log_submitter.types import JSON
 
 
 class HelperResult:
@@ -35,7 +36,7 @@ class HelperResult:
 
 
 class Helper:
-    defaults: Optional[dict[str, Optional[str]]] = None
+    defaults: Optional[dict[str, JSON]] = None
 
     config: sls.config.ConfigSection
     data: sls.data.DataStore
