@@ -1,13 +1,16 @@
 import argparse
 import json
 import sys
+from types import TracebackType
+from typing import Optional, Type
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 from collections.abc import Sequence
+from steamos_log_submitter.types import JSON, JSONEncodable
 
 
 class ClientWrapper:
-    def __enter__(self):
+    def __enter__(self) -> Optional[sls.client.Client]:
         try:
             client = sls.client.Client()
             return client
@@ -15,18 +18,18 @@ class ClientWrapper:
             print("Can't connect to daemon. Is service running?", file=sys.stderr)
             return None
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> bool:
         return not exc_type
 
 
-def set_enabled(enable: bool):
+def set_enabled(enable: bool) -> None:
     with ClientWrapper() as client:
         if not client:
             return
         client.enable(enable)
 
 
-def set_helper_enabled(helpers: list[str], enable: bool):
+def set_helper_enabled(helpers: list[str], enable: bool) -> None:
     with ClientWrapper() as client:
         if not client:
             return
@@ -44,7 +47,7 @@ def do_status(args: argparse.Namespace) -> None:
         if not client:
             return
         status = client.status()
-        helpers = None
+        helpers: Optional[dict[str, dict[str, JSON]]] = None
         if args.all:
             helpers = client.helper_status()
         elif args.helper:
@@ -55,10 +58,10 @@ def do_status(args: argparse.Namespace) -> None:
         if not args.json:
             print('Log submission is currently ' + ('enabled' if status else 'disabled'))
             if helpers:
-                for helper, status in helpers.items():
-                    print(f'Helper {helper} is currently ' + ('enabled' if status['enabled'] else 'disabled'))
+                for helper, helper_status in helpers.items():
+                    print(f'Helper {helper} is currently ' + ('enabled' if helper_status['enabled'] else 'disabled'))
         else:
-            blob = {'enabled': status}
+            blob: dict[str, JSONEncodable] = {'enabled': status}
             if helpers:
                 blob['helpers'] = helpers
             print(json.dumps(blob))
@@ -81,13 +84,13 @@ def do_log_level(args: argparse.Namespace) -> None:
             print('Please specify a valid log level', file=sys.stderr)
 
 
-def set_steam_info(key: str, value: str) -> bool:
+def set_steam_info(key: str, value: str) -> None:
     if key == 'account-id':
         try:
             int(value)
         except ValueError:
             print('Account ID must be numeric', file=sys.stderr)
-            return False
+            return
 
     with ClientWrapper() as client:
         if not client:
