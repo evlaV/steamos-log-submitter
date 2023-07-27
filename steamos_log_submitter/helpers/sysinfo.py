@@ -11,10 +11,11 @@ import os
 import re
 import subprocess
 import time
-from typing import Any, Optional
+from typing import Callable, Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 from steamos_log_submitter.dbus import DBusObject
+from steamos_log_submitter.types import JSON
 from . import Helper, HelperResult
 
 
@@ -22,7 +23,7 @@ class SysinfoHelper(Helper):
     defaults = {'timestamp': None}
 
     @staticmethod
-    def read_file(path, binary=False) -> Optional[str]:
+    def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
         try:
             with open(path, 'rb' if binary else 'r') as f:
                 data = f.read()
@@ -33,7 +34,7 @@ class SysinfoHelper(Helper):
             return None
 
     @classmethod
-    async def list_usb(cls) -> list[dict[str, Any]]:
+    async def list_usb(cls) -> list[dict[str, str]]:
         usb = '/sys/bus/usb/devices'
         devices = []
         for dev in os.listdir(usb):
@@ -44,23 +45,27 @@ class SysinfoHelper(Helper):
             pid = cls.read_file(f'{usb}/{dev}/idProduct')
             if not vid or not pid:
                 continue
+            assert isinstance(vid, str)
+            assert isinstance(pid, str)
             info = {
                 'vid': vid,
                 'pid': pid,
             }
             manufacturer = cls.read_file(f'{usb}/{dev}/manufacturer')
             if manufacturer is not None:
+                assert isinstance(manufacturer, str)
                 info['manufacturer'] = manufacturer
 
             product = cls.read_file(f'{usb}/{dev}/product')
             if product is not None:
+                assert isinstance(product, str)
                 info['product'] = product
 
             devices.append(info)
         return devices
 
     @classmethod
-    async def list_monitors(cls) -> list[dict[str, Any]]:
+    async def list_monitors(cls) -> list[dict[str, str]]:
         drm = '/sys/class/drm'
         devices = []
         for dev in os.listdir(drm):
@@ -69,11 +74,12 @@ class SysinfoHelper(Helper):
             edid = cls.read_file(f'{drm}/{dev}/edid', binary=True)
             if not edid:
                 continue
+            assert isinstance(edid, bytes)  # Hint to mypy
             devices.append({'edid': edid.hex()})
         return devices
 
     @classmethod
-    async def list_bluetooth(cls) -> list[dict[str, Any]]:
+    async def list_bluetooth(cls) -> list[dict[str, JSON]]:
         bus = 'org.bluez'
         bluez = DBusObject(bus, '/org/bluez')
         adapters = await bluez.list_children()
@@ -85,7 +91,7 @@ class SysinfoHelper(Helper):
                 dev_object = DBusObject(bus, dev)
                 dev_dict = {}
                 dev_bluez = dev_object.properties('org.bluez.Device1')
-                for name, convert in [
+                conversions: list[tuple[str, Callable]] = [
                     ('Address', str),
                     ('Alias', str),
                     ('Blocked', bool),
@@ -97,7 +103,8 @@ class SysinfoHelper(Helper):
                     ('Name', str),
                     ('Paired', bool),
                     ('Trusted', bool)
-                ]:
+                ]
+                for name, convert in conversions:
                     try:
                         dev_dict[name.lower()] = convert(await dev_bluez[name])
                     except KeyError:
@@ -108,7 +115,7 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    async def list_filesystems(cls) -> list[dict[str, Any]]:
+    async def list_filesystems(cls) -> list[dict[str, JSON]]:
         bus = 'org.freedesktop.UDisks2'
         try:
             findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
@@ -140,7 +147,7 @@ class SysinfoHelper(Helper):
         return filesystems
 
     @classmethod
-    async def list_system(cls) -> dict[str, Any]:
+    async def list_system(cls) -> dict[str, JSON]:
         sysinfo: dict[str, JSON] = {
             'branch': sls.steam.get_steamos_branch(),
             'release': sls.util.get_build_id(),
@@ -193,11 +200,13 @@ class SysinfoHelper(Helper):
         now = time.time()
         timestamp = cls.data['timestamp']
         new_file = False
-        if timestamp is not None:
+        if isinstance(timestamp, int | float):
             if now - timestamp >= cls.config.get('interval', 60 * 60 * 24 * 7):
                 # If last submitted over a week ago, submit now
                 os.rename(f'{sls.data.data_root}/sysinfo-pending.json', f'{sls.pending}/sysinfo/{now:.0f}.json')
                 new_file = True
+        else:
+            timestamp = None
 
         if not timestamp or new_file:
             cls.data['timestamp'] = now
