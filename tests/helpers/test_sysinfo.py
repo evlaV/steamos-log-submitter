@@ -353,6 +353,18 @@ async def test_collect_no_timestamp(monkeypatch, data_directory, helper_director
 
 
 @pytest.mark.asyncio
+async def test_collect_invalid_timestamp(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', [])
+    monkeypatch.setattr(time, 'time', lambda: 1000)
+
+    helper.data['timestamp'] = 'fake'
+    assert not await helper.collect()
+    assert helper.data.get('timestamp') == 1000
+
+
+@pytest.mark.asyncio
 async def test_collect_small_interval(monkeypatch, data_directory, helper_directory, mock_config):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', [])
