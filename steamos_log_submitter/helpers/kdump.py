@@ -15,8 +15,8 @@ from . import Helper, HelperResult
 class KdumpHelper(Helper):
     @staticmethod
     def get_summaries(dmesg: TextIO) -> tuple[str, str]:
-        crash_summary = []
-        call_trace = []
+        crash_summary_list: list[str] = []
+        call_trace_list: list[str] = []
         call_trace_grab = 0
 
         # Extract only the lines between "Kernel panic -" and
@@ -25,26 +25,25 @@ class KdumpHelper(Helper):
         # 2nd "RIP:" into the call trace log - notice we remove the useless
         # lines like "Call Trace / <TASK>" and "Sending NMI / Kernel Offset".
         for line in dmesg:
-            if crash_summary or 'Kernel panic -' in line:
-                crash_summary.append(line)
+            if crash_summary_list or 'Kernel panic -' in line:
+                crash_summary_list.append(line)
 
                 if call_trace_grab:
-                    call_trace.append(line)
+                    call_trace_list.append(line)
                     if ' RIP:' in line:
                         call_trace_grab -= 1
                 elif ' Call Trace:' in line:
                     call_trace_grab = 2
 
                 if 'Kernel Offset:' in line or 'Sending NMI' in line:
-                    crash_summary.pop()
+                    crash_summary_list.pop()
                     break
 
-        crash_summary = ''.join(crash_summary)
+        crash_summary = ''.join(crash_summary_list)
 
-        if call_trace:
-            call_trace.pop(0)
-            call_trace.pop()
-        call_trace = ''.join(call_trace)
+        if call_trace_list:
+            call_trace_list = call_trace_list[1:-1]
+        call_trace = ''.join(call_trace_list)
         return crash_summary, call_trace
 
     @classmethod
