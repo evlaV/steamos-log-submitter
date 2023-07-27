@@ -8,6 +8,7 @@ import json
 import os
 import steamos_log_submitter as sls
 from . import Helper, HelperResult
+from typing import Union
 
 
 class MinidumpHelper(Helper):
@@ -18,7 +19,7 @@ class MinidumpHelper(Helper):
             return HelperResult(HelperResult.PERMANENT_ERROR)
         name_parts = name.split('-')
 
-        metadata = {}
+        metadata: dict[str, Union[str, int]] = {}
         try:
             appid = int(name_parts[-1])
             metadata['sentry[tags][appid]'] = appid
@@ -37,8 +38,8 @@ class MinidumpHelper(Helper):
         for attr in ('executable', 'comm', 'path'):
             try:
                 value = os.getxattr(fname, f'user.{attr}')
-                metadata[f'sentry[tags][{attr}]'] = value
-            except IOError:
+                metadata[f'sentry[tags][{attr}]'] = value.decode(errors='replace')
+            except OSError:
                 cls.logger.warning(f'Failed to get {attr} xattr on minidump.')
 
         cls.logger.debug(f'Uploading minidump with metadata {metadata}')
