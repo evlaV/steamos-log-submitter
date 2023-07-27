@@ -176,7 +176,7 @@ async def test_envelope_multiple_attachments(monkeypatch):
 async def test_envelope_timestamp(monkeypatch):
     async def fake_response(self, url, **kwargs):
         if url == 'https://fake@dsn/api/0/store/':
-            assert kwargs['json']['timestamp'] == 0.0
+            assert kwargs['json']['timestamp'] == 0.1
         elif url == 'https://fake@dsn/api/0/envelope/':
             data = gzip.decompress(kwargs['content'])
             line, data = data.split(b'\n', 1)
@@ -187,4 +187,4 @@ async def test_envelope_timestamp(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', timestamp=0.0, attachments=[{'data': b''}])
+    assert await sentry.send_event('https://fake@dsn/0', timestamp=0.1, attachments=[{'data': b''}])
