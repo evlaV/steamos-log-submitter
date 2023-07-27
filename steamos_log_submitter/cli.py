@@ -3,7 +3,7 @@ import configparser
 import sys
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from typing import Optional
+from typing import Optional, Sequence
 
 
 def load_user_config() -> Optional[configparser.ConfigParser]:
@@ -26,6 +26,8 @@ def load_user_config() -> Optional[configparser.ConfigParser]:
 
 
 def save_user_config(user_config: configparser.ConfigParser) -> bool:
+    if not config.user_config_path:
+        return False
     try:
         with open(config.user_config_path, 'w') as f:
             user_config.write(f)
@@ -68,16 +70,16 @@ def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
     return save_user_config(user_config)
 
 
-def do_status(args):
+def do_status(args: argparse.Namespace) -> None:
     print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
 
 
-def do_list(args):
+def do_list(args: argparse.Namespace) -> None:
     for helper in sorted(sls.helpers.list_helpers()):
         print(helper)
 
 
-def set_steam_info(key, value) -> bool:
+def set_steam_info(key: str, value: str) -> bool:
     if key not in ('account-name', 'account-id', 'deck-serial'):
         print(f"'{key}' is not a valid Steam info key")
         return False
@@ -99,7 +101,7 @@ def set_steam_info(key, value) -> bool:
     return save_user_config(user_config)
 
 
-def main(args=sys.argv[1:]):
+def main(args: Sequence[str] = sys.argv[1:]) -> None:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
         description='SteamOS log collection and submission tool')
@@ -147,9 +149,9 @@ def main(args=sys.argv[1:]):
     set_steam.add_argument('value', type=str)
     set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))
 
-    args = parser.parse_args(args)
+    parsed_args = parser.parse_args(args)
 
-    args.func(args)
+    parsed_args.func(parsed_args)
 
 
 if __name__ == '__main__':  # pragma: no cover
