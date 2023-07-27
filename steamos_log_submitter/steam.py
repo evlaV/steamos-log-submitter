@@ -6,7 +6,7 @@
 import logging
 import pwd
 import subprocess
-import vdf
+import vdf  # type: ignore
 import steamos_log_submitter as sls
 from typing import Optional
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 default_uid = 1000
 
 
-def _setup():
+def _setup() -> None:
     global default_uid
     try:
         default_uid = int(config.get('uid', '1000'))
