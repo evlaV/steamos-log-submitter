@@ -11,40 +11,39 @@ import json
 import logging
 import urllib.parse
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Iterable, Optional, Union
 import steamos_log_submitter as sls
+from steamos_log_submitter.types import JSON
 
 logger = logging.getLogger(__name__)
 
 
 async def send_event(dsn: str, *,
                      appid: Optional[int] = None,
-                     attachments: List[Dict[str, Any]] = [],
-                     tags: Dict[str, str] = {},
-                     fingerprint: List[str] = [],
+                     attachments: Iterable[dict[str, Any]] = (),
+                     tags: dict[str, JSON] = {},
+                     fingerprint: Iterable[str] = (),
                      timestamp: Optional[float] = None,
                      environment: Optional[str] = None,
                      message: Optional[str] = None) -> bool:
     raw_envelope = io.BytesIO()
     envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
 
-    def append_json(j):
+    def append_json(j: JSON) -> None:
         envelope.write(json.dumps(j).encode())
         envelope.write(b'\n')
 
-    def append_item(j, item=b''):
+    def append_item(j: JSON, item: bytes = b'') -> None:
         append_json(j)
         envelope.write(item)
         envelope.write(b'\n')
 
     event_id = uuid.uuid4().hex
     sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    if timestamp is None:
-        timestamp = sent_at
 
-    event = {
+    event: dict[str, Union[JSON, list[str]]] = {  # XXX: I have no idea why this union is needed
         'event_id': event_id,
-        'timestamp': timestamp,
+        'timestamp': timestamp or sent_at,
         'platform': 'native',
     }
 
@@ -84,7 +83,7 @@ async def send_event(dsn: str, *,
         })
 
         if store_post.status_code != 200:
-            logger.error(f'Failed to submit event: {store_post.content}')
+            logger.error(f'Failed to submit event: {store_post.content.decode()}')
             return False
 
         if attachments:
@@ -95,7 +94,7 @@ async def send_event(dsn: str, *,
             })
 
             for attachment in attachments:
-                attachment_info = {
+                attachment_info: dict[str, JSON] = {
                     'type': 'attachment',
                     'length': len(attachment['data'])
                 }
@@ -115,7 +114,7 @@ async def send_event(dsn: str, *,
             })
 
             if envelope_post.status_code != 200:
-                logger.error(f'Failed to submit attachment: {envelope_post.content}')
+                logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
                 return False
 
     return True
