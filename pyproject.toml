@@ -1,2 +1,7 @@
 [build-system]
 requires = ["setuptools"]
+
+[tool.mypy]
+warn_unused_configs = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
