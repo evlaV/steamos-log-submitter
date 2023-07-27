@@ -35,8 +35,14 @@ __all__ = [
 
 _setup = False
 
+base_config: config.ConfigSection
+base: str
+pending: str
+uploaded: str
+failed: str
 
-def setup():
+
+def setup() -> None:
     global _setup
     global base_config
     global base
@@ -45,7 +51,7 @@ def setup():
     global failed
 
     if _setup:
-        return True
+        return
 
     base_config = config.get_config(__name__, defaults={
         'enable': 'off',
@@ -65,7 +71,7 @@ def setup():
     _setup = True
 
 
-def trigger():
+def trigger() -> None:
     asyncio.run(runner.trigger())
 
 
