@@ -6,6 +6,7 @@
 import configparser
 import logging
 import pwd
+from typing import Any, Optional
 
 __all__ = [
     'get_config',
@@ -19,15 +20,17 @@ user_config_path = None
 local_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
 local_config_path = None
 
+config: configparser.ConfigParser
+
 logger = logging.getLogger(__name__)
 
 
 class ConfigSection:
-    def __init__(self, name, *, defaults={}):
+    def __init__(self, name: str, *, defaults: Optional[dict[str, Any]] = None):
         self.name = name
         self._defaults = defaults or {}
 
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> Any:
         if local_config.has_section(self.name) and local_config.has_option(self.name, name):
             return local_config.get(self.name, name)
         if config.has_section(self.name) and config.has_option(self.name, name):
@@ -36,26 +39,26 @@ class ConfigSection:
             return self._defaults[name]
         raise KeyError(name)
 
-    def __setitem__(self, name, value):
+    def __setitem__(self, name: str, value: Any):
         if not local_config.has_section(self.name):
             local_config.add_section(self.name)
         local_config.set(self.name, name, str(value))
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
         if local_config.has_section(self.name) and local_config.has_option(self.name, name):
             return True
         if config.has_section(self.name) and config.has_option(self.name, name):
             return True
         return False
 
-    def get(self, name, default=None):
+    def get(self, name: str, default: Any = None) -> Any:
         try:
             return self[name]
         except KeyError:
             return default
 
 
-def get_config(mod, defaults=None) -> ConfigSection:
+def get_config(mod, defaults: Optional[dict[str, Any]] = None) -> ConfigSection:
     if mod == 'steamos_log_submitter':
         return ConfigSection('sls', defaults=defaults)
     if not mod.startswith('steamos_log_submitter.'):
