@@ -10,7 +10,8 @@ import pwd
 import re
 import requests
 import time
-from typing import Optional, Union
+from types import TracebackType
+from typing import Optional, Type, Union
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +105,7 @@ class drop_root:
             except ValueError:
                 self.target_gid = grp.getgrnam(target_gid)[2]
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.uid = os.geteuid()
         self.gid = os.getegid()
 
@@ -117,7 +118,7 @@ class drop_root:
             logger.error("Couldn't drop permissions", exc_info=e)
             raise
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> bool:
         try:
             os.seteuid(self.uid)
             os.setegid(self.gid)
