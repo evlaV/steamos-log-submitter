@@ -3,6 +3,9 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import os
+
 if __name__ == '__main__':  # pragma: no cover
     from . import trigger
+    os.nice(19)
     trigger()
