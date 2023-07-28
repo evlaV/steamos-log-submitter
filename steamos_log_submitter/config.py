@@ -39,7 +39,7 @@ class ConfigSection:
             return self._defaults[name]
         raise KeyError(name)
 
-    def __setitem__(self, name: str, value: Any):
+    def __setitem__(self, name: str, value: Any) -> None:
         if not local_config.has_section(self.name):
             local_config.add_section(self.name)
         local_config.set(self.name, name, str(value))
@@ -58,7 +58,7 @@ class ConfigSection:
             return default
 
 
-def get_config(mod, defaults: Optional[dict[str, Any]] = None) -> ConfigSection:
+def get_config(mod: str, defaults: Optional[dict[str, Any]] = None) -> ConfigSection:
     if mod == 'steamos_log_submitter':
         return ConfigSection('sls', defaults=defaults)
     if not mod.startswith('steamos_log_submitter.'):
@@ -66,7 +66,7 @@ def get_config(mod, defaults: Optional[dict[str, Any]] = None) -> ConfigSection:
     return ConfigSection(mod.split('.', 1)[1], defaults=defaults)
 
 
-def reload_config():
+def reload_config() -> None:
     global config
     global local_config_path
     global user_config_path
@@ -113,7 +113,7 @@ def reload_config():
             logger.error("Couldn't open local configuration file")
 
 
-def write_config():
+def write_config() -> None:
     if local_config_path is None:
         raise FileNotFoundError
     with open(local_config_path, 'w') as f:
