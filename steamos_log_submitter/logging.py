@@ -22,13 +22,13 @@ def valid_level(level: str) -> bool:
     return level.upper() in ('DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
 
 
-def add_handler(handler: logging.Handler, level: int):
+def add_handler(handler: logging.Handler, level: int) -> None:
     handler.setFormatter(formatter)
     handler.setLevel(level)
     root_logger.addHandler(handler)
 
 
-def reconfigure_logging(path: Optional[str] = None):
+def reconfigure_logging(path: Optional[str] = None) -> None:
     level = config.get('level', 'WARNING').upper()
     if valid_level(level):
         level = getattr(logging, level)
