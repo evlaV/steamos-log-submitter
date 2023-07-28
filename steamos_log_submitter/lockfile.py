@@ -83,7 +83,7 @@ class Lockfile:
 
 
 class LockRetry:
-    def __init__(self, lock, attempts=5, delay=0.1):
+    def __init__(self, lock: Lockfile, attempts: int = 5, delay: float = 0.1):
         self.lock = lock
         self._attempts = attempts
         self._delay = delay
