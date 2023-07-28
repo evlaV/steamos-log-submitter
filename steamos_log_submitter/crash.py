@@ -6,6 +6,7 @@
 import httpx
 import logging
 import os
+from typing import Any, Optional
 import steamos_log_submitter as sls
 
 __all__ = [
@@ -18,7 +19,11 @@ finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload
 logger = logging.getLogger(__name__)
 
 
-async def upload(product, *, build=None, version=None, info, dump=None) -> bool:
+async def upload(product: str, *,
+                 info: dict[str, Any],
+                 build: Optional[str] = None,
+                 version: Optional[str] = None,
+                 dump: Optional[str] = None) -> bool:
     logger.info(f'Uploading crash log for {product} (build: {build}, version: {version})')
     account = sls.steam.get_steam_account_id()
     if account is None:
