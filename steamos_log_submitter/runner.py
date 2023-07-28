@@ -14,7 +14,7 @@ import os
 logger = logging.getLogger(__name__)
 
 
-async def collect_category(category: str):
+async def collect_category(category: str) -> None:
     logger.info(f'Collecting logs for {category}')
     try:
         with sls.helpers.lock(category):
@@ -27,7 +27,7 @@ async def collect_category(category: str):
         logger.error(f'Encountered error collecting logs for {category}', exc_info=e)
 
 
-async def collect():
+async def collect() -> None:
     logger.info('Starting log collection')
     tasks = []
     for category in sls.helpers.list_helpers():
@@ -40,7 +40,7 @@ async def collect():
     logger.info('Finished log collection')
 
 
-async def submit_category(category: str, logs: list[str]):
+async def submit_category(category: str, logs: list[str]) -> None:
     try:
         with sls.helpers.lock(category):
             try:
@@ -66,7 +66,7 @@ async def submit_category(category: str, logs: list[str]):
         logger.warning(f'Lock already held trying to submit logs for {category}')
 
 
-async def submit():
+async def submit() -> None:
     logger.info('Starting log submission')
     if not sls.util.check_network():
         logger.info('Network is offline, bailing out')
@@ -93,7 +93,7 @@ async def submit():
     logger.info('Finished log submission')
 
 
-async def trigger():
+async def trigger() -> None:
     if sls.base_config['enable'] == 'on':
         logger.info('Routine collection/submission triggered')
         try:
