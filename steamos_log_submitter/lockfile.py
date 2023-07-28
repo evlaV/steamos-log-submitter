@@ -6,6 +6,8 @@
 import logging
 import os
 import time
+from types import TracebackType
+from typing import Optional, TextIO, Type
 from steamos_log_submitter.exceptions import LockHeldError, LockNotHeldError
 
 logger = logging.getLogger(__name__)
@@ -14,17 +16,17 @@ logger = logging.getLogger(__name__)
 class Lockfile:
     def __init__(self, path: str):
         self._path = path
-        self.lockfile = None
+        self.lockfile: Optional[TextIO] = None
 
-    def __enter__(self):
+    def __enter__(self) -> 'Lockfile':
         self.lock()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> bool:
         self.unlock()
         return not exc_type
 
-    def lock(self):
+    def lock(self) -> None:
         logger.debug(f'Attempting to get lock on {self._path}')
         if self.lockfile:
             logger.debug(f'Lock on {self._path} already held, bailing out')
@@ -72,7 +74,7 @@ class Lockfile:
         self.lockfile.flush()
         logger.debug(f'Lock on {self._path} obtained')
 
-    def unlock(self):
+    def unlock(self) -> None:
         if not self.lockfile:
             raise LockNotHeldError(f'Lock on {self._path} not held')
         # The lock must be deleted before closing to avoid race conditoins
@@ -88,7 +90,7 @@ class LockRetry:
         self._attempts = attempts
         self._delay = delay
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         for _ in range(self._attempts):
             try:
                 self.lock.lock()
@@ -97,6 +99,6 @@ class LockRetry:
                     raise
                 time.sleep(self._delay)
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> bool:
         self.lock.unlock()
         return not exc_type
