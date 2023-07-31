@@ -416,6 +416,48 @@ async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config)
 
 
 @pytest.mark.asyncio
+async def test_inhibit(test_daemon, monkeypatch, count_hits, mock_config):
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.04)
+    daemon, reader, writer = await test_daemon
+
+    start = time.time()
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.06)
+    assert mock_config.has_section('daemon')
+    assert mock_config.has_option('daemon', 'last_trigger')
+    assert count_hits.hits == 1
+    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.06
+
+    reply = await transact(sls.daemon.Command("inhibit", {"state": True}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert count_hits.hits == 1
+    assert mock_config.has_option('sls', 'inhibit')
+    assert mock_config.get('sls', 'inhibit') == 'on'
+
+    await asyncio.sleep(0.09)
+    assert count_hits.hits == 1
+
+    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert count_hits.hits == 1
+
+    reply = await transact(sls.daemon.Command("inhibit", {"state": False}), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert mock_config.has_option('sls', 'inhibit')
+    assert mock_config.get('sls', 'inhibit') == 'off'
+    await asyncio.sleep(0)
+    assert count_hits.hits == 2
+
+    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
+    assert reply.status == sls.daemon.Reply.OK
+    assert count_hits.hits == 3
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_trigger_called(test_daemon, monkeypatch, count_hits, mock_config):
     daemon, reader, writer = await test_daemon
     monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
