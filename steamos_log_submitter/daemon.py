@@ -177,7 +177,8 @@ class Daemon:
             if next_trigger > self._next_trigger:
                 self._next_trigger = next_trigger
 
-        self._periodic_task = asyncio.create_task(self._trigger_periodic())
+        if not self.inhibited():
+            self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
         suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
         suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
@@ -201,6 +202,8 @@ class Daemon:
             loop.stop()
 
     async def _trigger(self) -> None:
+        if self.inhibited():
+            return
         await sls.runner.trigger()
         last_trigger = time.time()
         config['last_trigger'] = last_trigger
@@ -215,6 +218,8 @@ class Daemon:
         self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
     async def trigger(self, wait: bool = True) -> None:
+        if self.inhibited():
+            return
         if self._trigger_active:
             return
         coro = self._trigger()
@@ -243,6 +248,25 @@ class Daemon:
             sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
         sls.config.write_config()
         return Reply(Reply.OK)
+
+    async def _inhibit(self, state: bool) -> Reply:
+        if type(state) != bool:
+            return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
+        sls.base_config['inhibit'] = 'on' if state else 'off'
+        sls.config.write_config()
+        if state and self._periodic_task:
+            self._periodic_task.cancel()
+            try:
+                await self._periodic_task
+            except asyncio.CancelledError:
+                pass
+            self._periodic_task = None
+        elif not state and not self._periodic_task:
+            self._periodic_task = asyncio.create_task(self._trigger_periodic())
+        return Reply(Reply.OK)
+
+    def inhibited(self) -> bool:
+        return sls.base_config.get('inhibit', 'off') == 'on'
 
     async def _list(self) -> Reply:
         helper_list = helpers.list_helpers()
@@ -292,6 +316,7 @@ class Daemon:
     _commands: dict[str, Any] = {  # TODO: Improve signature
         'enable': _enable,
         'enable-helpers': _enable_helpers,
+        'inhibit': _inhibit,
         'status': _status,
         'helper-status': _helper_status,
         'list': _list,
