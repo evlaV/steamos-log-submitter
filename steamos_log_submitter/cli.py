@@ -3,7 +3,8 @@ import configparser
 import sys
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 
 def load_user_config() -> Optional[configparser.ConfigParser]:

@@ -8,7 +8,7 @@ import logging
 import os
 import steamos_log_submitter as sls
 from typing import Optional
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import JSONEncodable
 
 datastore: dict[str, 'DataStore'] = {}
 data_root: str
@@ -17,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class DataStore:
-    def __init__(self, name: str, *, defaults: Optional[dict[str, JSON]] = {}):
+    def __init__(self, name: str, *, defaults: Optional[dict[str, JSONEncodable]] = {}):
         self.name = name
-        self._defaults: dict[str, JSON] = defaults or {}
+        self._defaults: dict[str, JSONEncodable] = defaults or {}
         self._data = {}
         self._dirty = False
 
@@ -29,21 +29,21 @@ class DataStore:
         except FileNotFoundError:
             pass
 
-    def __getitem__(self, name: str) -> JSON:
+    def __getitem__(self, name: str) -> JSONEncodable:
         if name in self._data:
             return self._data[name]
         if name in self._defaults:
             return self._defaults[name]
         raise KeyError(name)
 
-    def __setitem__(self, name: str, value: JSON) -> None:
+    def __setitem__(self, name: str, value: JSONEncodable) -> None:
         self._data[name] = value
         self._dirty = True
 
     def __contains__(self, name: str) -> bool:
         return name in self._data
 
-    def get(self, name: str, default: Optional[JSON] = None) -> Optional[JSON]:
+    def get(self, name: str, default: Optional[JSONEncodable] = None) -> Optional[JSONEncodable]:
         try:
             return self[name]
         except KeyError:
@@ -57,7 +57,7 @@ class DataStore:
             json.dump(self._data, f)
         self._dirty = False
 
-    def add_defaults(self, defaults: dict[str, JSON]) -> None:
+    def add_defaults(self, defaults: dict[str, JSONEncodable]) -> None:
         self._defaults.update(defaults)
 
 
@@ -70,7 +70,7 @@ def write_all() -> None:
             logger.error('Failed to write data to disk', exc_info=e)
 
 
-def get_data(name: str, defaults: Optional[dict[str, JSON]] = None) -> DataStore:
+def get_data(name: str, defaults: Optional[dict[str, JSONEncodable]] = None) -> DataStore:
     if name == 'steamos_log_submitter':
         name = 'sls'
     elif name.startswith('steamos_log_submitter.'):

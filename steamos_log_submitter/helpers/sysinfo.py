@@ -11,7 +11,8 @@ import os
 import re
 import subprocess
 import time
-from typing import Callable, Union
+from collections.abc import Callable
+from typing import Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 from steamos_log_submitter.dbus import DBusObject
