@@ -30,7 +30,7 @@ def test_collect_usb_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
     monkeypatch.setattr(helper, 'read_file', unreachable)
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -38,7 +38,7 @@ def test_collect_usb_nondev(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['usb1'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -46,7 +46,7 @@ def test_collect_usb_bad_dev(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['1-1'])
     make_usb_devs(monkeypatch, {'1-1': {}})
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -57,7 +57,7 @@ def test_collect_usb_vid_pid_only(monkeypatch):
         'idProduct': '5678'
     }})
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
         'vid': '1234',
@@ -73,7 +73,7 @@ def test_collect_usb_manufacturer(monkeypatch):
         'manufacturer': 'Black Mesa'
     }})
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
         'vid': '1234',
@@ -90,7 +90,7 @@ def test_collect_usb_product(monkeypatch):
         'product': 'Hazardous Environment Suit'
     }})
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
         'vid': '1234',
@@ -108,7 +108,7 @@ def test_collect_usb_all(monkeypatch):
         'product': 'Hazardous Environment Suit'
     }})
     devices = helper.list_usb()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {
         'vid': '1234',
@@ -124,7 +124,7 @@ def test_collect_bluetooth_no_adapters(monkeypatch, mock_dbus):
     MockDBusObject(bus, '/org/bluez', mock_dbus)
 
     devices = helper.list_bluetooth()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -135,7 +135,7 @@ def test_collect_bluetooth_empty_adapter(monkeypatch, mock_dbus):
     MockDBusObject(bus, '/org/bluez/hci0', mock_dbus)
 
     devices = helper.list_bluetooth()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -151,7 +151,7 @@ def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
     }
 
     devices = helper.list_bluetooth()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0] == {'address': '01:02:03:04:05', 'name': 'Crowbar', 'adapter': 'hci0'}
 
@@ -160,7 +160,7 @@ def test_collect_monitors_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
     monkeypatch.setattr(helper, 'read_file', unreachable)
     devices = helper.list_monitors()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -168,7 +168,7 @@ def test_collect_monitors_other_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['version'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
     devices = helper.list_monitors()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -176,7 +176,7 @@ def test_collect_monitors_card_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0'])
     monkeypatch.setattr(helper, 'read_file', unreachable)
     devices = helper.list_monitors()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -184,7 +184,7 @@ def test_collect_monitors_no_edid(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
     monkeypatch.setattr(helper, 'read_file', lambda _, binary: None)
     devices = helper.list_monitors()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert not len(devices)
 
 
@@ -197,7 +197,7 @@ def test_collect_monitors_edid(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
     monkeypatch.setattr(helper, 'read_file', read_file)
     devices = helper.list_monitors()
-    assert type(devices) == list
+    assert isinstance(devices, list)
     assert len(devices) == 1
     assert devices[0]['edid'] == '41414141'
 

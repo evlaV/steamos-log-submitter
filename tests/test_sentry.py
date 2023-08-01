@@ -189,7 +189,7 @@ def test_envelope_timestamp(monkeypatch):
             data = gzip.decompress(kwargs['data'])
             line, data = data.split(b'\n', 1)
             header = json.loads(line)
-            assert type(header.get('sent_at')) == str
+            assert isinstance(header.get('sent_at'), str)
         else:
             assert False
         r = requests.Response()

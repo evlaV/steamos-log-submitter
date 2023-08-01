@@ -44,7 +44,7 @@ def get_deck_serial(uid: int = default_uid) -> Optional[str]:
         return None
 
     serial = steamconf['InstallConfigStore']['SteamDeckRegisteredSerialNumber']
-    if type(serial) != str:
+    if not isinstance(serial, str):
         return None
     return serial
 

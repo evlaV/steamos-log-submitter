@@ -181,9 +181,9 @@ def collect() -> bool:
             for dev in known[section]:
                 devs[json.dumps(dev)] = True
         for dev in devices[section]:
-            if type(dev) in (dict, collections.OrderedDict):
+            if isinstance(dev, dict):
                 devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
-            if type(dev) == tuple:
+            if isinstance(dev, tuple):
                 devs[json.dumps(dev)] = True
         known[section] = [json.loads(dev) for dev in devs.keys()]
 
