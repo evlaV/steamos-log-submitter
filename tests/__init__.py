@@ -13,7 +13,8 @@ import pytest
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
-from typing import Any, Awaitable, Callable
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 
 def open_shim(text):

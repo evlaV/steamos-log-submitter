@@ -9,13 +9,14 @@ import os
 import pkgutil
 import sys
 import tempfile
+from collections.abc import Iterable
 from types import TracebackType
-from typing import Any, Iterable, Optional, Type
+from typing import Any, Optional, Type
 import steamos_log_submitter as sls
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.exceptions import HelperError
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import JSONEncodable
 
 
 class HelperResult:
@@ -36,7 +37,7 @@ class HelperResult:
 
 
 class Helper:
-    defaults: Optional[dict[str, JSON]] = None
+    defaults: Optional[dict[str, JSONEncodable]] = None
 
     config: sls.config.ConfigSection
     data: sls.data.DataStore

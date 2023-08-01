@@ -11,9 +11,10 @@ import json
 import logging
 import urllib.parse
 import uuid
-from typing import Any, Iterable, Optional, Union
+from collections.abc import Iterable
+from typing import Any, Optional
 import steamos_log_submitter as sls
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 async def send_event(dsn: str, *,
                      appid: Optional[int] = None,
                      attachments: Iterable[dict[str, Any]] = (),
-                     tags: dict[str, JSON] = {},
+                     tags: dict[str, JSONEncodable] = {},
                      fingerprint: Iterable[str] = (),
                      timestamp: Optional[float] = None,
                      environment: Optional[str] = None,
@@ -29,11 +30,11 @@ async def send_event(dsn: str, *,
     raw_envelope = io.BytesIO()
     envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
 
-    def append_json(j: JSON) -> None:
+    def append_json(j: JSONEncodable) -> None:
         envelope.write(json.dumps(j).encode())
         envelope.write(b'\n')
 
-    def append_item(j: JSON, item: bytes = b'') -> None:
+    def append_item(j: JSONEncodable, item: bytes = b'') -> None:
         append_json(j)
         envelope.write(item)
         envelope.write(b'\n')
@@ -41,7 +42,7 @@ async def send_event(dsn: str, *,
     event_id = uuid.uuid4().hex
     sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    event: dict[str, Union[JSON, list[str]]] = {  # XXX: I have no idea why this union is needed
+    event: dict[str, JSONEncodable] = {
         'event_id': event_id,
         'timestamp': timestamp or sent_at,
         'platform': 'native',
@@ -94,7 +95,7 @@ async def send_event(dsn: str, *,
             })
 
             for attachment in attachments:
-                attachment_info: dict[str, JSON] = {
+                attachment_info: dict[str, JSONEncodable] = {
                     'type': 'attachment',
                     'length': len(attachment['data'])
                 }

@@ -5,7 +5,8 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next
-from typing import Any, Awaitable, Callable, Iterable, Optional
+from collections.abc import Awaitable, Callable, Iterable
+from typing import Any, Optional
 
 connected = False
 system_bus = None
