@@ -249,7 +249,7 @@ class Daemon:
         sls.config.write_config()
         return Reply(Reply.OK)
 
-    async def _inhibit(self, state: bool) -> Reply:
+    async def inhibit(self, state: bool) -> None:
         if not isinstance(state, bool):
             return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
         sls.base_config['inhibit'] = 'on' if state else 'off'
@@ -263,14 +263,12 @@ class Daemon:
             self._periodic_task = None
         elif not state and not self._periodic_task:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
-        return Reply(Reply.OK)
 
     def inhibited(self) -> bool:
         return sls.base_config.get('inhibit', 'off') == 'on'
 
-    async def _list(self) -> Reply:
-        helper_list = helpers.list_helpers()
-        return Reply(Reply.OK, data=list(helper_list))
+    async def list_helpers(self) -> list[str]:
+        return list(helpers.list_helpers())
 
     async def _log_level(self, level: Optional[str] = None) -> Reply:
         if level is not None:
@@ -316,10 +314,10 @@ class Daemon:
     _commands: dict[str, Any] = {  # TODO: Improve signature
         'enable': _enable,
         'enable-helpers': _enable_helpers,
-        'inhibit': _inhibit,
+        'inhibit': inhibit,
         'status': _status,
         'helper-status': _helper_status,
-        'list': _list,
+        'list': list_helpers,
         'log-level': _log_level,
         'set-steam-info': _set_steam_info,
         'shutdown': shutdown,
