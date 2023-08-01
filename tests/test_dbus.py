@@ -8,8 +8,39 @@ import dbus_next
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
+from collections.abc import Mapping, Sequence
+from typing import Union
 from . import count_hits  # NOQA: F401
 from .dbus import mock_dbus, MockDBusInterface, MockDBusObject, MockDBusProperties  # NOQA: F401
+
+
+def test_signature_type():
+    assert sls.dbus.signature(int) == 'i'
+    assert sls.dbus.signature(float) == 'd'
+    assert sls.dbus.signature(bool) == 'b'
+    assert sls.dbus.signature(str) == 's'
+    assert sls.dbus.signature(list[int]) == 'ai'
+    assert sls.dbus.signature(tuple[int]) == '(i)'
+    assert sls.dbus.signature(tuple[int, int]) == '(ii)'
+    assert sls.dbus.signature(tuple[tuple[int, int], int]) == '((ii)i)'
+    assert sls.dbus.signature(Sequence[int]) == 'ai'
+    assert sls.dbus.signature(Sequence[Sequence[int]]) == 'aai'
+    assert sls.dbus.signature(dict[int, int]) == 'a{ii}'
+    assert sls.dbus.signature(Mapping[int, int]) == 'a{ii}'
+    assert sls.dbus.signature(Union[int, str]) == 'v'
+    assert sls.dbus.signature(int | str) == 'v'
+
+    try:
+        sls.dbus.signature(1)
+        assert False
+    except TypeError:
+        pass
+
+    try:
+        sls.dbus.signature(None)
+        assert False
+    except TypeError:
+        pass
 
 
 @pytest.mark.asyncio
