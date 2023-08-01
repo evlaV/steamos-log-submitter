@@ -105,7 +105,7 @@ class Daemon:
             return Reply(status=Reply.INVALID_ARGUMENTS)
         try:
             reply = await function(self, **command.args)
-            if type(reply) == Reply:
+            if isinstance(reply, Reply):
                 return reply
             return Reply(Reply.OK, data=reply)
         except Exception as e:
@@ -231,7 +231,7 @@ class Daemon:
             asyncio.create_task(coro)
 
     async def _enable(self, state: bool) -> Reply:
-        if type(state) != bool:
+        if not isinstance(state, bool):
             return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
@@ -242,7 +242,7 @@ class Daemon:
         if invalid_helpers:
             return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': invalid_helpers})
         for helper, state in helpers.items():
-            if type(state) != bool:
+            if not isinstance(state, bool):
                 return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
             logger.debug(f'Changing {helper} enable state to ' + ('on' if state else 'off'))
             sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
@@ -250,7 +250,7 @@ class Daemon:
         return Reply(Reply.OK)
 
     async def _inhibit(self, state: bool) -> Reply:
-        if type(state) != bool:
+        if not isinstance(state, bool):
             return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
         sls.base_config['inhibit'] = 'on' if state else 'off'
         sls.config.write_config()
