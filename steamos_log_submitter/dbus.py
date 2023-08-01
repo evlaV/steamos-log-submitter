@@ -5,8 +5,10 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next
-from collections.abc import Awaitable, Callable, Iterable
-from typing import Any, Optional
+import typing
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
+from types import UnionType
+from typing import Any, Optional, Union
 
 connected = False
 system_bus = None
@@ -22,6 +24,33 @@ async def connect() -> None:  # pragma: no cover
 
     await system_bus.connect()
     connected = True
+
+
+def signature(type_annotation: type) -> str:
+    if type_annotation is int:
+        return 'i'
+    if type_annotation is float:
+        return 'd'
+    if type_annotation is bool:
+        return 'b'
+    if type_annotation is str:
+        return 's'
+    origin = typing.get_origin(type_annotation)
+    types = typing.get_args(type_annotation)
+    if origin is None:
+        raise TypeError
+    if origin is Union or issubclass(origin, UnionType):
+        return 'v'
+    if issubclass(origin, Mapping):
+        key = signature(types[0])
+        value = signature(types[1])
+        return 'a{' + key + value + '}'
+    if issubclass(origin, tuple):
+        return '(' + ''.join(signature(typ) for typ in types) + ')'
+    if issubclass(origin, Sequence):
+        value = signature(types[0])
+        return 'a' + value
+    raise TypeError
 
 
 class DBusInterface:
