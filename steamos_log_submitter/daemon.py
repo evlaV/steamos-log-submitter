@@ -4,6 +4,7 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import dbus_next
 import inspect
 import importlib.machinery
 import json
@@ -125,6 +126,7 @@ class Daemon:
         self._suspend = 'inactive'
         self._trigger_active = False
         self._next_trigger = 0.0
+        self._iface: Optional[DaemonInterface] = None
 
     async def _run_command(self, command: Command) -> Reply:
         if not command:
@@ -218,6 +220,15 @@ class Daemon:
         if not self.inhibited():
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
+        await sls.dbus.connect()
+        assert sls.dbus.system_bus
+        try:
+            await sls.dbus.system_bus.request_name(sls.dbus.bus_name)
+            self.iface = DaemonInterface(self)
+            sls.dbus.system_bus.export('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+        except dbus_next.errors.DBusError:
+            logger.error('Failed to claim D-Bus bus name')
+
         suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
         suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
         await suspend_props.subscribe('ActiveState', self._leave_suspend)
@@ -276,6 +287,8 @@ class Daemon:
             raise InvalidArgumentsError({'state': state})
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
+        if self.iface:
+            self.iface.emit_properties_changed({'Enabled': self.enabled()})
 
     async def enable_helpers(self, helpers: dict[str, bool]) -> None:
         _, invalid_helpers = sls.helpers.validate_helpers(helpers.keys())
@@ -293,6 +306,8 @@ class Daemon:
             return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
         sls.base_config['inhibit'] = 'on' if state else 'off'
         sls.config.write_config()
+        if self.iface:
+            self.iface.emit_properties_changed({'Inhibited': self.inhibited()})
         if state and self._periodic_task:
             self._periodic_task.cancel()
             try:
@@ -366,6 +381,36 @@ class Daemon:
         'shutdown': shutdown,
         'trigger': trigger,
     }
+
+
+class DaemonInterface(dbus_next.service.ServiceInterface):
+    def __init__(self, daemon: 'sls.daemon.Daemon'):
+        super().__init__(f'{sls.dbus.bus_name}.Manager')
+        self.daemon = daemon
+
+    @dbus_next.service.dbus_property()
+    def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
+        return self.daemon.enabled()
+
+    @Enabled.setter
+    async def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+        await self.daemon.enable(enable)
+
+    @dbus_next.service.dbus_property()
+    def Inhibited(self) -> 'b':  # type: ignore # NOQA: F821
+        return self.daemon.inhibited()
+
+    @Inhibited.setter
+    async def set_inhibited(self, inhibit: 'b'):  # type: ignore # NOQA: F821
+        await self.daemon.inhibit(inhibit)
+
+    @dbus_next.service.method()
+    async def Trigger(self):  # type: ignore
+        await self.daemon.trigger()
+
+    @dbus_next.service.method()
+    async def Shutdown(self):  # type: ignore
+        await self.daemon.shutdown()
 
 
 if __name__ == '__main__':  # pragma: no cover

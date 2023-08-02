@@ -73,6 +73,15 @@ class MockDBusBus:
     def get_proxy_object(self, bus_name, object_path, introspection):
         return self.buses[bus_name]['path'][object_path]
 
+    def add_message_handler(self, handler):
+        pass
+
+    async def request_name(self, name: str):
+        pass
+
+    def export(self, path: str, iface):
+        pass
+
 
 class MockDBusProperties:
     def __init__(self, obj, iface):
