@@ -10,7 +10,8 @@ import json
 import logging
 import os
 import time
-from typing import Any, Iterable, Optional, Self
+from collections.abc import Coroutine, Iterable
+from typing import Any, Callable, Optional, Self
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -74,6 +75,44 @@ class Reply(Serializable):
         self.data = data
 
 
+class DaemonError(RuntimeError):
+    def __init__(self, status: int, data: Optional[JSONEncodable] = None):
+        if data:
+            super().__init__(data)
+        else:
+            super().__init__()
+        self.data = data
+        self.status = status
+
+
+class UnknownError(DaemonError):
+    def __init__(self, data: Optional[JSONEncodable] = None):
+        super().__init__(Reply.UNKNOWN_ERROR, data)
+
+
+class InvalidCommandError(DaemonError):
+    def __init__(self, data: Optional[JSONEncodable] = None):
+        super().__init__(Reply.INVALID_COMMAND, data)
+
+
+class InvalidDataError(DaemonError):
+    def __init__(self, data: Optional[JSONEncodable] = None):
+        super().__init__(Reply.INVALID_DATA, data)
+
+
+class InvalidArgumentsError(DaemonError):
+    def __init__(self, data: Optional[JSONEncodable] = None):
+        super().__init__(Reply.INVALID_ARGUMENTS, data)
+
+
+exception_map = {
+    Reply.UNKNOWN_ERROR: UnknownError,
+    Reply.INVALID_COMMAND: InvalidCommandError,
+    Reply.INVALID_DATA: InvalidDataError,
+    Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
+}
+
+
 class Daemon:
     _startup = 20
     _interval = 3600
@@ -104,10 +143,9 @@ class Daemon:
             logger.error('Invocation does not match signature', exc_info=e)
             return Reply(status=Reply.INVALID_ARGUMENTS)
         try:
-            reply = await function(self, **command.args)
-            if isinstance(reply, Reply):
-                return reply
-            return Reply(Reply.OK, data=reply)
+            return Reply(Reply.OK, await function(self, **command.args))
+        except DaemonError as e:
+            return Reply(e.status, data=e.data)
         except Exception as e:
             logger.error('Exception hit when attempting to run command', exc_info=e)
             return Reply(status=Reply.UNKNOWN_ERROR, data={'exception': str(e)})
@@ -230,24 +268,22 @@ class Daemon:
         else:
             asyncio.create_task(coro)
 
-    async def _enable(self, state: bool) -> Reply:
+    async def enable(self, state: bool) -> None:
         if not isinstance(state, bool):
-            return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
+            raise InvalidArgumentsError({'state': state})
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
-        return Reply(Reply.OK)
 
-    async def _enable_helpers(self, helpers: dict[str, bool]) -> Reply:
+    async def enable_helpers(self, helpers: dict[str, bool]) -> None:
         _, invalid_helpers = sls.helpers.validate_helpers(helpers.keys())
         if invalid_helpers:
-            return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': invalid_helpers})
+            raise InvalidArgumentsError({'invalid-helper': invalid_helpers})
         for helper, state in helpers.items():
             if not isinstance(state, bool):
-                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-state': [helper, state]})
+                raise InvalidArgumentsError({'invalid-state': [helper, state]})
             logger.debug(f'Changing {helper} enable state to ' + ('on' if state else 'off'))
             sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')['enable'] = 'on' if state else 'off'
         sls.config.write_config()
-        return Reply(Reply.OK)
 
     async def inhibit(self, state: bool) -> None:
         if not isinstance(state, bool):
@@ -270,56 +306,55 @@ class Daemon:
     async def list_helpers(self) -> list[str]:
         return list(helpers.list_helpers())
 
-    async def _log_level(self, level: Optional[str] = None) -> Reply:
+    async def log_level(self, level: Optional[str] = None) -> dict[str, str]:
         if level is not None:
             if not sls.logging.valid_level(level):
-                return Reply(Reply.INVALID_ARGUMENTS, {'level': level})
+                raise InvalidArgumentsError({'level': level})
             sls.config.migrate_key('logging', 'level')
             sls.logging.config['level'] = level.upper()
             sls.config.write_config()
             sls.logging.reconfigure_logging(sls.logging.config.get('path'))
-        return Reply(Reply.OK, {'level': sls.logging.config.get('level', 'WARNING').upper()})
+        return {'level': sls.logging.config.get('level', 'WARNING').upper()}
 
-    async def _status(self) -> Reply:
+    async def status(self) -> dict[str, bool]:
         enabled = sls.base_config.get('enable') == 'on'
-        return Reply(Reply.OK, data={'enabled': enabled})
+        return {'enabled': enabled}
 
-    async def _helper_status(self, helpers: Optional[Iterable[str]] = None) -> Reply:
+    async def helper_status(self, helpers: Optional[Iterable[str]] = None) -> dict[str, JSONEncodable]:
         if helpers is not None:
             _, invalid_helpers = sls.helpers.validate_helpers(helpers)
             if invalid_helpers:
-                return Reply(Reply.INVALID_ARGUMENTS, data={'invalid-helper': list(invalid_helpers)})
+                raise InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
         else:
             helpers = sls.helpers.list_helpers()
         status: dict[str, JSONEncodable] = {}
         for helper in helpers:
             config = sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')
             status[helper] = {'enabled': config.get('enable', 'off') == 'on'}
-        return Reply(Reply.OK, data=status)
+        return status
 
-    async def _set_steam_info(self, key: str, value: str) -> Reply:
+    async def set_steam_info(self, key: str, value: str) -> None:
         if key not in (
             'deck_serial',
             'account_id',
             'account_name'
         ):
             logger.warning(f'Got Steam info change for invalid key {key}')
-            return Reply(Reply.INVALID_ARGUMENTS, data={'key': key})
+            raise InvalidArgumentsError({'key': key})
 
         logger.debug(f'Changing Steam info key {key} to {value}')
         sls.steam.config[key] = value
         sls.config.write_config()
-        return Reply(Reply.OK)
 
-    _commands: dict[str, Any] = {  # TODO: Improve signature
-        'enable': _enable,
-        'enable-helpers': _enable_helpers,
+    _commands: dict[str, Callable[..., Coroutine[Any, Any, JSONEncodable]]] = {
+        'enable': enable,
+        'enable-helpers': enable_helpers,
         'inhibit': inhibit,
-        'status': _status,
-        'helper-status': _helper_status,
+        'status': status,
+        'helper-status': helper_status,
         'list': list_helpers,
-        'log-level': _log_level,
-        'set-steam-info': _set_steam_info,
+        'log-level': log_level,
+        'set-steam-info': set_steam_info,
         'shutdown': shutdown,
         'trigger': trigger,
     }
