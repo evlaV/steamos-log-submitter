@@ -13,39 +13,6 @@ from steamos_log_submitter.types import JSON
 logger = logging.getLogger(__name__)
 
 
-class ClientError(RuntimeError):
-    def __init__(self, reply: Optional[daemon.Reply] = None):
-        if reply:
-            super().__init__(reply.data)
-        else:
-            super().__init__()
-        self.reply = reply
-
-
-class UnknownError(ClientError):
-    pass
-
-
-class InvalidCommandError(ClientError):
-    pass
-
-
-class InvalidDataError(ClientError):
-    pass
-
-
-class InvalidArgumentsError(ClientError):
-    pass
-
-
-exception_map = {
-    daemon.Reply.UNKNOWN_ERROR: UnknownError,
-    daemon.Reply.INVALID_COMMAND: InvalidCommandError,
-    daemon.Reply.INVALID_DATA: InvalidDataError,
-    daemon.Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
-}
-
-
 class Client:
     def __init__(self, sock: Optional[socket.socket] = None, *, path: Optional[str] = None):
         if sock:
@@ -60,11 +27,11 @@ class Client:
         reply_bytes = self._socket.recv(4096)
         reply = daemon.Reply.deserialize(reply_bytes)
         if not reply:
-            raise UnknownError()
+            raise daemon.UnknownError()
         if reply.status == daemon.Reply.OK:
             return reply.data
-        exc = exception_map[reply.status]
-        raise exc(reply)
+        exc = daemon.exception_map[reply.status]
+        raise exc(reply.data)
 
     def enable(self, state: bool = True) -> None:
         self._transact('enable', {'state': state})

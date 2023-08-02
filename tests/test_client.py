@@ -74,7 +74,7 @@ def test_helper_status(sync_client):
     try:
         assert sync_client.helper_status(['test2'])
         assert False
-    except sls.client.InvalidArgumentsError:
+    except sls.daemon.InvalidArgumentsError:
         pass
 
 
@@ -86,7 +86,7 @@ def test_enable_helpers(sync_client):
     try:
         sync_client.enable_helpers(['test2'])
         assert False
-    except sls.client.InvalidArgumentsError:
+    except sls.daemon.InvalidArgumentsError:
         pass
 
 
@@ -97,5 +97,5 @@ def test_set_steam_info(sync_client):
     try:
         sync_client.set_steam_info('account_serial', 12345)
         assert False
-    except sls.client.InvalidArgumentsError:
+    except sls.daemon.InvalidArgumentsError:
         pass
