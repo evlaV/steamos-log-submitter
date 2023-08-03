@@ -268,6 +268,9 @@ class Daemon:
         else:
             asyncio.create_task(coro)
 
+    def enabled(self) -> bool:
+        return sls.base_config.get('enable', 'off') == 'on'
+
     async def enable(self, state: bool) -> None:
         if not isinstance(state, bool):
             raise InvalidArgumentsError({'state': state})
@@ -316,10 +319,9 @@ class Daemon:
             sls.logging.reconfigure_logging(sls.logging.config.get('path'))
         return {'level': sls.logging.config.get('level', 'WARNING').upper()}
 
-    async def status(self) -> dict[str, bool]:
-        enabled = sls.base_config.get('enable') == 'on'
+    async def status(self) -> dict[str, JSONEncodable]:
         return {
-            'enabled': enabled,
+            'enabled': self.enabled(),
             'inhibited': self.inhibited(),
         }
 
