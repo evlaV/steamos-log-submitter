@@ -69,13 +69,16 @@ def always_raise(exc):
 
 @pytest.fixture
 def patch_module():
-    class FakeModule:
+    class MockHelper(sls.helpers.Helper):
         defaults = None
 
         @classmethod
         def _setup(cls):
             pass
-    return FakeModule()
+
+    MockHelper.name = 'test'
+    MockHelper.config = sls.config.get_config('steamos_log_submitter.helpers.test')
+    return MockHelper
 
 
 @pytest.fixture
