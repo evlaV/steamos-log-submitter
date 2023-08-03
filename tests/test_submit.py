@@ -13,8 +13,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
 from steamos_log_submitter.runner import submit
 from . import awaitable, setup_categories, unreachable
-from . import helper_directory, patch_module, count_hits  # NOQA: F401
-from . import mock_config as testconf  # NOQA: F401
+from . import helper_directory, mock_config, patch_module, count_hits  # NOQA: F401
 
 
 @pytest.fixture
@@ -37,9 +36,8 @@ async def test_offline(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_disable_all(helper_directory, monkeypatch, online, patch_module, testconf):
-    testconf.add_section('helpers.test')
-    testconf.set('helpers.test', 'enable', 'off')
+async def test_disable_all(helper_directory, monkeypatch, online, patch_module, mock_config):
+    patch_module.enable(False)
 
     setup_categories(['test'])
 
@@ -48,9 +46,8 @@ async def test_disable_all(helper_directory, monkeypatch, online, patch_module, 
 
 
 @pytest.mark.asyncio
-async def test_disable_submit(helper_directory, monkeypatch, online, patch_module, testconf):
-    testconf.add_section('helpers.test')
-    testconf.set('helpers.test', 'submit', 'off')
+async def test_disable_submit(helper_directory, monkeypatch, online, patch_module, mock_config):
+    patch_module.enable_submit(False)
 
     setup_categories(['test'])
 

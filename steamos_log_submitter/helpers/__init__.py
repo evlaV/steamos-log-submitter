@@ -39,19 +39,27 @@ class HelperResult:
 class Helper:
     defaults: Optional[dict[str, JSONEncodable]] = None
 
+    name: str
     config: sls.config.ConfigSection
     data: sls.data.DataStore
     logger: logging.Logger
 
     @classmethod
     def __init_subclass__(cls) -> None:
-        cls.logger = logging.getLogger(cls.__module__)
-        sys.modules[cls.__module__].helper = cls  # type: ignore
+        module = cls.__module__
+        cls.logger = logging.getLogger(module)
+        if module == __name__:
+            return
+        sys.modules[module].helper = cls  # type: ignore
 
     @classmethod
     def _setup(cls) -> None:
-        cls.config = sls.config.get_config(cls.__module__)
-        cls.data = sls.data.get_data(cls.__module__, defaults=cls.defaults)
+        module = cls.__module__
+        if module == __name__:
+            return
+        cls.name = module.split('.', 2)[2]
+        cls.config = sls.config.get_config(module)
+        cls.data = sls.data.get_data(module, defaults=cls.defaults)
 
     @classmethod
     async def collect(cls) -> bool:
@@ -60,6 +68,34 @@ class Helper:
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
         raise NotImplementedError
+
+    @classmethod
+    def enabled(cls) -> bool:
+        return cls.config.get('enable', 'on') == 'on'
+
+    @classmethod
+    def enable(cls, enabled: bool, /) -> None:
+        cls.config['enable'] = 'on' if enabled else 'off'
+
+    @classmethod
+    def collect_enabled(cls) -> bool:
+        return cls.config.get('collect', 'on') == 'on'
+
+    @classmethod
+    def enable_collect(cls, enabled: bool, /) -> None:
+        cls.config['collect'] = 'on' if enabled else 'off'
+
+    @classmethod
+    def submit_enabled(cls) -> bool:
+        return cls.config.get('submit', 'on') == 'on'
+
+    @classmethod
+    def enable_submit(cls, enabled: bool, /) -> None:
+        cls.config['submit'] = 'on' if enabled else 'off'
+
+    @classmethod
+    def lock(cls) -> sls.lockfile.Lockfile:
+        return sls.lockfile.Lockfile(f'{sls.pending}/{cls.name}/.lock')
 
 
 class SentryHelper(Helper):
@@ -82,10 +118,6 @@ def create_helper(category: str) -> Helper:
 
 def list_helpers() -> Iterable[str]:
     return (helper.name for helper in pkgutil.iter_modules(__path__))
-
-
-def lock(helper: str) -> sls.lockfile.Lockfile:
-    return sls.lockfile.Lockfile(f'{sls.pending}/{helper}/.lock')
 
 
 class StagingFile:

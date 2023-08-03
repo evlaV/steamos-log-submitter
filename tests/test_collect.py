@@ -16,9 +16,7 @@ async def submit(log):
 
 @pytest.mark.asyncio
 async def test_disable_all(helper_directory, mock_config, monkeypatch, patch_module):
-    mock_config.add_section('helpers.test')
-    mock_config.set('helpers.test', 'enable', 'off')
-
+    patch_module.enable(False)
     setup_categories(['test'])
 
     patch_module.submit = unreachable
@@ -28,9 +26,7 @@ async def test_disable_all(helper_directory, mock_config, monkeypatch, patch_mod
 
 @pytest.mark.asyncio
 async def test_disable_collect(helper_directory, mock_config, monkeypatch, patch_module):
-    mock_config.add_section('helpers.test')
-    mock_config.set('helpers.test', 'enable', 'off')
-
+    patch_module.enable_collect(False)
     setup_categories(['test'])
 
     patch_module.submit = unreachable

@@ -14,56 +14,59 @@ import os
 logger = logging.getLogger(__name__)
 
 
-async def collect_category(category: str) -> None:
-    logger.info(f'Collecting logs for {category}')
+async def collect_category(helper: sls.helpers.Helper) -> None:
+    logger.info(f'Collecting logs for {helper.name}')
     try:
-        with sls.helpers.lock(category):
-            helper = sls.helpers.create_helper(category)
+        with helper.lock():
             await helper.collect()
     except LockHeldError:
         # Another process is currently working on this directory
-        logger.warning(f'Lock already held trying to collect logs for {category}')
+        logger.warning(f'Lock already held trying to collect logs for {helper.name}')
     except Exception as e:
-        logger.error(f'Encountered error collecting logs for {category}', exc_info=e)
+        logger.error(f'Encountered error collecting logs for {helper.name}', exc_info=e)
 
 
 async def collect() -> None:
     logger.info('Starting log collection')
     tasks = []
     for category in sls.helpers.list_helpers():
-        cat_config = sls.config.get_config(f'steamos_log_submitter.helpers.{category}')
-        if cat_config.get('enable', 'on') != 'on' or cat_config.get('collect', 'on') != 'on':
+        try:
+            helper = sls.helpers.create_helper(category)
+        except Exception as e:
+            logger.error(f'Encountered error getting helper for {category}', exc_info=e)
             continue
-        tasks.append(asyncio.create_task(collect_category(category)))
+
+        if not helper.enabled() or not helper.collect_enabled():
+            continue
+        tasks.append(asyncio.create_task(collect_category(helper)))
     if tasks:
         await asyncio.wait(tasks)
     logger.info('Finished log collection')
 
 
-async def submit_category(category: str, logs: list[str]) -> None:
+async def submit_category(helper: sls.helpers.Helper, logs: list[str]) -> None:
     try:
-        with sls.helpers.lock(category):
+        with helper.lock():
             try:
-                helper = sls.helpers.create_helper(category)
                 for log in logs:
                     if log.startswith('.'):
                         continue
-                    logger.debug(f'Found log {category}/{log}')
-                    result = await helper.submit(f'{sls.pending}/{category}/{log}')
+                    logger.debug(f'Found log {helper.name}/{log}')
+                    result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
                     if result.code == sls.helpers.HelperResult.OK:
-                        logger.debug(f'Succeeded in submitting {category}/{log}')
-                        os.replace(f'{sls.pending}/{category}/{log}', f'{sls.uploaded}/{category}/{log}')
+                        logger.debug(f'Succeeded in submitting {helper.name}/{log}')
+                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
                     else:
-                        logger.warning(f'Failed to submit log {category}/{log} with code {result.code}')
+                        logger.warning(f'Failed to submit log {helper.name}/{log} with code {result.code}')
                     if result.code == sls.helpers.HelperResult.PERMANENT_ERROR:
-                        os.replace(f'{sls.pending}/{category}/{log}', f'{sls.failed}/{category}/{log}')
+                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
                     elif result.code == sls.helpers.HelperResult.CLASS_ERROR:
                         break
             except Exception as e:
-                logger.error(f'Encountered error submitting logs for {category}', exc_info=e)
+                logger.error(f'Encountered error submitting logs for {helper.name}', exc_info=e)
     except LockHeldError:
         # Another process is currently working on this directory
-        logger.warning(f'Lock already held trying to submit logs for {category}')
+        logger.warning(f'Lock already held trying to submit logs for {helper.name}')
 
 
 async def submit() -> None:
@@ -74,8 +77,13 @@ async def submit() -> None:
 
     tasks = []
     for category in sls.helpers.list_helpers():
-        cat_config = sls.config.get_config(f'steamos_log_submitter.helpers.{category}')
-        if cat_config.get('enable', 'on') != 'on' or cat_config.get('submit', 'on') != 'on':
+        try:
+            helper = sls.helpers.create_helper(category)
+        except Exception as e:
+            logger.error(f'Encountered error getting helper for {category}', exc_info=e)
+            continue
+
+        if not helper.enabled() or not helper.submit_enabled():
             continue
         logger.info(f'Submitting logs for {category}')
         try:
@@ -87,7 +95,7 @@ async def submit() -> None:
         if not logs:
             logger.info('No logs found, skipping')
             continue
-        tasks.append(asyncio.create_task(submit_category(category, logs)))
+        tasks.append(asyncio.create_task(submit_category(helper, logs)))
     if tasks:
         await asyncio.wait(tasks)
     logger.info('Finished log submission')
