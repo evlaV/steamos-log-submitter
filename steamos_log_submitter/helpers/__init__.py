@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import dbus_next
 import importlib
 import logging
 import os
@@ -36,18 +37,51 @@ class HelperResult:
         return HelperResult(false_code)
 
 
+class HelperInterface(dbus_next.service.ServiceInterface):
+    def __init__(self, helper: Type['Helper']):
+        super().__init__(f'{sls.dbus.bus_name}.Helper')
+        self.helper = helper
+
+    @dbus_next.service.dbus_property()
+    def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
+        return self.helper.enabled()
+
+    @Enabled.setter
+    def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+        return self.helper.enable(enable)
+
+    @dbus_next.service.dbus_property()
+    def CollectEnabled(self) -> 'b':  # type: ignore # NOQA: F821
+        return self.helper.collect_enabled()
+
+    @CollectEnabled.setter
+    def set_collect_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+        return self.helper.enable_collect(enable)
+
+    @dbus_next.service.dbus_property()
+    def SubmitEnabled(self) -> 'b':  # type: ignore # NOQA: F821
+        return self.helper.submit_enabled()
+
+    @SubmitEnabled.setter
+    def set_submit_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+        return self.helper.enable_submit(enable)
+
+
 class Helper:
     defaults: Optional[dict[str, JSONEncodable]] = None
 
+    __name__: str
     name: str
     config: sls.config.ConfigSection
     data: sls.data.DataStore
+    iface: Optional[HelperInterface]
     logger: logging.Logger
 
     @classmethod
     def __init_subclass__(cls) -> None:
         module = cls.__module__
         cls.logger = logging.getLogger(module)
+        cls.iface = None
         if module == __name__:
             return
         sys.modules[module].helper = cls  # type: ignore
@@ -60,6 +94,7 @@ class Helper:
         cls.name = module.split('.', 2)[2]
         cls.config = sls.config.get_config(module)
         cls.data = sls.data.get_data(module, defaults=cls.defaults)
+        cls.iface = HelperInterface(cls)
 
     @classmethod
     async def collect(cls) -> bool:
@@ -76,6 +111,8 @@ class Helper:
     @classmethod
     def enable(cls, enabled: bool, /) -> None:
         cls.config['enable'] = 'on' if enabled else 'off'
+        if cls.iface:
+            cls.iface.emit_properties_changed({'Enabled': enabled})
 
     @classmethod
     def collect_enabled(cls) -> bool:
@@ -84,6 +121,8 @@ class Helper:
     @classmethod
     def enable_collect(cls, enabled: bool, /) -> None:
         cls.config['collect'] = 'on' if enabled else 'off'
+        if cls.iface:
+            cls.iface.emit_properties_changed({'CollectEnabled': enabled})
 
     @classmethod
     def submit_enabled(cls) -> bool:
@@ -92,6 +131,8 @@ class Helper:
     @classmethod
     def enable_submit(cls, enabled: bool, /) -> None:
         cls.config['submit'] = 'on' if enabled else 'off'
+        if cls.iface:
+            cls.iface.emit_properties_changed({'SubmitEnabled': enabled})
 
     @classmethod
     def lock(cls) -> sls.lockfile.Lockfile:
