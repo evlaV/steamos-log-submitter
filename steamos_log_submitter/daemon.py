@@ -318,7 +318,10 @@ class Daemon:
 
     async def status(self) -> dict[str, bool]:
         enabled = sls.base_config.get('enable') == 'on'
-        return {'enabled': enabled}
+        return {
+            'enabled': enabled,
+            'inhibited': self.inhibited(),
+        }
 
     async def helper_status(self, helpers: Optional[Iterable[str]] = None) -> dict[str, JSONEncodable]:
         if helpers is not None:

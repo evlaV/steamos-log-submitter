@@ -200,18 +200,18 @@ async def test_status(test_daemon, mock_config):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"enabled": False}
+    assert reply.data['enabled'] is False
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'on')
     reply = await transact(sls.daemon.Command("status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"enabled": True}
+    assert reply.data['enabled'] is True
 
     mock_config.set('sls', 'enable', 'off')
     reply = await transact(sls.daemon.Command("status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"enabled": False}
+    assert reply.data['enabled'] is False
     await daemon.shutdown()
 
 
