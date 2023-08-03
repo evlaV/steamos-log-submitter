@@ -185,6 +185,24 @@ class Daemon:
                 logger.error('Failed executing remote connection', exc_info=e)
         self._conns.remove((reader, writer))
 
+    def _setup_dbus(self) -> None:
+        assert sls.dbus.system_bus
+        self.iface = DaemonInterface(self)
+        sls.dbus.system_bus.export('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+        for helper in sls.helpers.list_helpers():
+            try:
+                helper_module = sls.helpers.create_helper(helper)
+            except sls.exceptions.HelperError as e:
+                logger.warning(f'Failed to enumerate helper {helper}', exc_info=e)
+                continue
+            if not helper_module.iface:
+                continue
+            camel_case = helper_module.__name__
+            if not camel_case.endswith('Helper'):
+                continue
+            camel_case = camel_case[:-len('Helper')]
+            sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface)
+
     async def _leave_suspend(self, iface: str, prop: str, value: str) -> None:
         if value == self._suspend:
             return
@@ -224,8 +242,7 @@ class Daemon:
         assert sls.dbus.system_bus
         try:
             await sls.dbus.system_bus.request_name(sls.dbus.bus_name)
-            self.iface = DaemonInterface(self)
-            sls.dbus.system_bus.export('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+            self._setup_dbus()
         except dbus_next.errors.DBusError:
             logger.error('Failed to claim D-Bus bus name')
 
