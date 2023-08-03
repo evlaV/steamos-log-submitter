@@ -3,13 +3,11 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import configparser
 import pytest
 import steamos_log_submitter as sls
-import steamos_log_submitter.config as config
 from steamos_log_submitter.runner import collect
 from . import awaitable, unreachable
-from . import count_hits, helper_directory, patch_module, setup_categories  # NOQA: F401
+from . import count_hits, helper_directory, mock_config, patch_module, setup_categories  # NOQA: F401
 
 
 async def submit(log):
@@ -17,11 +15,9 @@ async def submit(log):
 
 
 @pytest.mark.asyncio
-async def test_disable_all(helper_directory, monkeypatch, patch_module):
-    testconf = configparser.ConfigParser()
-    testconf.add_section('helpers.test')
-    testconf.set('helpers.test', 'enable', 'off')
-    monkeypatch.setattr(config, 'config', testconf)
+async def test_disable_all(helper_directory, mock_config, monkeypatch, patch_module):
+    mock_config.add_section('helpers.test')
+    mock_config.set('helpers.test', 'enable', 'off')
 
     setup_categories(['test'])
 
@@ -31,11 +27,9 @@ async def test_disable_all(helper_directory, monkeypatch, patch_module):
 
 
 @pytest.mark.asyncio
-async def test_disable_collect(helper_directory, monkeypatch, patch_module):
-    testconf = configparser.ConfigParser()
-    testconf.add_section('helpers.test')
-    testconf.set('helpers.test', 'collect', 'off')
-    monkeypatch.setattr(config, 'config', testconf)
+async def test_disable_collect(helper_directory, mock_config, monkeypatch, patch_module):
+    mock_config.add_section('helpers.test')
+    mock_config.set('helpers.test', 'enable', 'off')
 
     setup_categories(['test'])
 
