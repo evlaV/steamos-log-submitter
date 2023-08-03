@@ -11,6 +11,7 @@ import time
 import threading
 import steamos_log_submitter as sls
 import steamos_log_submitter.daemon
+from . import patch_module  # NOQA: F401
 from .dbus import MockDBusObject
 from .dbus import mock_dbus  # NOQA: F401
 
@@ -68,8 +69,9 @@ class SyncClient:
 
 
 @pytest.fixture
-def sync_client(fake_socket, mock_config, monkeypatch):
+def sync_client(fake_socket, mock_config, patch_module, monkeypatch):
     monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+    monkeypatch.setattr(sls.helpers, 'create_helper', lambda _: patch_module)
     client = SyncClient()
     yield client
     if client.client:

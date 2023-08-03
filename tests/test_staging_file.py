@@ -6,7 +6,7 @@
 import os
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
-from . import helper_directory, patch_module, setup_categories  # NOQA: F401
+from . import helper_directory, mock_config, patch_module, setup_categories  # NOQA: F401
 
 
 def test_staging_file_rename(helper_directory):

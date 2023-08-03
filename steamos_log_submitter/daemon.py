@@ -333,9 +333,12 @@ class Daemon:
         else:
             helpers = sls.helpers.list_helpers()
         status: dict[str, JSONEncodable] = {}
-        for helper in helpers:
-            config = sls.config.get_config(f'steamos_log_submitter.helpers.{helper}')
-            status[helper] = {'enabled': config.get('enable', 'off') == 'on'}
+        for helper in (sls.helpers.create_helper(h) for h in helpers):
+            status[helper.name] = {
+                'enabled': helper.enabled(),
+                'submission': helper.submit_enabled(),
+                'collection': helper.collect_enabled(),
+            }
         return status
 
     async def set_steam_info(self, key: str, value: str) -> None:

@@ -9,7 +9,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 from . import awaitable
-from . import count_hits, mock_config  # NOQA: F401
+from . import count_hits, mock_config, patch_module  # NOQA: F401
 from .daemon import fake_socket, sync_client, systemd_object  # NOQA: F401
 from .dbus import mock_dbus  # NOQA: F401
 
@@ -69,8 +69,8 @@ def test_client_trigger_wait(sync_client, mock_config, monkeypatch):
 
 def test_helper_status(sync_client):
     sync_client.start()
-    assert sync_client.helper_status() == {'test': {'enabled': False}}
-    assert sync_client.helper_status(['test']) == {'test': {'enabled': False}}
+    assert sync_client.helper_status() == {'test': {'enabled': True, 'collection': True, 'submission': True}}
+    assert sync_client.helper_status(['test']) == {'test': {'enabled': True, 'collection': True, 'submission': True}}
     try:
         assert sync_client.helper_status(['test2'])
         assert False
@@ -78,11 +78,13 @@ def test_helper_status(sync_client):
         pass
 
 
-def test_enable_helpers(sync_client):
+def test_enable_helpers(mock_config, sync_client):
+    mock_config.add_section('helpers.test')
+    mock_config.set('helpers.test', 'enable', 'off')
     sync_client.start()
-    assert sync_client.helper_status() == {'test': {'enabled': False}}
+    assert sync_client.helper_status(['test'])['test']['enabled'] is False
     sync_client.enable_helpers(['test'])
-    assert sync_client.helper_status() == {'test': {'enabled': True}}
+    assert sync_client.helper_status(['test'])['test']['enabled'] is True
     try:
         sync_client.enable_helpers(['test2'])
         assert False

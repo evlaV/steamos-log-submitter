@@ -68,7 +68,7 @@ def always_raise(exc):
 
 
 @pytest.fixture
-def patch_module():
+def patch_module(mock_config):
     class MockHelper(sls.helpers.Helper):
         defaults = None
 
