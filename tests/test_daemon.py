@@ -12,8 +12,8 @@ import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from . import awaitable, CustomConfig
-from . import count_hits, mock_config  # NOQA: F401
+from . import awaitable, setup_categories, CustomConfig
+from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import fake_socket, systemd_object  # NOQA: F401
 from .dbus import mock_dbus  # NOQA: F401
 
@@ -216,17 +216,17 @@ async def test_status(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_helper_status(test_daemon, mock_config, monkeypatch):
+async def test_helper_status(test_daemon, mock_config, monkeypatch, helper_directory):
     daemon, reader, writer = await test_daemon
-    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
+    setup_categories(['test'])
 
     reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": False}}
+    assert reply.data == {"test": {"enabled": True, "collection": True, "submission": True}}
 
     reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": False}}
+    assert reply.data == {"test": {"enabled": True, "collection": True, "submission": True}}
 
     reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test2"]}), reader, writer)
     assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
@@ -237,15 +237,15 @@ async def test_helper_status(test_daemon, mock_config, monkeypatch):
     assert reply.data == {"invalid-helper": ["test2"]}
 
     mock_config.add_section('helpers.test')
-    mock_config.set('helpers.test', 'enable', 'on')
+    mock_config.set('helpers.test', 'enable', 'off')
 
     reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": True}}
+    assert reply.data == {"test": {"enabled": False, "collection": True, "submission": True}}
 
     reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": True}}
+    assert reply.data == {"test": {"enabled": False, "collection": True, "submission": True}}
 
 
 @pytest.mark.asyncio
