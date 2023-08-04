@@ -111,7 +111,7 @@ def list_bluetooth() -> list[dict[str, Any]]:
 def list_filesystems() -> list[dict[str, Any]]:
     bus = 'org.freedesktop.UDisks2'
     try:
-        findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size,used', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
+        findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
     except (subprocess.SubprocessError, OSError) as e:
         logger.error('Failed to exec findmnt', exc_info=e)
         return []
