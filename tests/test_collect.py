@@ -35,6 +35,17 @@ async def test_disable_collect(helper_directory, mock_config, monkeypatch, patch
 
 
 @pytest.mark.asyncio
+async def test_disable_collect_global(helper_directory, mock_config, monkeypatch, patch_module):
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'collect', 'off')
+    setup_categories(['test'])
+
+    patch_module.submit = unreachable
+    patch_module.collect = unreachable
+    await collect()
+
+
+@pytest.mark.asyncio
 async def test_module(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
 
