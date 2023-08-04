@@ -4,23 +4,28 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import importlib.machinery
 import json
 import logging
 import os
 import shutil
 import subprocess
 import time
+from typing import Union
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from steamos_log_submitter.logging import reconfigure_logging
+from steamos_log_submitter.types import JSONEncodable
 
-reconfigure_logging(f'{sls.base}/gpu-crash.log')
-logger = logging.getLogger(__name__)
+__loader__: importlib.machinery.SourceFileLoader
+logger = logging.getLogger(__loader__.name)
 
-try:
+
+def run() -> None:
     ts = time.time_ns()
-    log = {
-        'env': {},
+    env: dict[str, Union[str, int]] = {}
+    log: dict[str, JSONEncodable] = {
         'timestamp': ts / 1_000_000_000,
         'kernel': os.uname().release,
         'branch': sls.steam.get_steamos_branch(),
@@ -29,7 +34,8 @@ try:
     for key, val in os.environ.items():
         if key == 'PID':
             pid = int(val)
-        log['env'][key] = val
+        env[key] = val
+    log['env'] = env
     if pid:
         log['pid'] = pid
         appid = sls.util.get_appid(pid)
@@ -42,11 +48,17 @@ try:
         pass
     try:
         mesa = subprocess.run(['pacman', '-Q', 'mesa'], capture_output=True, errors='replace', check=True)
-        log['mesa'] = mesa.stdout.strip.split(' ')[1]
+        log['mesa'] = mesa.stdout.strip().split(' ')[1]
     except (OSError, subprocess.SubprocessError):
         pass
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
         shutil.chown(f.name, user='steamos-log-submitter')
-except Exception as e:
-    logger.critical('Unhandled exception', exc_info=e)
+
+
+if __name__ == '__main__':
+    reconfigure_logging(f'{sls.base}/gpu-crash.log')
+    try:
+        run()
+    except Exception as e:
+        logger.critical('Unhandled exception', exc_info=e)

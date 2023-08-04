@@ -4,44 +4,50 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import importlib.machinery
 import logging
 import os
 import shutil
 import subprocess
 import sys
 import time
+from collections.abc import Iterable
+from typing import BinaryIO
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from steamos_log_submitter.logging import reconfigure_logging
 
-reconfigure_logging(f'{sls.base}/crash-hook.log')
-logger = logging.getLogger(__name__)
+__loader__: importlib.machinery.SourceFileLoader
+logger = logging.getLogger(__loader__.name)
 
 
-def tee(infd, outprocs):
+def tee(infd: BinaryIO, outprocs: Iterable[subprocess.Popen]) -> None:
     while True:
         buffer = infd.read(4096)
         if not buffer:
             break
         for proc in outprocs:
+            if not proc.stdin:
+                continue
             try:
                 proc.stdin.write(buffer)
             except Exception:
                 pass
 
     for proc in outprocs:
-        try:
-            proc.stdin.close()
-        except Exception:
-            pass
+        if proc.stdin:
+            try:
+                proc.stdin.close()
+            except Exception:
+                pass
         try:
             proc.wait(5)
         except Exception:
             pass
 
 
-try:
+def run() -> None:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
 
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
@@ -67,7 +73,12 @@ try:
     shutil.chown(tmpfile, user='steamos-log-submitter')
     os.rename(tmpfile, f'{sls.pending}/minidump/{minidump}')
 
-    with sls.util.drop_root():
-        sls.trigger()
-except Exception as e:
-    logger.critical('Unhandled exception', exc_info=e)
+
+if __name__ == '__main__':
+    reconfigure_logging(f'{sls.base}/crash-hook.log')
+    try:
+        run()
+        with sls.util.drop_root():
+            sls.trigger()
+    except Exception as e:
+        logger.critical('Unhandled exception', exc_info=e)

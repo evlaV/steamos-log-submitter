@@ -3,4 +3,4 @@
 #  Copyright (c) 2022-2023 Valve Software
 #  Author: Vicki Pfau <vi@endrift.com>
 
-kernel.core_pattern=|/usr/lib/steamos-log-submitter/hooks/coredump.py %P %e %u %g %s %t %c %h %f %E
+kernel.core_pattern=|/usr/bin/python -m steamos_log_submitter.hooks.coredump %P %e %u %g %s %t %c %h %f %E
