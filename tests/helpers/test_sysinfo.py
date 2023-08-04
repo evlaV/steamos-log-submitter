@@ -312,6 +312,47 @@ async def test_collect_system(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_collect_batteries_none(monkeypatch, mock_dbus):
+    bus = 'org.freedesktop.UPower'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/UPower/devices', mock_dbus)
+
+    devices = await helper.list_batteries()
+    assert isinstance(devices, list)
+    assert not len(devices)
+
+
+@pytest.mark.asyncio
+async def test_collect_batteries_some(monkeypatch, mock_dbus):
+    bus = 'org.freedesktop.UPower'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/UPower/devices', mock_dbus)
+    dev = MockDBusObject(bus, '/org/freedesktop/UPower/devices/battery_BAT1', mock_dbus)
+    dev.properties['org.freedesktop.UPower.Device'] = {
+        'EnergyFull': 99.8,
+        'EnergyFullDesign': 99.9,
+        'Model': 'PbAcid',
+        'NativePath': 'BAT1',
+        'Online': False,
+        'State': 1,
+        'Type': 5,
+    }
+
+    devices = await helper.list_batteries()
+    assert isinstance(devices, list)
+    assert len(devices) == 1
+    assert devices[0] == {
+        'energy_full': 99.8,
+        'energy_full_design': 99.9,
+        'model': 'PbAcid',
+        'native_path': 'BAT1',
+        'online': False,
+        'state': 1,
+        'type': 5
+    }
+
+
+@pytest.mark.asyncio
 async def test_collect(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
