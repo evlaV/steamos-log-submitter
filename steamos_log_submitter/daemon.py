@@ -12,6 +12,7 @@ import logging
 import os
 import time
 from collections.abc import Coroutine, Iterable
+from dbus_next.constants import ErrorType
 from typing import Any, Callable, Optional, Self
 
 import steamos_log_submitter as sls
@@ -428,6 +429,13 @@ class DaemonInterface(dbus_next.service.ServiceInterface):
     @dbus_next.service.method()
     async def Shutdown(self):  # type: ignore
         await self.daemon.shutdown()
+
+    @dbus_next.service.method()
+    async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore # NOQA: F821
+        try:
+            await self.daemon.set_steam_info(key, value)
+        except InvalidArgumentsError as e:
+            raise dbus_next.errors.DBusError(ErrorType.INVALID_ARGS, f'Invalid argument {e.data}')
 
 
 if __name__ == '__main__':  # pragma: no cover
