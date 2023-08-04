@@ -13,7 +13,6 @@ import time
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
-from steamos_log_submitter.lockfile import LockHeldError, LockRetry
 from steamos_log_submitter.logging import reconfigure_logging
 
 reconfigure_logging(f'{sls.base}/crash-hook.log')
@@ -47,30 +46,26 @@ try:
 
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
     appid = sls.util.get_appid(int(P))
-    minidump = f'{sls.pending}/minidump/{t}-{e}-{P}-{appid}.dmp'
+    minidump = f'{t}-{e}-{P}-{appid}.dmp'
+    tmpfile = f'{sls.pending}/minidump/.staging-{minidump}'
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
+    breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, tmpfile], stdin=subprocess.PIPE)
+    tee(sys.stdin.buffer, (breakpad, systemd))
+
+    if breakpad.returncode:
+        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
+    if systemd.returncode:
+        logger.error(f'systemd-coredump failed with status {systemd.returncode}')
+
     try:
-        with LockRetry(sls.helpers.lock('minidump'), 50):
-            breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, minidump], stdin=subprocess.PIPE)
+        os.setxattr(tmpfile, 'user.executable', f.encode())
+        os.setxattr(tmpfile, 'user.comm', e.encode())
+        os.setxattr(tmpfile, 'user.path', E.replace('!', '/').encode())
+    except OSError as e:
+        logger.warning('Failed to set xattrs', exc_info=e)
 
-            tee(sys.stdin.buffer, (breakpad, systemd))
-
-            if breakpad.returncode:
-                logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
-            if systemd.returncode:
-                logger.error(f'systemd-coredump failed with status {systemd.returncode}')
-
-            try:
-                os.setxattr(minidump, 'user.executable', f.encode())
-                os.setxattr(minidump, 'user.comm', e.encode())
-                os.setxattr(minidump, 'user.path', E.replace('!', '/').encode())
-            except OSError as e:
-                logger.warning('Failed to set xattrs', exc_info=e)
-
-            shutil.chown(minidump, user='steamos-log-submitter')
-    except LockHeldError:
-        logger.error("Couldn't claim minidump lockfile, giving up")
-        tee(sys.stdin.buffer, (systemd,))
+    shutil.chown(tmpfile, user='steamos-log-submitter')
+    os.rename(tmpfile, f'{sls.pending}/minidump/{minidump}')
 
     with sls.util.drop_root():
         sls.trigger()
