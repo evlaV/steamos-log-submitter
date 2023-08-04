@@ -159,12 +159,42 @@ class SysinfoHelper(Helper):
             sysinfo['devmode'] = False
         return sysinfo
 
+    @classmethod
+    async def list_batteries(cls) -> list[dict[str, JSON]]:
+        bus = 'org.freedesktop.UPower'
+        parent = DBusObject(bus, '/org/freedesktop/UPower/devices')
+        children = await parent.list_children()
+        devices = []
+        for child in children:
+            dev_object = DBusObject(bus, child)
+            dev_dict = {}
+            dev_props = dev_object.properties('org.freedesktop.UPower.Device')
+            conversions: list[tuple[str, Callable]] = [
+                ('EnergyFull', float),
+                ('EnergyFullDesign', float),
+                ('Model', str),
+                ('NativePath', str),
+                ('Online', bool),
+                ('State', int),
+                ('Type', int),
+            ]
+            for name, convert in conversions:
+                try:
+                    snake_case = re.sub('(?<=.)([A-Z])', r'_\1', name).lower()
+                    dev_dict[snake_case] = convert(await dev_props[name])
+                except KeyError:
+                    pass
+            devices.append(dev_dict)
+
+        return devices
+
     device_types = [
         'usb',
         'bluetooth',
         'monitors',
         'filesystems',
         'system',
+        'batteries',
     ]
 
     @classmethod
