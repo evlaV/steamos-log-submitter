@@ -27,6 +27,8 @@ async def collect_category(helper: sls.helpers.Helper) -> None:
 
 
 async def collect() -> None:
+    if sls.base_config.get('collect', 'on') != 'on':
+        return
     logger.info('Starting log collection')
     tasks = []
     for category in sls.helpers.list_helpers():
@@ -69,6 +71,8 @@ async def submit_category(helper: sls.helpers.Helper, logs: list[str]) -> None:
 
 
 async def submit() -> None:
+    if sls.base_config.get('submit', 'on') != 'on':
+        return
     logger.info('Starting log submission')
     if not sls.util.check_network():
         logger.info('Network is offline, bailing out')

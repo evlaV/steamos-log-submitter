@@ -40,6 +40,7 @@ async def test_disable_all(helper_directory, monkeypatch, online, patch_module, 
     patch_module.enable(False)
 
     setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
 
     patch_module.submit = unreachable
     await submit()
@@ -50,6 +51,19 @@ async def test_disable_submit(helper_directory, monkeypatch, online, patch_modul
     patch_module.enable_submit(False)
 
     setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
+
+    patch_module.submit = unreachable
+    await submit()
+
+
+@pytest.mark.asyncio
+async def test_disable_submit_global(helper_directory, monkeypatch, online, patch_module, mock_config):
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'submit', 'off')
+
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
 
     patch_module.submit = unreachable
     await submit()
