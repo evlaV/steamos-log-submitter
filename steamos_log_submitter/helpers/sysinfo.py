@@ -188,11 +188,15 @@ class SysinfoHelper(Helper):
             if section in known:
                 for dev in known[section]:
                     devs[json.dumps(dev)] = True
-            for dev in devices[section]:
-                if isinstance(dev, dict):
-                    devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
-                if isinstance(dev, tuple):
-                    devs[json.dumps(dev)] = True
+            value = devices[section]
+            if isinstance(value, list):
+                for dev in value:
+                    if isinstance(dev, dict):
+                        devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
+                    elif isinstance(dev, tuple):
+                        devs[json.dumps(dev)] = True
+            elif isinstance(value, dict):
+                devs[json.dumps(value)] = True
             known[section] = [json.loads(dev) for dev in devs.keys()]
 
         with open(f'{sls.data.data_root}/sysinfo-pending.json', 'w') as f:

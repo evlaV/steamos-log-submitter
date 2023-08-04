@@ -435,6 +435,58 @@ async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_director
 
 
 @pytest.mark.asyncio
+async def test_collect_return_dict(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', ['system'])
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: {'branch': 'rel', 'release': '20230703'}))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 1
+    assert cache['system'] == [{'branch': 'rel', 'release': '20230703'}]
+
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: {'branch': 'main', 'release': '20230704'}))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 2
+    assert cache['system'] == [{'branch': 'rel', 'release': '20230703'}, {'branch': 'main', 'release': '20230704'}]
+
+
+@pytest.mark.asyncio
+async def test_collect_switch_types(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', ['system'])
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: [('branch', 'rel'), ('release', '20230703')]))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 2
+    assert cache['system'] == [['branch', 'rel'], ['release', '20230703']]
+
+    monkeypatch.setattr(helper, 'list_system', awaitable(lambda: {'branch': 'main', 'release': '20230704'}))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 3
+    assert cache['system'] == [['branch', 'rel'], ['release', '20230703'], {'branch': 'main', 'release': '20230704'}]
+
+
+@pytest.mark.asyncio
 async def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
