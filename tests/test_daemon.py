@@ -321,9 +321,9 @@ async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
     monkeypatch.setattr(daemon, '_interval', 0.04)
+    start = time.time()
     await daemon.start()
 
-    start = time.time()
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert mock_config.has_section('daemon')
@@ -347,9 +347,9 @@ async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock
 
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() + 0.03))
+    start = time.time()
     await daemon.start()
 
-    start = time.time()
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert count_hits.hits == 0
@@ -371,9 +371,9 @@ async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, moc
 
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
+    start = time.time()
     await daemon.start()
 
-    start = time.time()
     assert count_hits.hits == 0
     await asyncio.sleep(0.03)
     assert count_hits.hits == 1
@@ -420,9 +420,9 @@ async def test_inhibit(test_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.04)
+    start = time.time()
     daemon, reader, writer = await test_daemon
 
-    start = time.time()
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert mock_config.has_section('daemon')
