@@ -5,10 +5,13 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next
+import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
-from types import UnionType
-from typing import Any, Optional, Union
+from types import CoroutineType, UnionType
+from typing import Any, Optional, Type, Union
+
+from steamos_log_submitter.types import DBusCallable
 
 connected = False
 system_bus = None
@@ -51,6 +54,36 @@ def signature(type_annotation: type) -> str:
         value = signature(types[0])
         return 'a' + value
     raise TypeError
+
+
+def fn_signature(fn: DBusCallable) -> inspect.Signature:
+    inspection = inspect.signature(fn)
+    arguments_signature = [inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY)]
+    for i, arg in enumerate(inspection.parameters.values()):
+        if not i:
+            continue
+        arguments_signature.append(inspect.Parameter(arg.name, arg.kind, annotation=signature(arg.annotation)))
+    return_signature: Union[Type[inspect._empty], str] = inspect._empty
+    if inspection.return_annotation is not inspect._empty:
+        return_signature = signature(inspection.return_annotation)
+
+    return inspect.Signature(arguments_signature, return_annotation=return_signature)
+
+
+def dbusify(fn: DBusCallable) -> Callable[..., Any]:
+    wrapped: Callable[..., Any]
+
+    if inspect.iscoroutinefunction(fn):
+        async def wrapped(*args: Any, **kwargs: Any) -> Any:
+            coro = fn(*args, **kwargs)
+            assert isinstance(coro, CoroutineType)
+            return await coro
+    else:
+        def wrapped(*args: Any, **kwargs: Any) -> Any:
+            return fn(*args, **kwargs)
+
+    wrapped.__signature__ = fn_signature(fn)  # type: ignore
+    return wrapped
 
 
 class DBusInterface:
