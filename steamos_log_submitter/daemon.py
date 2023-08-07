@@ -204,6 +204,11 @@ class Daemon:
             camel_case = camel_case[:-len('Helper')]
             sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface)
 
+            for iface in helper_module.extra_ifaces.values():
+                sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', iface)
+            for service, iface in helper_module.child_services.items():
+                sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}/{service}', iface)
+
     async def _leave_suspend(self, iface: str, prop: str, value: str) -> None:
         if value == self._suspend:
             return

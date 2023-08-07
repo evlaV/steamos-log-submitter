@@ -14,6 +14,7 @@ from collections.abc import Callable
 from typing import Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
+import steamos_log_submitter.dbus
 from steamos_log_submitter.dbus import DBusObject
 from steamos_log_submitter.types import JSON
 from . import Helper, HelperResult
@@ -21,6 +22,11 @@ from . import Helper, HelperResult
 
 class SysinfoHelper(Helper):
     defaults = {'timestamp': None}
+
+    @classmethod
+    def _setup(cls) -> None:
+        super()._setup()
+        cls.child_services = {sls.util.camel_case(device_type): SysinfoInterface(device_type) for device_type in cls.device_types}
 
     @staticmethod
     def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
@@ -268,3 +274,14 @@ class SysinfoHelper(Helper):
             'note': '',
         }
         return HelperResult.check(await crash.upload(product='sysinfo', info=info, dump=fname))
+
+
+class SysinfoInterface(dbus.service.ServiceInterface):
+    @dbus.service.method()
+    async def GetJson(self) -> 's':  # type: ignore # NOQA: F821
+        return json.dumps(await self.fn())
+
+    def __init__(self, device_type: str):
+        super().__init__(f'{sls.dbus.bus_name}.Sysinfo')
+
+        self.fn = getattr(SysinfoHelper, f'list_{device_type}')
