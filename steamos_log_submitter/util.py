@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import grp
 import httpx
@@ -125,3 +125,28 @@ class drop_root:
         except PermissionError as e:
             logger.error("Couldn't undrop permissions", exc_info=e)
         return not exc_type
+
+
+def camel_case(text: str) -> str:
+    def replace(match: re.Match) -> str:
+        char = match.group(2)
+        if char:
+            return char.upper()
+        return ''
+
+    return re.sub('(^|_)([a-z])?', replace, text)
+
+
+def snake_case(text: str) -> str:
+    snaked = []
+    for i, char in enumerate(text):
+        if char.islower():
+            snaked.append(char)
+        else:
+            if i:
+                if snaked[-1].islower():
+                    snaked.append('_')
+                elif i + 1 < len(text) and text[i + 1].islower():
+                    snaked.append('_')
+            snaked.append(char)
+    return ''.join(snaked).lower()
