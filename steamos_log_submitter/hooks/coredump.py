@@ -17,6 +17,7 @@ from typing import BinaryIO
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from steamos_log_submitter.logging import reconfigure_logging
+from steamos_log_submitter.hooks import trigger
 
 __loader__: importlib.machinery.SourceFileLoader
 logger = logging.getLogger(__loader__.name)
@@ -51,7 +52,10 @@ def run() -> None:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
 
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
-    appid = sls.util.get_appid(int(P))
+    try:
+        appid = sls.util.get_appid(int(P))
+    except ValueError:
+        appid = None
     minidump = f'{t}-{e}-{P}-{appid}.dmp'
     tmpfile = f'{sls.pending}/minidump/.staging-{minidump}'
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
@@ -74,11 +78,10 @@ def run() -> None:
     os.rename(tmpfile, f'{sls.pending}/minidump/{minidump}')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging(f'{sls.base}/crash-hook.log')
     try:
         run()
-        with sls.util.drop_root():
-            sls.trigger()
+        trigger()
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)
