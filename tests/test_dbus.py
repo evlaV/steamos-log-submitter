@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next
+import inspect
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -41,6 +42,76 @@ def test_signature_type():
         assert False
     except TypeError:
         pass
+
+
+def test_fn_signature_type():
+    def fn__i(self) -> int:
+        pass
+
+    def fn_i_(self, a: int):
+        pass
+
+    def fn_ai_ai(self, a: Sequence[int]) -> list[int]:
+        pass
+
+    async def afn_ai_ai(self, a: Sequence[int]) -> list[int]:
+        pass
+
+    assert sls.dbus.fn_signature(fn__i) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY)
+    ], return_annotation='i')
+    assert sls.dbus.fn_signature(fn_i_) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='i'),
+    ])
+    assert sls.dbus.fn_signature(fn_ai_ai) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='ai'),
+    ], return_annotation='ai')
+    assert sls.dbus.fn_signature(afn_ai_ai) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='ai'),
+    ], return_annotation='ai')
+
+
+@pytest.mark.asyncio
+async def test_dbusify():
+    @sls.dbus.dbusify
+    def fn__i(self) -> int:
+        return 1
+
+    @sls.dbus.dbusify
+    def fn_i_(self, a: int):
+        pass
+
+    @sls.dbus.dbusify
+    def fn_ai_ai(self, a: Sequence[int]) -> list[int]:
+        return list(a)
+
+    @sls.dbus.dbusify
+    async def afn_ai_ai(self, a: Sequence[int]) -> list[int]:
+        return list(a)
+
+    assert inspect.signature(fn__i) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY)
+    ], return_annotation='i')
+    assert inspect.signature(fn_i_) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='i'),
+    ])
+    assert inspect.signature(fn_ai_ai) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='ai'),
+    ], return_annotation='ai')
+    assert inspect.signature(afn_ai_ai) == inspect.Signature([
+        inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY),
+        inspect.Parameter('a', inspect._ParameterKind.POSITIONAL_OR_KEYWORD, annotation='ai'),
+    ], return_annotation='ai')
+
+    assert fn__i(None) == 1
+    fn_i_(None, 0)
+    assert fn_ai_ai(None, (2,)) == [2]
+    assert await afn_ai_ai(None, (2,)) == [2]
 
 
 @pytest.mark.asyncio
