@@ -185,8 +185,7 @@ class SysinfoHelper(Helper):
             ]
             for name, convert in conversions:
                 try:
-                    snake_case = re.sub('(?<=.)([A-Z])', r'_\1', name).lower()
-                    dev_dict[snake_case] = convert(await dev_props[name])
+                    dev_dict[sls.util.snake_case(name)] = convert(await dev_props[name])
                 except KeyError:
                     pass
             devices.append(dev_dict)
