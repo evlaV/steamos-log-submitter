@@ -75,6 +75,8 @@ class Helper:
     config: sls.config.ConfigSection
     data: sls.data.DataStore
     iface: Optional[HelperInterface]
+    extra_ifaces: dict[str, dbus_next.service.ServiceInterface]
+    child_services: dict[str, dbus_next.service.ServiceInterface]
     logger: logging.Logger
 
     @classmethod
@@ -82,6 +84,8 @@ class Helper:
         module = cls.__module__
         cls.logger = logging.getLogger(module)
         cls.iface = None
+        cls.extra_ifaces = {}
+        cls.child_services = {}
         if module == __name__:
             return
         sys.modules[module].helper = cls  # type: ignore
