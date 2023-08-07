@@ -33,7 +33,10 @@ def run() -> None:
     pid = None
     for key, val in os.environ.items():
         if key == 'PID':
-            pid = int(val)
+            try:
+                pid = int(val)
+            except ValueError:
+                pass
         env[key] = val
     log['env'] = env
     if pid:
@@ -56,7 +59,7 @@ def run() -> None:
         shutil.chown(f.name, user='steamos-log-submitter')
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging(f'{sls.base}/gpu-crash.log')
     try:
         run()
