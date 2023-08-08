@@ -66,6 +66,10 @@ class HelperInterface(dbus_next.service.ServiceInterface):
     def set_submit_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         return self.helper.enable_submit(enable)
 
+    @dbus_next.service.method()
+    async def Collect(self) -> 'b':  # type: ignore # NOQA: F821
+        return await self.helper.collect()
+
 
 class Helper:
     defaults: Optional[dict[str, JSONEncodable]] = None
