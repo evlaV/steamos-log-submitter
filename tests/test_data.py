@@ -135,3 +135,17 @@ def test_write_all(data_directory):
     assert os.access(f'{data_directory}/test.json', os.F_OK)
     with open(f'{data_directory}/test.json') as f:
         assert json.load(f) == {"foo": 1}
+
+
+def test_names(data_directory):
+    d = data.get_data('test')
+    assert d is data.datastore['test']
+
+    d = data.get_data('steamos_log_submitter.test')
+    assert d is data.datastore['test']
+
+    d = data.get_data('steamos_log_submitter.test.subtest')
+    assert d is data.datastore['test.subtest']
+
+    d = data.get_data('steamos_log_submitter')
+    assert d is data.datastore['sls']
