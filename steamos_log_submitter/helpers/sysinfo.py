@@ -9,7 +9,6 @@ import dbus_next
 import json
 import os
 import re
-import subprocess
 import time
 from collections.abc import Callable
 from typing import Union
@@ -119,12 +118,14 @@ class SysinfoHelper(Helper):
     async def list_filesystems(cls) -> list[dict[str, JSON]]:
         bus = 'org.freedesktop.UDisks2'
         try:
-            findmnt = subprocess.run(['findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list'], capture_output=True, errors='replace', check=True)
-        except (subprocess.SubprocessError, OSError) as e:
+            findmnt = await asyncio.create_subprocess_exec('findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list', stdout=asyncio.subprocess.PIPE)
+            assert findmnt.stdout
+            stdout = await findmnt.stdout.read()
+        except OSError as e:
             cls.logger.error('Failed to exec findmnt', exc_info=e)
             return []
         try:
-            mntinfo = json.loads(findmnt.stdout)
+            mntinfo = json.loads(stdout.decode(errors='replace'))
         except json.decoder.JSONDecodeError as e:
             cls.logger.error('Got invalid JSON from findmnt', exc_info=e)
             return []

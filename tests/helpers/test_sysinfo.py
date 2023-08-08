@@ -3,12 +3,13 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import builtins
 import collections
+import io
 import json
 import os
 import pytest
-import subprocess
 import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers import create_helper, HelperResult
@@ -221,18 +222,19 @@ async def test_collect_monitors_edid(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_raise(monkeypatch):
-    monkeypatch.setattr(subprocess, 'run', always_raise(OSError))
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', always_raise(OSError))
     assert await helper.list_filesystems() == []
 
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_malformed(monkeypatch):
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = '!'
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        ret.stdout = io.BytesIO(b'!')
+        ret.stdout.read = awaitable(ret.stdout.read)
         return ret
 
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     fs = await helper.list_filesystems()
     assert fs == []
@@ -240,12 +242,13 @@ async def test_collect_filesystems_malformed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_missing(monkeypatch):
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = '{"wrong_things":"go_here"}'
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        ret.stdout = io.BytesIO(b'{"wrong_things":"go_here"}')
+        ret.stdout.read = awaitable(ret.stdout.read)
         return ret
 
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     fs = await helper.list_filesystems()
     assert fs == []
@@ -253,12 +256,14 @@ async def test_collect_filesystems_missing(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
+        ret.stdout = io.BytesIO(blob.encode())
+        ret.stdout.read = awaitable(ret.stdout.read)
         return ret
 
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
     bus = 'org.freedesktop.UDisks2'
     mock_dbus.add_bus(bus)
     block_dev = MockDBusObject(bus, '/org/freedesktop/UDisks2/block_devices/null', mock_dbus)
@@ -272,12 +277,14 @@ async def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        blob = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
+        ret.stdout = io.BytesIO(blob.encode())
+        ret.stdout.read = awaitable(ret.stdout.read)
         return ret
 
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
     bus = 'org.freedesktop.UDisks2'
     mock_dbus.add_bus(bus)
 
@@ -287,12 +294,14 @@ async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_clean(monkeypatch):
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
+        ret.stdout = io.BytesIO(blob.encode())
+        ret.stdout.read = awaitable(ret.stdout.read)
         return ret
 
-    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     fs = await helper.list_filesystems()
     assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
