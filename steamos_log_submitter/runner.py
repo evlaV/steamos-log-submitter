@@ -47,26 +47,25 @@ async def collect() -> None:
 async def submit_category(helper: sls.helpers.Helper, logs: list[str]) -> None:
     try:
         with helper.lock():
-            try:
-                for log in logs:
-                    if log.startswith('.'):
-                        continue
-                    logger.debug(f'Found log {helper.name}/{log}')
-                    result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
-                    if result.code == sls.helpers.HelperResult.OK:
-                        logger.debug(f'Succeeded in submitting {helper.name}/{log}')
-                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
-                    else:
-                        logger.warning(f'Failed to submit log {helper.name}/{log} with code {result.code}')
-                    if result.code == sls.helpers.HelperResult.PERMANENT_ERROR:
-                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
-                    elif result.code == sls.helpers.HelperResult.CLASS_ERROR:
-                        break
-            except Exception as e:
-                logger.error(f'Encountered error submitting logs for {helper.name}', exc_info=e)
+            for log in logs:
+                if log.startswith('.'):
+                    continue
+                logger.debug(f'Found log {helper.name}/{log}')
+                result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
+                if result.code == sls.helpers.HelperResult.OK:
+                    logger.debug(f'Succeeded in submitting {helper.name}/{log}')
+                    os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
+                else:
+                    logger.warning(f'Failed to submit log {helper.name}/{log} with code {result.code}')
+                if result.code == sls.helpers.HelperResult.PERMANENT_ERROR:
+                    os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
+                elif result.code == sls.helpers.HelperResult.CLASS_ERROR:
+                    break
     except LockHeldError:
         # Another process is currently working on this directory
         logger.warning(f'Lock already held trying to submit logs for {helper.name}')
+    except Exception as e:
+        logger.error(f'Encountered error submitting logs for {helper.name}', exc_info=e)
 
 
 async def submit() -> None:
