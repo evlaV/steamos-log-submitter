@@ -3,10 +3,10 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import dbus_next
 import json
 import os
-import subprocess
 from typing import Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.dbus import DBusObject
@@ -40,30 +40,32 @@ class JournalHelper(SentryHelper):
     ]
 
     @classmethod
-    def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict]], Optional[str]]:
+    async def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict]], Optional[str]]:
         cmd = ['journalctl', '-o', 'json', '-u', unit]
         if cursor is not None:
             cmd.extend(['--after-cursor', cursor])
         try:
-            journal = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
-        except (subprocess.SubprocessError, OSError) as e:
+            journal = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+            assert journal.stdout
+
+            invocations: dict[str, list] = {}
+            cursor = None
+            while True:
+                line = await journal.stdout.readline()
+                if not line:
+                    break
+                log = json.loads(line.decode())
+                invocation = log.get('INVOCATION_ID')
+                if not invocation:
+                    invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
+                logs = invocations.get(invocation, [])
+                logs.append(log)
+                invocations[invocation] = logs
+
+                cursor = log['__CURSOR']
+        except OSError as e:
             cls.logger.error('Failed to exec journalctl', exc_info=e)
             return None, None
-
-        invocations: dict[str, list] = {}
-        cursor = None
-        for line in journal.stdout.decode().split('\n'):
-            if not line:
-                continue
-            log = json.loads(line)
-            invocation = log.get('INVOCATION_ID')
-            if not invocation:
-                invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
-            logs = invocations.get(invocation, [])
-            logs.append(log)
-            invocations[invocation] = logs
-
-            cursor = log['__CURSOR']
 
         pruned_invocations = []
         for logs in invocations.values():
@@ -116,7 +118,7 @@ class JournalHelper(SentryHelper):
 
             cursor = cls.data.get(f'{cls.escape(unit)}.cursor')
             assert cursor is None or isinstance(cursor, str)
-            journal, cursor = cls.read_journal(unit, cursor)
+            journal, cursor = await cls.read_journal(unit, cursor)
 
             if not journal:
                 cls.logger.error(f'Failed reading journal for unit {unit}')
