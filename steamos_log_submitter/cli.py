@@ -8,7 +8,7 @@ from typing import Optional, Sequence
 
 def load_user_config() -> Optional[configparser.ConfigParser]:
     if not config.user_config_path:
-        print("No user configuration file path found")
+        print("No user configuration file path found", file=sys.stderr)
         return None
     user_config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
     try:
@@ -17,10 +17,10 @@ def load_user_config() -> Optional[configparser.ConfigParser]:
     except FileNotFoundError:
         pass
     except OSError:
-        print("Couldn't open configuration file")
+        print("Couldn't open configuration file", file=sys.stderr)
         return None
     except configparser.Error:
-        print("Invalid config file. Please fix manually.")
+        print("Invalid config file. Please fix manually.", file=sys.stderr)
         return None
     return user_config
 
@@ -32,7 +32,7 @@ def save_user_config(user_config: configparser.ConfigParser) -> bool:
         with open(config.user_config_path, 'w') as f:
             user_config.write(f)
     except OSError:
-        print("Couldn't open configuration file")
+        print("Couldn't open configuration file", file=sys.stderr)
         return False
     return True
 
@@ -57,7 +57,7 @@ def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
     did_anything = False
     for helper in helpers:
         if helper not in sls.helpers.list_helpers():
-            print(f'Helper {helper} not found')
+            print(f'Helper {helper} not found', file=sys.stderr)
             continue
 
         if not user_config.has_section(f'helpers.{helper}'):
@@ -92,18 +92,18 @@ def do_log_level(args: argparse.Namespace) -> None:
         user_config.set('logging', 'level', args.level.upper())
         save_user_config(user_config)
     else:
-        print('Please specify a valid log level')
+        print('Please specify a valid log level', file=sys.stderr)
 
 
 def set_steam_info(key: str, value: str) -> bool:
     if key not in ('account-name', 'account-id', 'deck-serial'):
-        print(f"'{key}' is not a valid Steam info key")
+        print(f"'{key}' is not a valid Steam info key", file=sys.stderr)
         return False
     if key == 'account-id':
         try:
             int(value)
         except ValueError:
-            print('Account ID must be numeric')
+            print('Account ID must be numeric', file=sys.stderr)
             return False
 
     user_config = load_user_config()

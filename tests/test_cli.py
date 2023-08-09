@@ -52,7 +52,7 @@ def test_set_log_level(mock_config, monkeypatch, user_config):
 
 def test_invalid_log_level(capsys, mock_config, monkeypatch, user_config):
     cli.main(['log-level', 'foo'])
-    assert capsys.readouterr().out.strip() == 'Please specify a valid log level'
+    assert capsys.readouterr().err.strip() == 'Please specify a valid log level'
 
 
 def test_enable(user_config):
