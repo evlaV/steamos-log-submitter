@@ -128,12 +128,12 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
                                    help='Current status')
     status.set_defaults(func=do_status)
 
-    status = subparsers.add_parser('list',
-                                   description='''List all available helper modules. Each helper
-                                                  module handles one or more types of logs that have
-                                                  a common method of collection and submission.''',
-                                   help='List helper modules')
-    status.set_defaults(func=do_list)
+    list_cmd = subparsers.add_parser('list',
+                                     description='''List all available helper modules. Each helper
+                                                    module handles one or more types of logs that have
+                                                    a common method of collection and submission.''',
+                                     help='List helper modules')
+    list_cmd.set_defaults(func=do_list)
 
     log_level = subparsers.add_parser('log-level',
                                       description='''Set or get the log level. If no argument is passed,
