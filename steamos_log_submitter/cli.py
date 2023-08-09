@@ -79,6 +79,22 @@ def do_list(args: argparse.Namespace) -> None:
         print(helper)
 
 
+def do_log_level(args: argparse.Namespace) -> None:
+    user_config = load_user_config()
+    if not user_config:
+        return
+
+    if args.level is None:
+        print(sls.logging.config.get('level', 'WARNING').upper())
+    elif sls.logging.valid_level(args.level):
+        if not user_config.has_section('logging'):
+            user_config.add_section('logging')
+        user_config.set('logging', 'level', args.level.upper())
+        save_user_config(user_config)
+    else:
+        print('Please specify a valid log level')
+
+
 def set_steam_info(key: str, value: str) -> bool:
     if key not in ('account-name', 'account-id', 'deck-serial'):
         print(f"'{key}' is not a valid Steam info key")
@@ -118,6 +134,16 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
                                                   a common method of collection and submission.''',
                                    help='List helper modules')
     status.set_defaults(func=do_list)
+
+    log_level = subparsers.add_parser('log-level',
+                                      description='''Set or get the log level. If no argument is passed,
+                                                     print the current log level, otherwise set a new
+                                                     log level.''',
+                                      help='Set or get the log level')
+    log_level.add_argument('level', type=str, nargs='?',
+                           help='''Which new log level to set. The possible levels are DEBUG, INFO,
+                                   WARNING, ERROR, and CRITICAL, in order from least to most severe.''')
+    log_level.set_defaults(func=do_log_level)
 
     enable = subparsers.add_parser('enable',
                                    description='Enable the log collection service.',

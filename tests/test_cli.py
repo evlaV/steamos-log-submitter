@@ -37,6 +37,24 @@ def test_list(capsys, monkeypatch):
     assert capsys.readouterr().out.strip() == 'test'
 
 
+def test_log_level(capsys, mock_config, monkeypatch, user_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'ERROR')
+    cli.main(['log-level'])
+    assert capsys.readouterr().out.strip() == 'ERROR'
+
+
+def test_set_log_level(mock_config, monkeypatch, user_config):
+    cli.main(['log-level', 'error'])
+    with open(user_config.name) as f:
+        assert f.read() == '[logging]\nlevel = ERROR\n\n'
+
+
+def test_invalid_log_level(capsys, mock_config, monkeypatch, user_config):
+    cli.main(['log-level', 'foo'])
+    assert capsys.readouterr().out.strip() == 'Please specify a valid log level'
+
+
 def test_enable(user_config):
     assert cli.set_enabled(True)
     with open(user_config.name) as f:
