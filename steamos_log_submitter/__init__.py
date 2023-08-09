@@ -11,7 +11,7 @@ import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
 
-import logging
+import logging as _logging
 import os
 
 __all__ = [
@@ -44,7 +44,7 @@ failed = f'{base}/failed'
 
 reconfigure_logging()
 
-logger = logging.getLogger(__name__)
+logger = _logging.getLogger(__name__)
 
 # This needs to be imported late so that sls.base is populated
 from steamos_log_submitter.data import get_data  # NOQA: E402
