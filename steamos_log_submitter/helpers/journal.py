@@ -4,7 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next
+import dbus_next as dbus
 import json
 import os
 from typing import Optional
@@ -110,7 +110,7 @@ class JournalHelper(SentryHelper):
                 dbus_unit = DBusObject(bus, f'/org/freedesktop/systemd1/unit/{cls.escape(unit)}')
                 props = dbus_unit.properties('org.freedesktop.systemd1.Unit')
                 state = await props['ActiveState']
-            except (dbus_next.errors.DBusError, KeyError) as e:
+            except (dbus.errors.DBusError, KeyError) as e:
                 cls.logger.warning(f'Exception getting state of unit {unit}', exc_info=e)
                 continue
             if state != 'failed':

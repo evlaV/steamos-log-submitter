@@ -4,7 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next
+import dbus_next as dbus
 import inspect
 import pytest
 import steamos_log_submitter as sls
@@ -121,7 +121,7 @@ async def test_invalid_object(mock_dbus):
     try:
         await obj._connect()
         assert False
-    except dbus_next.errors.DBusError as e:
+    except dbus.errors.DBusError as e:
         assert e.type == 'org.freedesktop.DBus.Error.ServiceUnknown'
 
 
