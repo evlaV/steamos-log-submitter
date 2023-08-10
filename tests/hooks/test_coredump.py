@@ -14,7 +14,7 @@ import sys
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.coredump as hook
 
-from .. import always_raise
+from .. import always_raise, unreachable
 from .. import count_hits  # NOQA: F401
 
 
@@ -88,6 +88,15 @@ def test_tee_broken_close(count_hits):
     assert count_hits.hits == 1
 
 
+def test_should_collect():
+    assert hook.should_collect('/usr/bin/true')
+    assert hook.should_collect('/usr/lib/Xorg')
+    assert hook.should_collect('/tmp/virus')
+    assert not hook.should_collect('/tmp/.mount_not_a_virus')
+    assert hook.should_collect('/home/deck/.local/bin/ruby')
+    assert not hook.should_collect('/home/deck/.local/share/Steam/ubuntu12_64/secret')
+
+
 def test_basic(monkeypatch):
     attempt = 0
     tmpfile = f'{sls.pending}/minidump/.staging-1-e-P-None.dmp'
@@ -122,7 +131,7 @@ def test_basic(monkeypatch):
     monkeypatch.setattr(subprocess, 'Popen', fake_subprocess)
     monkeypatch.setattr(sys, 'argv', ['python', 'P', 'e', 'u', 'g', 's', '1', 'c', 'h', 'f', 'E'])
 
-    hook.run()
+    assert hook.run()
 
 
 def test_broken_xattr(monkeypatch, count_hits):
@@ -138,6 +147,29 @@ def test_broken_xattr(monkeypatch, count_hits):
     monkeypatch.setattr(subprocess, 'Popen', fake_subprocess)
     monkeypatch.setattr(sys, 'argv', ['python', 'P', 'e', 'u', 'g', 's', '1', 'c', 'h', 'f', 'E'])
 
-    hook.run()
+    assert hook.run()
 
     assert count_hits.hits == 1
+
+
+def test_no_collect(monkeypatch):
+    attempt = 0
+
+    def fake_subprocess(*args, **kwargs):
+        nonlocal attempt
+        ret = subprocess.CompletedProcess(args[0], 0)
+        ret.stdin = io.BytesIO()
+        assert attempt < 1
+        if attempt == 0:
+            assert args[0] == ['/usr/lib/systemd/systemd-coredump', 'P', 'u', 'g', 's', '1', 'c', 'h']
+        attempt += 1
+        return ret
+
+    monkeypatch.setattr(hook, 'tee', lambda *_: None)
+    monkeypatch.setattr(os, 'rename', lambda *_: None)
+    monkeypatch.setattr(os, 'setxattr', unreachable)
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'Popen', fake_subprocess)
+    monkeypatch.setattr(sys, 'argv', ['python', 'P', 'e', 'u', 'g', 's', '1', 'c', 'h', 'f', '/home/deck/.local/share/Steam/ubuntu12_64/cef.so'])
+
+    assert not hook.run()

@@ -48,7 +48,18 @@ def tee(infd: BinaryIO, outprocs: Iterable[subprocess.Popen]) -> None:
             pass
 
 
-def run() -> None:
+def should_collect(path: str) -> bool:
+    if path.startswith('/tmp/.mount_'):
+        # AppImage
+        return False
+    if '/.local/share/Steam/' in path:
+        # Steam-managed application, has its own handler
+        return False
+
+    return True
+
+
+def run() -> bool:
     P, e, u, g, s, t, c, h, f, E = sys.argv[1:]
 
     logger.info(f'Process {P} ({e}) dumped core with signal {s} at {time.ctime(int(t))}')
@@ -59,29 +70,36 @@ def run() -> None:
     minidump = f'{t}-{e}-{P}-{appid}.dmp'
     tmpfile = f'{sls.pending}/minidump/.staging-{minidump}'
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
-    breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, tmpfile], stdin=subprocess.PIPE)
-    tee(sys.stdin.buffer, (breakpad, systemd))
 
-    if breakpad.returncode:
-        logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
+    if should_collect(E):
+        breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, tmpfile], stdin=subprocess.PIPE)
+        tee(sys.stdin.buffer, (breakpad, systemd))
+
+        if breakpad.returncode:
+            logger.error(f'Breakpad core_handler failed with status {breakpad.returncode}')
+
+        try:
+            os.setxattr(tmpfile, 'user.executable', f.encode())
+            os.setxattr(tmpfile, 'user.comm', e.encode())
+            os.setxattr(tmpfile, 'user.path', E.replace('!', '/').encode())
+        except OSError as e:
+            logger.warning('Failed to set xattrs', exc_info=e)
+
+        shutil.chown(tmpfile, user='steamos-log-submitter')
+        os.rename(tmpfile, f'{sls.pending}/minidump/{minidump}')
+    else:
+        tee(sys.stdin.buffer, (systemd,))
+
     if systemd.returncode:
         logger.error(f'systemd-coredump failed with status {systemd.returncode}')
 
-    try:
-        os.setxattr(tmpfile, 'user.executable', f.encode())
-        os.setxattr(tmpfile, 'user.comm', e.encode())
-        os.setxattr(tmpfile, 'user.path', E.replace('!', '/').encode())
-    except OSError as e:
-        logger.warning('Failed to set xattrs', exc_info=e)
-
-    shutil.chown(tmpfile, user='steamos-log-submitter')
-    os.rename(tmpfile, f'{sls.pending}/minidump/{minidump}')
+    return should_collect(E)
 
 
 if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging(f'{sls.base}/crash-hook.log')
     try:
-        run()
-        trigger()
+        if run():
+            trigger()
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)
