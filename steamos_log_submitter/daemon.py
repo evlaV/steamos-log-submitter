@@ -4,7 +4,7 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next
+import dbus_next as dbus
 import inspect
 import importlib.machinery
 import json
@@ -249,7 +249,7 @@ class Daemon:
         try:
             await sls.dbus.system_bus.request_name(sls.dbus.bus_name)
             self._setup_dbus()
-        except dbus_next.errors.DBusError:
+        except dbus.errors.DBusError:
             logger.error('Failed to claim D-Bus bus name')
 
         suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
@@ -406,12 +406,12 @@ class Daemon:
     }
 
 
-class DaemonInterface(dbus_next.service.ServiceInterface):
+class DaemonInterface(dbus.service.ServiceInterface):
     def __init__(self, daemon: 'sls.daemon.Daemon'):
         super().__init__(f'{sls.dbus.bus_name}.Manager')
         self.daemon = daemon
 
-    @dbus_next.service.dbus_property()
+    @dbus.service.dbus_property()
     def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
         return self.daemon.enabled()
 
@@ -419,7 +419,7 @@ class DaemonInterface(dbus_next.service.ServiceInterface):
     async def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         await self.daemon.enable(enable)
 
-    @dbus_next.service.dbus_property()
+    @dbus.service.dbus_property()
     def Inhibited(self) -> 'b':  # type: ignore # NOQA: F821
         return self.daemon.inhibited()
 
@@ -427,20 +427,20 @@ class DaemonInterface(dbus_next.service.ServiceInterface):
     async def set_inhibited(self, inhibit: 'b'):  # type: ignore # NOQA: F821
         await self.daemon.inhibit(inhibit)
 
-    @dbus_next.service.method()
+    @dbus.service.method()
     async def Trigger(self):  # type: ignore
         await self.daemon.trigger()
 
-    @dbus_next.service.method()
+    @dbus.service.method()
     async def Shutdown(self):  # type: ignore
         await self.daemon.shutdown()
 
-    @dbus_next.service.method()
+    @dbus.service.method()
     async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore # NOQA: F821
         try:
             await self.daemon.set_steam_info(key, value)
         except InvalidArgumentsError as e:
-            raise dbus_next.errors.DBusError(ErrorType.INVALID_ARGS, f'Invalid argument {e.data}')
+            raise dbus.errors.DBusError(ErrorType.INVALID_ARGS, f'Invalid argument {e.data}')
 
 
 if __name__ == '__main__':  # pragma: no cover
