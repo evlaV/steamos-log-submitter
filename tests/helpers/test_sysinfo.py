@@ -293,6 +293,29 @@ async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
 
 
 @pytest.mark.asyncio
+async def test_collect_filesystems_filter(monkeypatch):
+    async def fake_subprocess(*args, **kwargs):
+        ret = collections.namedtuple('Process', ['stdout'])
+        blob = json.dumps({'filesystems': [
+            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0},
+            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.ntfs-3g', 'size': 0},
+            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.portal', 'size': 0},
+            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.hl2.AppImage', 'size': 0},
+        ]})
+        ret.stdout = io.BytesIO(blob.encode())
+        ret.stdout.read = awaitable(ret.stdout.read)
+        return ret
+
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
+
+    fs = await helper.list_filesystems()
+    assert fs == [
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0},
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.ntfs-3g', 'size': 0},
+    ]
+
+
+@pytest.mark.asyncio
 async def test_collect_filesystems_clean(monkeypatch):
     async def fake_subprocess(*args, **kwargs):
         ret = collections.namedtuple('Process', ['stdout'])
