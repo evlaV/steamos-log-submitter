@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
-import dbus_next
+import dbus_next as dbus
 import json
 import os
 import re
@@ -148,7 +148,7 @@ class SysinfoHelper(Helper):
                     block_dev = DBusObject(bus, f'/org/freedesktop/UDisks2/block_devices/{node}')
                     dev_props = block_dev.properties('org.freedesktop.UDisks2.Block')
                     fs['size'] = int(await dev_props['Size'])
-                except (AttributeError, dbus_next.errors.DBusError) as e:
+                except (AttributeError, dbus.errors.DBusError) as e:
                     cls.logger.info(f'Failed to get size of device {source}', exc_info=e)
 
         return filesystems

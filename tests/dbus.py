@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_next
+import dbus_next as dbus
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -22,7 +22,7 @@ class MockDBusBus:
             bus = self.buses[bus_name]
             return bus['path'][object_path]
         except KeyError:
-            raise dbus_next.errors.DBusError('org.freedesktop.DBus.Error.ServiceUnknown', '')
+            raise dbus.errors.DBusError('org.freedesktop.DBus.Error.ServiceUnknown', '')
 
     def add_bus(self, bus_name):
         if bus_name not in self.buses:
@@ -52,7 +52,7 @@ class MockDBusBus:
         try:
             children = self.buses[bus_name]['children'].get(object_path, {})
         except KeyError:
-            raise dbus_next.errors.DBusError('org.freedesktop.DBus.Error.ServiceUnknown', '')
+            raise dbus.errors.DBusError('org.freedesktop.DBus.Error.ServiceUnknown', '')
         for name in children.keys():
             node = et.Element('node')
             node.attrib['name'] = name
@@ -79,7 +79,7 @@ class MockDBusProperties:
         try:
             self.properties = obj.properties[iface]
         except KeyError:
-            raise dbus_next.errors.InterfaceNotFoundError(iface)
+            raise dbus.errors.InterfaceNotFoundError(iface)
         self._iface = iface
         self._obj = obj
 
@@ -141,7 +141,7 @@ class MockDBusInterface:
             return on
 
     def signal(self, signal, *args):
-        name = dbus_next.proxy_object.BaseProxyInterface._to_snake_case(signal)
+        name = dbus.proxy_object.BaseProxyInterface._to_snake_case(signal)
         if name in self._signals:
             for cb in self._signals[name]:
                 cb(*args)
@@ -173,7 +173,7 @@ class MockDBusVariant:
 @pytest.fixture
 def mock_dbus(monkeypatch):
     bus = MockDBusBus()
-    monkeypatch.setattr(dbus_next.aio, 'MessageBus', lambda bus_type: bus)
+    monkeypatch.setattr(dbus.aio, 'MessageBus', lambda bus_type: bus)
     monkeypatch.setattr(sls.dbus, 'system_bus', bus)
     monkeypatch.setattr(sls.dbus, 'connected', True)
     return bus

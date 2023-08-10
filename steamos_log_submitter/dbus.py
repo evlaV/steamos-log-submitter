@@ -4,7 +4,7 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next
+import dbus_next as dbus
 import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
@@ -23,7 +23,7 @@ async def connect() -> None:  # pragma: no cover
     if connected:
         return
 
-    system_bus = dbus_next.aio.MessageBus(bus_type=dbus_next.BusType.SYSTEM)
+    system_bus = dbus.aio.MessageBus(bus_type=dbus.BusType.SYSTEM)
 
     await system_bus.connect()
     connected = True
@@ -90,7 +90,7 @@ class DBusInterface:
     def __init__(self, obj: 'DBusObject', iface: str):
         self._obj = obj
         self._iface = iface
-        self._iface_handle: Optional[dbus_next.aio.ProxyInterface] = None
+        self._iface_handle: Optional[dbus.aio.ProxyInterface] = None
 
     def __getattr__(self, name: str) -> Callable:
         async def call(*args: Any, **kwargs: Any) -> Any:
@@ -105,7 +105,7 @@ class DBusInterface:
 
 class DBusProperties:
     def __init__(self, obj: 'DBusObject', iface: str):
-        self._properties_iface: Optional[dbus_next.aio.ProxyInterface] = None
+        self._properties_iface: Optional[dbus.aio.ProxyInterface] = None
         self._obj = obj
         self._iface = iface
         self._subscribed: dict[str, list[Callable[[str, str, Any], Awaitable[None]]]] = {}
@@ -120,7 +120,7 @@ class DBusProperties:
         except OSError:
             raise
 
-    def _update_props(self, iface: str, changed: dict[str, dbus_next.Variant], invalidated: list[str]) -> None:
+    def _update_props(self, iface: str, changed: dict[str, dbus.Variant], invalidated: list[str]) -> None:
         async def do_cb(cb: Callable[[str, str, Any], Awaitable[None]], iface: str, prop: str, value: Any) -> None:
             if value is None:
                 value = await self._properties_iface.call_get(self._iface, prop)  # type: ignore
@@ -175,7 +175,7 @@ class DBusObject:
     async def subscribe(self, iface: str, signal: str, cb: Callable[[str, str, Any], None]) -> None:
         await self._connect()
         iface_handle = self.object.get_interface(iface)
-        name = dbus_next.proxy_object.BaseProxyInterface._to_snake_case(signal)
+        name = dbus.proxy_object.BaseProxyInterface._to_snake_case(signal)
         getattr(iface_handle, f'on_{name}')(cb)
 
     async def list_children(self) -> Iterable[str]:
