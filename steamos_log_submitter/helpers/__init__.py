@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_next
+import dbus_next as dbus
 import importlib
 import logging
 import os
@@ -37,12 +37,12 @@ class HelperResult:
         return HelperResult(false_code)
 
 
-class HelperInterface(dbus_next.service.ServiceInterface):
+class HelperInterface(dbus.service.ServiceInterface):
     def __init__(self, helper: Type['Helper']):
         super().__init__(f'{sls.dbus.bus_name}.Helper')
         self.helper = helper
 
-    @dbus_next.service.dbus_property()
+    @dbus.service.dbus_property()
     def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
         return self.helper.enabled()
 
@@ -50,7 +50,7 @@ class HelperInterface(dbus_next.service.ServiceInterface):
     def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         return self.helper.enable(enable)
 
-    @dbus_next.service.dbus_property()
+    @dbus.service.dbus_property()
     def CollectEnabled(self) -> 'b':  # type: ignore # NOQA: F821
         return self.helper.collect_enabled()
 
@@ -58,7 +58,7 @@ class HelperInterface(dbus_next.service.ServiceInterface):
     def set_collect_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         return self.helper.enable_collect(enable)
 
-    @dbus_next.service.dbus_property()
+    @dbus.service.dbus_property()
     def SubmitEnabled(self) -> 'b':  # type: ignore # NOQA: F821
         return self.helper.submit_enabled()
 
@@ -66,7 +66,7 @@ class HelperInterface(dbus_next.service.ServiceInterface):
     def set_submit_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         return self.helper.enable_submit(enable)
 
-    @dbus_next.service.method()
+    @dbus.service.method()
     async def Collect(self) -> 'b':  # type: ignore # NOQA: F821
         return await self.helper.collect()
 
@@ -79,8 +79,8 @@ class Helper:
     config: sls.config.ConfigSection
     data: sls.data.DataStore
     iface: Optional[HelperInterface]
-    extra_ifaces: dict[str, dbus_next.service.ServiceInterface]
-    child_services: dict[str, dbus_next.service.ServiceInterface]
+    extra_ifaces: dict[str, dbus.service.ServiceInterface]
+    child_services: dict[str, dbus.service.ServiceInterface]
     logger: logging.Logger
 
     @classmethod
