@@ -181,7 +181,6 @@ class SysinfoHelper(Helper):
                 ('Model', str),
                 ('NativePath', str),
                 ('Online', bool),
-                ('State', int),
                 ('Type', int),
             ]
             for name, convert in conversions:

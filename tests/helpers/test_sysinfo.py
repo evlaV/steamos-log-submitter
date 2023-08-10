@@ -379,7 +379,6 @@ async def test_collect_batteries_some(monkeypatch, mock_dbus):
         'model': 'PbAcid',
         'native_path': 'BAT1',
         'online': False,
-        'state': 1,
         'type': 5
     }
 
