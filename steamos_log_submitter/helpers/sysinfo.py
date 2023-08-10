@@ -131,8 +131,13 @@ class SysinfoHelper(Helper):
             return []
         if 'filesystems' not in mntinfo:
             return []
-        filesystems = mntinfo['filesystems']
-        for fs in filesystems:
+        filesystems = []
+        for fs in mntinfo['filesystems']:
+            if fs['fstype'].lower().endswith('.appimage'):
+                continue
+            if fs['fstype'] == 'fuse.portal':
+                continue
+            filesystems.append(fs)
             if fs['size'] is None:
                 source = fs['source']
                 if not source.startswith('/dev/'):
