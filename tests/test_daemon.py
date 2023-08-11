@@ -391,7 +391,7 @@ async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config)
     daemon = sls.daemon.Daemon()
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
-    monkeypatch.setattr(daemon, '_interval', 0.05)
+    monkeypatch.setattr(daemon, '_interval', 0.06)
 
     start = time.time()
     await daemon.start()
@@ -401,7 +401,7 @@ async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config)
     assert count_hits.hits == 1
     assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.05
 
-    await asyncio.sleep(0.03)
+    await asyncio.sleep(0.02)
     await daemon.trigger(wait=True)
     assert count_hits.hits == 2
     end = float(mock_config.get('daemon', 'last_trigger'))
