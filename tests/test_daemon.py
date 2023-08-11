@@ -133,7 +133,7 @@ async def test_broken_command(test_daemon, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_list(test_daemon, monkeypatch):
+async def test_list(test_daemon, monkeypatch, helper_directory):
     def list_helpers():
         return ['test']
 
