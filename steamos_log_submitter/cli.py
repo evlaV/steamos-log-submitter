@@ -1,5 +1,6 @@
 import argparse
 import configparser
+import json
 import sys
 import steamos_log_submitter as sls
 import steamos_log_submitter.config as config
@@ -72,7 +73,11 @@ def set_helper_enabled(helpers: list[str], enable: bool) -> bool:
 
 
 def do_status(args: argparse.Namespace) -> None:
-    print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
+    if not args.json:
+        print('Log submission is currently ' + ('enabled' if sls.base_config['enable'] == 'on' else 'disabled'))
+    else:
+        blob = {'enabled': sls.base_config['enable'] == 'on'}
+        print(json.dumps(blob))
 
 
 def do_list(args: argparse.Namespace) -> None:
@@ -127,6 +132,7 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
     status = subparsers.add_parser('status',
                                    description='Display the current status of the log collection service.',
                                    help='Current status')
+    status.add_argument('--json', '-J', action='store_true', help='Output results as JSON')
     status.set_defaults(func=do_status)
 
     list_cmd = subparsers.add_parser('list',

@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 import tempfile
@@ -29,6 +30,22 @@ def test_status(capsys, mock_config):
     mock_config.set('sls', 'enable', 'foo')
     cli.main(['status'])
     assert capsys.readouterr().out.strip().endswith('disabled')
+
+
+def test_status_json(capsys, mock_config):
+    mock_config.add_section('sls')
+
+    mock_config.set('sls', 'enable', 'off')
+    cli.main(['status', '-J'])
+    assert json.loads(capsys.readouterr().out.strip())['enabled'] is False
+
+    mock_config.set('sls', 'enable', 'on')
+    cli.main(['status', '-J'])
+    assert json.loads(capsys.readouterr().out.strip())['enabled'] is True
+
+    mock_config.set('sls', 'enable', 'foo')
+    cli.main(['status', '-J'])
+    assert json.loads(capsys.readouterr().out.strip())['enabled'] is False
 
 
 def test_list(capsys, monkeypatch):
