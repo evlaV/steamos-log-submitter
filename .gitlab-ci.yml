@@ -12,7 +12,7 @@ run_pytest:
     - pacman -Sy --noconfirm --needed dbus-python python-pip
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
-    - pip install .[test]
+    - pip install .[pytest]
     - pytest
 
 lint:
@@ -36,6 +36,5 @@ mypy:
     - pacman -Sy --noconfirm --needed python-pip
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
-    - pip install mypy
-    - pip install .
+    - pip install mypy .[mypy]
     - mypy -p steamos_log_submitter --disallow-untyped-defs --disallow-incomplete-defs
