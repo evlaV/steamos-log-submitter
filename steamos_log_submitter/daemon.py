@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next as dbus
+import gc
 import inspect
 import importlib.machinery
 import json
@@ -155,6 +156,7 @@ class Daemon:
             return Reply(status=Reply.UNKNOWN_ERROR, data={'exception': str(e)})
 
     async def _trigger_periodic(self) -> None:
+        gc.collect()
         next_interval = self._next_trigger - time.time()
         if next_interval > 0:
             logger.debug(f'Sleeping for {next_interval:.3f} seconds')
@@ -185,6 +187,7 @@ class Daemon:
                 await writer.drain()
             except Exception as e:
                 logger.error('Failed executing remote connection', exc_info=e)
+            gc.collect()
         self._conns.remove((reader, writer))
 
     def _setup_dbus(self) -> None:
