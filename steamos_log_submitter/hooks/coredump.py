@@ -52,6 +52,9 @@ def should_collect(path: str) -> bool:
     if path.startswith('/tmp/.mount_'):
         # AppImage
         return False
+    if path.startswith('/app'):
+        # Flatpak
+        return False
     if '/.local/share/Steam/' in path:
         # Steam-managed application, has its own handler
         return False
