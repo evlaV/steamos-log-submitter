@@ -10,6 +10,7 @@ import importlib.machinery
 import json
 import logging
 import os
+import psutil
 import time
 from collections.abc import Coroutine, Iterable
 from dbus_next.constants import ErrorType
@@ -224,7 +225,6 @@ class Daemon:
     async def start(self) -> None:
         if self._serving:
             return
-        sls.logging.reconfigure_logging(sls.logging.config.get('path'))
         logger.info('Daemon starting up')
         sls.config.upgrade()
         if os.access(socket, os.F_OK):
@@ -444,7 +444,12 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    os.nice(10)  # De-prioritize background work
+    sls.logging.reconfigure_logging(sls.logging.config.get('path'))
+    try:
+        os.nice(10)  # De-prioritize background work
+        psutil.Process().ionice(psutil.IOPRIO_CLASS_BE, value=7)
+    except OSError as e:
+        logger.error('Failed to downgrade process priority', exc_info=e)
     daemon = Daemon(exit_on_shutdown=True)
     loop = asyncio.get_event_loop()
     loop.create_task(daemon.start())
