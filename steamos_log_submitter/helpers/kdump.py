@@ -4,7 +4,6 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import io
-import os
 import time
 import zipfile
 import steamos_log_submitter.crash as crash
@@ -13,6 +12,8 @@ from . import Helper, HelperResult
 
 
 class KdumpHelper(Helper):
+    valid_extensions = frozenset({'.zip'})
+
     @staticmethod
     def get_summaries(dmesg: TextIO) -> tuple[str, str]:
         crash_summary_list: list[str] = []
@@ -48,10 +49,6 @@ class KdumpHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        name, ext = os.path.splitext(os.path.basename(fname))
-        if ext != '.zip':
-            return HelperResult(HelperResult.PERMANENT_ERROR)
-
         note, stack = None, None
         try:
             with zipfile.ZipFile(fname) as f:

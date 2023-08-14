@@ -19,11 +19,6 @@ helper = create_helper('minidump')
 
 
 @pytest.mark.asyncio
-async def test_submit_bad_name():
-    assert (await helper.submit('not-a-dmp.txt')).code == HelperResult.PERMANENT_ERROR
-
-
-@pytest.mark.asyncio
 async def test_submit_metadata(monkeypatch):
     async def post(*args, **kwargs):
         data = kwargs['data']

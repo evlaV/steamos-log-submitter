@@ -21,6 +21,7 @@ from . import Helper, HelperResult
 
 
 class SysinfoHelper(Helper):
+    valid_extensions = frozenset({'.json'})
     defaults = {'timestamp': None}
 
     @classmethod
@@ -264,10 +265,6 @@ class SysinfoHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        name, ext = os.path.splitext(os.path.basename(fname))
-        if ext != '.json':
-            return HelperResult(HelperResult.PERMANENT_ERROR)
-
         info = {
             'crash_time': int(time.time()),
             'stack': '',

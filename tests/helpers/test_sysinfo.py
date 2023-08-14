@@ -12,7 +12,7 @@ import os
 import pytest
 import time
 import steamos_log_submitter as sls
-from steamos_log_submitter.helpers import create_helper, HelperResult
+from steamos_log_submitter.helpers import create_helper
 from .. import always_raise, awaitable, open_shim, setup_categories, unreachable
 from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
@@ -633,8 +633,3 @@ def test_read_file_binary(monkeypatch):
 def test_read_file_none(monkeypatch):
     monkeypatch.setattr(builtins, 'open', open_shim(None))
     assert helper.read_file('') is None
-
-
-@pytest.mark.asyncio
-async def test_submit_bad_name():
-    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR

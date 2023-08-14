@@ -14,6 +14,7 @@ from . import HelperResult, SentryHelper
 
 
 class JournalHelper(SentryHelper):
+    valid_extensions = frozenset({'.json'})
     units = [
         'gpu-trace.service',
         'jupiter-biosupdate.service',
@@ -156,9 +157,7 @@ class JournalHelper(SentryHelper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        name, ext = os.path.splitext(os.path.basename(fname))
-        if ext != '.json':
-            return HelperResult(HelperResult.PERMANENT_ERROR)
+        name, _ = os.path.splitext(os.path.basename(fname))
 
         try:
             with open(fname, 'rb') as f:

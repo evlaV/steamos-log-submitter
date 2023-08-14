@@ -3,13 +3,14 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import steamos_log_submitter as sls
-import steamos_log_submitter.helpers
-from steamos_log_submitter.lockfile import LockHeldError
-
 import asyncio
 import logging
 import os
+from collections.abc import Iterable
+
+import steamos_log_submitter as sls
+import steamos_log_submitter.helpers
+from steamos_log_submitter.lockfile import LockHeldError
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ async def collect() -> None:
     logger.info('Finished log collection')
 
 
-async def submit_category(helper: sls.helpers.Helper, logs: list[str]) -> None:
+async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> None:
     try:
         with helper.lock():
             for log in logs:
@@ -89,11 +90,7 @@ async def submit() -> None:
         if not helper.enabled() or not helper.submit_enabled():
             continue
         logger.info(f'Submitting logs for {category}')
-        try:
-            logs = os.listdir(f'{sls.pending}/{category}')
-        except OSError as e:
-            logger.error(f'Encountered error listing logs for {category}', exc_info=e)
-            continue
+        logs = helper.list_pending()
 
         if not logs:
             logger.info('No logs found, skipping')

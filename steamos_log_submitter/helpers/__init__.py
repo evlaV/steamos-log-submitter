@@ -10,7 +10,7 @@ import os
 import pkgutil
 import sys
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Container, Iterable
 from types import TracebackType
 from typing import Any, Optional, Type
 import steamos_log_submitter as sls
@@ -73,6 +73,7 @@ class HelperInterface(dbus.service.ServiceInterface):
 
 class Helper:
     defaults: Optional[dict[str, JSONEncodable]] = None
+    valid_extensions: Container[str] = frozenset()
 
     __name__: str
     name: str
@@ -145,6 +146,23 @@ class Helper:
     @classmethod
     def lock(cls) -> sls.lockfile.Lockfile:
         return sls.lockfile.Lockfile(f'{sls.pending}/{cls.name}/.lock')
+
+    @classmethod
+    def filter_log(cls, fname: str) -> bool:
+        if fname.startswith('.'):
+            return False
+        _, ext = os.path.splitext(os.path.basename(fname))
+        if cls.valid_extensions and ext not in cls.valid_extensions:
+            return False
+        return True
+
+    @classmethod
+    def list_pending(cls) -> Iterable[str]:
+        try:
+            return (log for log in os.listdir(f'{sls.pending}/{cls.name}') if cls.filter_log(log))
+        except OSError as e:
+            cls.logger.error(f'Encountered error listing logs for {cls.name}', exc_info=e)
+            return ()
 
 
 class SentryHelper(Helper):

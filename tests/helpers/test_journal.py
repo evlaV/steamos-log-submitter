@@ -270,11 +270,6 @@ def test_unescape():
 
 
 @pytest.mark.asyncio
-async def test_submit_bad_name():
-    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR
-
-
-@pytest.mark.asyncio
 async def test_submit_params(helper_directory, mock_config, monkeypatch):
     async def fake_submit(dsn, *, attachments, tags, fingerprint, message):
         assert len(attachments) == 1

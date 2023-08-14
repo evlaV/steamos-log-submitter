@@ -9,12 +9,10 @@ from . import HelperResult, SentryHelper
 
 
 class GPUHelper(SentryHelper):
+    valid_extensions = frozenset({'.json'})
+
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        name, ext = os.path.splitext(os.path.basename(fname))
-        if ext != '.json':
-            return HelperResult(HelperResult.PERMANENT_ERROR)
-
         try:
             with open(fname, 'rb') as f:
                 attachment = f.read()

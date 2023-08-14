@@ -15,11 +15,6 @@ helper = create_helper('gpu')
 
 
 @pytest.mark.asyncio
-async def test_submit_bad_name():
-    assert (await helper.submit('not-a-log.bin')).code == HelperResult.PERMANENT_ERROR
-
-
-@pytest.mark.asyncio
 async def test_collect_none():
     assert not await helper.collect()
 

@@ -28,11 +28,6 @@ def test_dmesg_parse():
 
 
 @pytest.mark.asyncio
-async def test_submit_bad_name():
-    assert (await helper.submit('not-a-zip.txt')).code == HelperResult.PERMANENT_ERROR
-
-
-@pytest.mark.asyncio
 async def test_submit_succeed(monkeypatch):
     monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
     response = FakeResponse()

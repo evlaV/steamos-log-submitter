@@ -12,11 +12,11 @@ from typing import Union
 
 
 class MinidumpHelper(Helper):
+    valid_extensions = frozenset({'.md', '.dmp'})
+
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        name, ext = os.path.splitext(os.path.basename(fname))
-        if ext not in ('.md', '.dmp'):
-            return HelperResult(HelperResult.PERMANENT_ERROR)
+        name, _ = os.path.splitext(os.path.basename(fname))
         name_parts = name.split('-')
 
         metadata: dict[str, Union[str, int]] = {}
