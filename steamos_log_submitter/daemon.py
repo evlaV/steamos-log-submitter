@@ -445,6 +445,14 @@ class DaemonInterface(dbus.service.ServiceInterface):
         except InvalidArgumentsError as e:
             raise dbus.errors.DBusError(ErrorType.INVALID_ARGS, f'Invalid argument {e.data}')
 
+    @dbus.service.method()
+    async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722
+        pending: list[str] = []
+        for helper in sls.helpers.list_helpers():
+            helper_module = sls.helpers.create_helper(helper)
+            pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
+        return pending
+
 
 if __name__ == '__main__':  # pragma: no cover
     sls.logging.reconfigure_logging(sls.logging.config.get('path'))

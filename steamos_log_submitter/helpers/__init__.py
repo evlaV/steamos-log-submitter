@@ -70,6 +70,10 @@ class HelperInterface(dbus.service.ServiceInterface):
     async def Collect(self) -> 'b':  # type: ignore # NOQA: F821
         return await self.helper.collect()
 
+    @dbus.service.method()
+    async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722
+        return list(self.helper.list_pending())
+
 
 class Helper:
     defaults: Optional[dict[str, JSONEncodable]] = None
