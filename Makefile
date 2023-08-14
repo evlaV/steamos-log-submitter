@@ -41,5 +41,5 @@ install: all $(infiles)
 	install -D -m0644 systemd/crash-hook.sysctl $(DESTDIR)$(sysctldir)/60-crash-hook.conf
 	install -D -m0644 udev/steamos-log-submitter.rules $(DESTDIR)$(udevdir)/rules.d/79-steamos-log-submitter.rules
 	install -D -m0644 base.cfg $(DESTDIR)$(libdir)/steamos-log-submitter/base.cfg
-	mkdir -p $(DESTDIR)$(systemdunitsdir)/timers.target.wants
-	ln -sf $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.timer $(DESTDIR)$(systemdunitsdir)/timers.target.wants
+	mkdir -p $(DESTDIR)$(systemdunitsdir)/multi-user.target.wants
+	ln -sf $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/multi-user.target.wants
