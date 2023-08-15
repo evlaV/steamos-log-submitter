@@ -293,11 +293,67 @@ async def test_collect_system(monkeypatch):
     monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(helper, 'get_vram', awaitable(lambda: '1024 MB'))
+    monkeypatch.setattr(helper, 'get_ram', awaitable(lambda: ('14400000 kB', '1024000 kB')))
 
     assert dict(await helper.list_system()) == {
         'branch': 'main',
         'release': '20230704',
         'devmode': True,
+        'vram': '1024 MB',
+        'mem': '14400000 kB',
+        'swap': '1024000 kB',
+    }
+
+
+@pytest.mark.asyncio
+async def test_collect_system_no_vram(monkeypatch):
+    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(helper, 'get_vram', awaitable(lambda: None))
+    monkeypatch.setattr(helper, 'get_ram', awaitable(lambda: ('14400000 kB', '1024000 kB')))
+
+    assert dict(await helper.list_system()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+        'mem': '14400000 kB',
+        'swap': '1024000 kB',
+    }
+
+
+@pytest.mark.asyncio
+async def test_collect_system_no_mem(monkeypatch):
+    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(helper, 'get_vram', awaitable(lambda: '1024 MB'))
+    monkeypatch.setattr(helper, 'get_ram', awaitable(lambda: (None, '1024000 kB')))
+
+    assert dict(await helper.list_system()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+        'vram': '1024 MB',
+        'swap': '1024000 kB',
+    }
+
+
+@pytest.mark.asyncio
+async def test_collect_system_no_swap(monkeypatch):
+    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(helper, 'get_vram', awaitable(lambda: '1024 MB'))
+    monkeypatch.setattr(helper, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
+
+    assert dict(await helper.list_system()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+        'vram': '1024 MB',
+        'mem': '14400000 kB',
     }
 
 
@@ -514,6 +570,60 @@ async def test_collect_switch_types(monkeypatch, data_directory, helper_director
 
     assert len(cache['system']) == 3
     assert cache['system'] == [['branch', 'rel'], ['release', '20230703'], {'branch': 'main', 'release': '20230704'}]
+
+
+@pytest.mark.asyncio
+async def test_collect_vram(fake_async_subprocess):
+    fake_async_subprocess(stdout=b'abc\nMemory info (GL_NVX_gpu_memory_info):\nDedicated video memory: 1024 MB\nMemory info (GL_NVX_gpu_memory_info):\nDedicated video memory: 2048 MB\n')
+    vram = await helper.get_vram()
+    assert vram == '1024 MB'
+
+
+@pytest.mark.asyncio
+async def test_collect_no_vram(fake_async_subprocess):
+    fake_async_subprocess(stdout=b'abc\n')
+    vram = await helper.get_vram()
+    assert vram is None
+
+
+@pytest.mark.asyncio
+async def test_collect_mem_swap(open_shim):
+    open_shim('''
+MemTotal:       32768000 kB
+MemFree:         1674856 kB
+MemAvailable:    2072596 kB
+SwapTotal:      65536000 kB
+SwapFree:       36444924 kB
+''')
+    mem, swap = await helper.get_ram()
+    assert mem == '32768000 kB'
+    assert swap == '65536000 kB'
+
+
+@pytest.mark.asyncio
+async def test_collect_mem_no_swap(open_shim):
+    open_shim('''
+MemTotal:       32768000 kB
+MemFree:         1674856 kB
+MemAvailable:    2072596 kB
+SwapFree:       36444924 kB
+''')
+    mem, swap = await helper.get_ram()
+    assert mem == '32768000 kB'
+    assert swap is None
+
+
+@pytest.mark.asyncio
+async def test_collect_no_mem_swap(open_shim):
+    open_shim('''
+MemFree:         1674856 kB
+MemAvailable:    2072596 kB
+SwapTotal:      65536000 kB
+SwapFree:       36444924 kB
+''')
+    mem, swap = await helper.get_ram()
+    assert mem is None
+    assert swap == '65536000 kB'
 
 
 @pytest.mark.asyncio

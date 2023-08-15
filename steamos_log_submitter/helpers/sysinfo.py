@@ -11,7 +11,7 @@ import os
 import re
 import time
 from collections.abc import Callable
-from typing import Union
+from typing import Optional, Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.dbus
@@ -161,15 +161,64 @@ class SysinfoHelper(Helper):
         return filesystems
 
     @classmethod
+    async def get_vram(cls) -> Optional[str]:
+        vram: Optional[str] = None
+        try:
+            eglinfo = await asyncio.create_subprocess_exec('eglinfo', '-a', 'glcore', '-p', 'surfaceless', stdout=asyncio.subprocess.PIPE)
+            assert eglinfo.stdout
+            next_line = False
+            while True:
+                line = await eglinfo.stdout.readline()
+                if not line:
+                    break
+                if next_line:
+                    vram = line.decode().split(':')[-1].strip()
+                    break
+                if line.startswith(b'Memory info (GL_NVX_gpu_memory_info)'):
+                    next_line = True
+        except OSError as e:
+            cls.logger.error('Failed to exec eglinfo', exc_info=e)
+        return vram
+
+    @classmethod
+    async def get_ram(cls) -> tuple[Optional[str], Optional[str]]:
+        mem: Optional[str] = None
+        swap: Optional[str] = None
+        try:
+            with open('/proc/meminfo') as f:
+                for line in f:
+                    if line.startswith('MemTotal'):
+                        mem = line.split(':')[-1].strip()
+                    elif line.startswith('SwapTotal'):
+                        swap = line.split(':')[-1].strip()
+                    if mem and swap:
+                        break
+        except OSError as e:
+            cls.logger.error('Failed read meminfo', exc_info=e)
+        return mem, swap
+
+    @classmethod
     async def list_system(cls) -> dict[str, JSON]:
         sysinfo: dict[str, JSON] = {
             'branch': sls.steam.get_steamos_branch(),
             'release': sls.util.get_build_id(),
         }
+
         try:
             sysinfo['devmode'] = os.access('/usr/share/steamos/devmode-enabled', os.F_OK)
         except OSError:
             sysinfo['devmode'] = False
+
+        vram = await cls.get_vram()
+        if vram:
+            sysinfo['vram'] = vram
+
+        mem, swap = await cls.get_ram()
+        if mem:
+            sysinfo['mem'] = mem
+        if swap:
+            sysinfo['swap'] = swap
+
         return sysinfo
 
     @classmethod
