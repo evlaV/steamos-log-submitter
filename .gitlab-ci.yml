@@ -13,7 +13,7 @@ run_pytest:
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
     - pip install .[pytest]
-    - pytest
+    - dbus-run-session pytest
 
 lint:
   stage: test

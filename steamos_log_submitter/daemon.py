@@ -252,12 +252,15 @@ class Daemon:
         try:
             await sls.dbus.system_bus.request_name(sls.dbus.bus_name)
             self._setup_dbus()
-        except dbus.errors.DBusError:
-            logger.error('Failed to claim D-Bus bus name')
+        except (dbus.errors.DBusError, RuntimeError) as e:
+            logger.error('Failed to claim D-Bus bus name', exc_info=e)
 
-        suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
-        suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
-        await suspend_props.subscribe('ActiveState', self._leave_suspend)
+        try:
+            suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
+            suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
+            await suspend_props.subscribe('ActiveState', self._leave_suspend)
+        except dbus.errors.DBusError as e:
+            logger.error('Failed to subscript to suspend state', exc_info=e)
 
     async def shutdown(self) -> None:
         logger.info('Daemon shutting down')

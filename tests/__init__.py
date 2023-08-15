@@ -92,7 +92,7 @@ def patch_module(mock_config):
 
         @classmethod
         def _setup(cls):
-            pass
+            cls.iface = sls.helpers.HelperInterface(cls)
 
     TestHelper.name = 'test'
     TestHelper.config = sls.config.get_config('steamos_log_submitter.helpers.test')

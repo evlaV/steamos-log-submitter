@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import collections
 import dbus_next as dbus
 import pytest
 import steamos_log_submitter as sls
@@ -186,3 +187,11 @@ def mock_dbus(monkeypatch):
     monkeypatch.setattr(sls.dbus, 'system_bus', bus)
     monkeypatch.setattr(sls.dbus, 'connected', True)
     return bus
+
+
+@pytest.fixture
+async def real_dbus(monkeypatch):
+    monkeypatch.setattr(dbus, 'BusType', collections.namedtuple('BusType', ['SYSTEM', 'SESSION'])(dbus.BusType.SESSION, dbus.BusType.SESSION))
+    sls.dbus.connected = False
+    await sls.dbus.connect()
+    return sls.dbus.system_bus.unique_name
