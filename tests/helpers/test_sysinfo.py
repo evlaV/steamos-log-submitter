@@ -6,7 +6,6 @@
 import asyncio
 import builtins
 import collections
-import io
 import json
 import os
 import pytest
@@ -14,7 +13,7 @@ import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers import create_helper
 from .. import always_raise, awaitable, open_shim, setup_categories, unreachable
-from .. import data_directory, helper_directory, mock_config, patch_module  # NOQA: F401
+from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 helper = create_helper('sysinfo')
@@ -227,43 +226,23 @@ async def test_collect_filesystems_raise(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_malformed(monkeypatch):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        ret.stdout = io.BytesIO(b'!')
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
-
+async def test_collect_filesystems_malformed(fake_async_subprocess):
+    fake_async_subprocess(stdout=b'!')
     fs = await helper.list_filesystems()
     assert fs == []
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_missing(monkeypatch):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        ret.stdout = io.BytesIO(b'{"wrong_things":"go_here"}')
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
-
+async def test_collect_filesystems_missing(fake_async_subprocess):
+    fake_async_subprocess(stdout=b'{"wrong_things":"go_here"}')
     fs = await helper.list_filesystems()
     assert fs == []
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
-        ret.stdout = io.BytesIO(blob.encode())
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
+async def test_collect_filesystems_get_missing_size(fake_async_subprocess, mock_dbus):
+    blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': None}]})
+    fake_async_subprocess(stdout=blob.encode())
     bus = 'org.freedesktop.UDisks2'
     mock_dbus.add_bus(bus)
     block_dev = MockDBusObject(bus, '/org/freedesktop/UDisks2/block_devices/null', mock_dbus)
@@ -276,15 +255,9 @@ async def test_collect_filesystems_get_missing_size(monkeypatch, mock_dbus):
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        blob = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
-        ret.stdout = io.BytesIO(blob.encode())
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
+async def test_collect_filesystems_unknown_missing_size(fake_async_subprocess, mock_dbus):
+    blob = json.dumps({'filesystems': [{'uuid': None, 'source': 'resonance', 'target': '/', 'fstype': 'cascade', 'size': None}]})
+    fake_async_subprocess(stdout=blob.encode())
     bus = 'org.freedesktop.UDisks2'
     mock_dbus.add_bus(bus)
 
@@ -293,21 +266,14 @@ async def test_collect_filesystems_unknown_missing_size(monkeypatch, mock_dbus):
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_filter(monkeypatch):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        blob = json.dumps({'filesystems': [
-            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0},
-            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.ntfs-3g', 'size': 0},
-            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.portal', 'size': 0},
-            {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.hl2.AppImage', 'size': 0},
-        ]})
-        ret.stdout = io.BytesIO(blob.encode())
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
-
+async def test_collect_filesystems_filter(fake_async_subprocess):
+    blob = json.dumps({'filesystems': [
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0},
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.ntfs-3g', 'size': 0},
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.portal', 'size': 0},
+        {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'fuse.hl2.AppImage', 'size': 0},
+    ]})
+    fake_async_subprocess(stdout=blob.encode())
     fs = await helper.list_filesystems()
     assert fs == [
         {'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0},
@@ -316,16 +282,9 @@ async def test_collect_filesystems_filter(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_collect_filesystems_clean(monkeypatch):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
-        ret.stdout = io.BytesIO(blob.encode())
-        ret.stdout.read = awaitable(ret.stdout.read)
-        return ret
-
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
-
+async def test_collect_filesystems_clean(fake_async_subprocess):
+    blob = json.dumps({'filesystems': [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]})
+    fake_async_subprocess(stdout=blob.encode())
     fs = await helper.list_filesystems()
     assert fs == [{'uuid': None, 'source': '/dev/null', 'target': '/', 'fstype': 'bitbucket', 'size': 0}]
 

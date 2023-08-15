@@ -14,7 +14,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.helpers import create_helper, HelperResult
 from .. import always_raise, awaitable, unreachable
-from .. import data_directory, count_hits, drop_root, helper_directory, mock_config, patch_module  # NOQA: F401
+from .. import data_directory, count_hits, drop_root, fake_async_subprocess, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 bus = 'org.freedesktop.systemd1'
@@ -183,18 +183,12 @@ async def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_
 
 
 @pytest.mark.asyncio
-async def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        lines = [json.dumps({'__CURSOR': str(x)}) for x in range(20)]
-        lines.append(json.dumps({'__CURSOR': 'foo', 'UNIT_RESULT': 'bar'}))
-        lines.append('')
-        ret.stdout = io.BytesIO('\n'.join(lines).encode())
-        ret.stdout.readline = awaitable(ret.stdout.readline)
-        return ret
-
+async def test_journal_cursor_update(fake_async_subprocess, mock_dbus, data_directory, mock_unit, helper_directory):
+    lines = [json.dumps({'__CURSOR': str(x)}) for x in range(20)]
+    lines.append(json.dumps({'__CURSOR': 'foo', 'UNIT_RESULT': 'bar'}))
+    lines.append('')
+    fake_async_subprocess(stdout='\n'.join(lines).encode())
     os.mkdir(f'{sls.pending}/journal')
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     assert await helper.collect()
 
@@ -204,25 +198,19 @@ async def test_journal_cursor_update(monkeypatch, mock_dbus, data_directory, moc
 
 
 @pytest.mark.asyncio
-async def test_journal_invocation_prune(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
-    async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
-        lines = []
-        for x in range(5):
-            line = {
-                '__CURSOR': str(x),
-                'INVOCATION_ID': str(x)
-            }
-            if x & 1:
-                line['UNIT_RESULT'] = 'foo'
-            lines.append(json.dumps(line))
-        lines.append('')
-        ret.stdout = io.BytesIO('\n'.join(lines).encode())
-        ret.stdout.readline = awaitable(ret.stdout.readline)
-        return ret
-
+async def test_journal_invocation_prune(fake_async_subprocess, mock_dbus, data_directory, mock_unit, helper_directory):
+    lines = []
+    for x in range(5):
+        line = {
+            '__CURSOR': str(x),
+            'INVOCATION_ID': str(x)
+        }
+        if x & 1:
+            line['UNIT_RESULT'] = 'foo'
+        lines.append(json.dumps(line))
+    lines.append('')
+    fake_async_subprocess(stdout='\n'.join(lines).encode())
     os.mkdir(f'{sls.pending}/journal')
-    monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     assert await helper.collect()
 

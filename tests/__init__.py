@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
+import collections
 import configparser
 import httpx
 import importlib
@@ -189,6 +191,26 @@ def awaitable(fn: Callable[..., Any]) -> Awaitable[Any]:
         return fn(*args, **kwargs)
 
     return afn
+
+
+@pytest.fixture
+def fake_async_subprocess(monkeypatch):
+    def setup(*, stdout=None, stderr=None, returncode=0):
+        async def fake_subprocess(*args, **kwargs):
+            ret = collections.namedtuple('Process', ['stdout', 'stderr', 'returncode'])
+            ret.returncode = returncode
+            if stdout:
+                ret.stdout = io.BytesIO(stdout)
+                ret.stdout.read = awaitable(ret.stdout.read)
+                ret.stdout.readline = awaitable(ret.stdout.readline)
+            if stderr:
+                ret.stderr = io.BytesIO(stderr)
+                ret.stderr.read = awaitable(ret.stderr.read)
+                ret.stderr.readline = awaitable(ret.stderr.readline)
+            return ret
+        monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
+
+    return setup
 
 
 class CustomConfig:
