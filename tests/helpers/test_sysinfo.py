@@ -4,7 +4,6 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import builtins
 import collections
 import json
 import os
@@ -12,8 +11,8 @@ import pytest
 import time
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers import create_helper
-from .. import always_raise, awaitable, open_shim, setup_categories, unreachable
-from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, patch_module  # NOQA: F401
+from .. import always_raise, awaitable, setup_categories, unreachable
+from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 helper = create_helper('sysinfo')
@@ -579,16 +578,16 @@ async def test_collect_new_section(monkeypatch, data_directory, helper_directory
     assert {'vid': '1234', 'pid': '5678'} in cache['usb']
 
 
-def test_read_file_text(monkeypatch):
-    monkeypatch.setattr(builtins, 'open', open_shim('text'))
+def test_read_file_text(open_shim):
+    open_shim('text')
     assert helper.read_file('') == 'text'
 
 
-def test_read_file_binary(monkeypatch):
-    monkeypatch.setattr(builtins, 'open', open_shim(b'bytes'))
+def test_read_file_binary(open_shim):
+    open_shim(b'bytes')
     assert helper.read_file('', binary=True) == b'bytes'
 
 
-def test_read_file_none(monkeypatch):
-    monkeypatch.setattr(builtins, 'open', open_shim(None))
+def test_read_file_none(open_shim):
+    open_shim(None)
     assert helper.read_file('') is None

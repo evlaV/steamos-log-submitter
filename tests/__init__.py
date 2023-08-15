@@ -4,6 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import builtins
 import collections
 import configparser
 import httpx
@@ -19,32 +20,47 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 
-def open_shim(text):
-    def open_fake(fname, mode='r'):
-        if text is None:
-            raise FileNotFoundError
-        if 'b' in mode:
-            return io.BytesIO(text)
-        else:
-            return io.StringIO(text)
-    return open_fake
+@pytest.fixture
+def open_shim(monkeypatch):
+    class OpenShim:
+        @staticmethod
+        def __call__(text):
+            def open_fake(fname, mode='r', *args, **kwargs):
+                if text is None:
+                    raise FileNotFoundError
+                if 'b' in mode:
+                    return io.BytesIO(text)
+                else:
+                    return io.StringIO(text)
+            monkeypatch.setattr(builtins, 'open', open_fake)
 
+        @staticmethod
+        def cb(cb):
+            def open_fake(fname, mode='r', *args, **kwargs):
+                text = cb(fname)
+                if text is None:
+                    raise FileNotFoundError
+                if 'b' in mode:
+                    return io.BytesIO(text)
+                else:
+                    return io.StringIO(text)
+            monkeypatch.setattr(builtins, 'open', open_fake)
 
-def open_shim_cb(cb):
-    def open_fake(fname, *args):
-        text = cb(fname)
-        if text is None:
-            raise FileNotFoundError
-        return io.StringIO(text)
-    return open_fake
+        @staticmethod
+        def do_raise(exc):
+            def open_fake(fname, *args, **kwargs):
+                raise exc(fname)
+            monkeypatch.setattr(builtins, 'open', open_fake)
 
+        @classmethod
+        def enoent(cls):
+            cls.do_raise(FileNotFoundError)
 
-def open_enoent(fname, *args, **kwargs):
-    raise FileNotFoundError(fname)
+        @classmethod
+        def eacces(cls):
+            cls.do_raise(PermissionError)
 
-
-def open_eacces(fname, *args, **kwargs):
-    raise PermissionError(fname)
+    return OpenShim()
 
 
 def fake_request(status_code):

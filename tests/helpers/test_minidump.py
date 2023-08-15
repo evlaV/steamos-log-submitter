@@ -3,7 +3,6 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import builtins
 import httpx
 import os
 import pytest
@@ -11,15 +10,15 @@ import tempfile
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
 from steamos_log_submitter.helpers import create_helper, HelperResult
-from .. import custom_dsn, open_shim
-from .. import mock_config  # NOQA: F401
+from .. import custom_dsn
+from .. import mock_config, open_shim  # NOQA: F401
 
 dsn = custom_dsn('helpers.minidump')
 helper = create_helper('minidump')
 
 
 @pytest.mark.asyncio
-async def test_submit_metadata(monkeypatch):
+async def test_submit_metadata(monkeypatch, open_shim):
     async def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][appid]') == 456
@@ -30,13 +29,13 @@ async def test_submit_metadata(monkeypatch):
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: 'rel')
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
+    open_shim(b'MDMP')
 
     assert (await helper.submit('fake-0-456.dmp')).code == HelperResult.OK
 
 
 @pytest.mark.asyncio
-async def test_no_metadata(monkeypatch):
+async def test_no_metadata(monkeypatch, open_shim):
     async def post(*args, **kwargs):
         data = kwargs['data']
         assert 'sentry[tags][appid]' not in data
@@ -50,7 +49,7 @@ async def test_no_metadata(monkeypatch):
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(steam, 'get_steamos_branch', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
+    open_shim(b'MDMP')
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.OK
 
@@ -97,24 +96,24 @@ async def test_partial_xattrs(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_400_corrupted(monkeypatch):
+async def test_400_corrupted(monkeypatch, open_shim):
     async def post(*args, **kwargs):
         return httpx.Response(400, content=b'{"detail":"invalid minidump"}')
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
+    open_shim(b'MDMP')
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
-async def test_400_not_corrupted(monkeypatch):
+async def test_400_not_corrupted(monkeypatch, open_shim):
     async def post(*args, **kwargs):
         return httpx.Response(400)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'MDMP'))
+    open_shim(b'MDMP')
 
     assert (await helper.submit('fake.dmp')).code == HelperResult.TRANSIENT_ERROR

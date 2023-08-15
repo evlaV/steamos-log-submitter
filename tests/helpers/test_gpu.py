@@ -3,12 +3,11 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import builtins
 import pytest
 import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.helpers import create_helper, HelperResult
-from .. import custom_dsn, open_shim, unreachable
-from .. import mock_config  # NOQA: F401
+from .. import custom_dsn, unreachable
+from .. import mock_config, open_shim  # NOQA: F401
 
 dsn = custom_dsn('helpers.gpu')
 helper = create_helper('gpu')
@@ -20,15 +19,15 @@ async def test_collect_none():
 
 
 @pytest.mark.asyncio
-async def test_bad_file(monkeypatch):
+async def test_bad_file(monkeypatch, open_shim):
     monkeypatch.setattr(sentry, 'send_event', unreachable)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'!'))
+    open_shim(b'!')
 
     assert (await helper.submit('fake.json')).code == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
-async def test_no_timestamp(monkeypatch):
+async def test_no_timestamp(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -38,14 +37,14 @@ async def test_no_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
+    open_shim(b'{}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_bad_timestamp(monkeypatch):
+async def test_bad_timestamp(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -55,14 +54,14 @@ async def test_bad_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":"fake"}'))
+    open_shim(b'{"timestamp":"fake"}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_timestamp(monkeypatch):
+async def test_timestamp(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -72,14 +71,14 @@ async def test_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"timestamp":1234.0}'))
+    open_shim(b'{"timestamp":1234.0}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_no_appid(monkeypatch):
+async def test_no_appid(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -90,14 +89,14 @@ async def test_no_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{}'))
+    open_shim(b'{}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_bad_appid(monkeypatch):
+async def test_bad_appid(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -108,14 +107,14 @@ async def test_bad_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":null}'))
+    open_shim(b'{"appid":null}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_appid(monkeypatch):
+async def test_appid(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -126,14 +125,14 @@ async def test_appid(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"appid":1234}'))
+    open_shim(b'{"appid":1234}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_exe(monkeypatch):
+async def test_exe(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -145,14 +144,14 @@ async def test_exe(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"executable":"hl2.exe"}'))
+    open_shim(b'{"executable":"hl2.exe"}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
 
 
 @pytest.mark.asyncio
-async def test_kernel(monkeypatch):
+async def test_kernel(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
@@ -163,7 +162,7 @@ async def test_kernel(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry, 'send_event', check_now)
-    monkeypatch.setattr(builtins, 'open', open_shim(b'{"kernel":"4.20.69-valve1"}'))
+    open_shim(b'{"kernel":"4.20.69-valve1"}')
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
