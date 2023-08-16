@@ -144,3 +144,30 @@ async def test_set_steam_info(dbus_daemon, mock_config):
     except dbus.errors.DBusError as e:
         assert e.type == 'org.freedesktop.DBus.Error.InvalidArgs'
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_get_log_level(dbus_daemon, mock_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'INFO')
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    assert await props['LogLevel'] == 'INFO'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_set_log_level(dbus_daemon, mock_config):
+    mock_config.add_section('logging')
+    mock_config.set('logging', 'level', 'INFO')
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    await props.set('LogLevel', 'WARNING')
+    assert mock_config.get('logging', 'level') == 'WARNING'
+    await daemon.shutdown()

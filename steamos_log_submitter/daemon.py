@@ -430,6 +430,14 @@ class DaemonInterface(dbus.service.ServiceInterface):
     async def set_inhibited(self, inhibit: 'b'):  # type: ignore # NOQA: F821
         await self.daemon.inhibit(inhibit)
 
+    @dbus.service.dbus_property()
+    def LogLevel(self) -> 's':  # type: ignore # NOQA: F821
+        return sls.logging.config.get('level', 'WARNING').upper()
+
+    @LogLevel.setter
+    async def set_log_level(self, level: 's'):  # type: ignore # NOQA: F821
+        await self.daemon.log_level(level)
+
     @dbus.service.method()
     async def Trigger(self):  # type: ignore
         await self.daemon.trigger()
