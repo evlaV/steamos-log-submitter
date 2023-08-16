@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from types import CoroutineType, UnionType
 from typing import Any, Optional, Type, Union
 
-from steamos_log_submitter.types import DBusCallable
+from steamos_log_submitter.types import DBusCallable, DBusEncodable
 
 connected = False
 system_bus = None
@@ -107,6 +107,7 @@ class DBusInterface:
 class DBusProperties:
     def __init__(self, obj: 'DBusObject', iface: str):
         self._properties_iface: Optional[dbus.aio.ProxyInterface] = None
+        self._iface_handle: Optional[dbus.aio.ProxyInterface] = None
         self._obj = obj
         self._iface = iface
         self._subscribed: dict[str, list[Callable[[str, str, Any], Awaitable[None]]]] = {}
@@ -115,11 +116,15 @@ class DBusProperties:
         if not self._properties_iface:
             await self._obj._connect()
             self._properties_iface = self._obj.object.get_interface('org.freedesktop.DBus.Properties')
-        try:
-            variant = await self._properties_iface.call_get(self._iface, name)  # type: ignore
-            return variant.value
-        except OSError:
-            raise
+        variant = await self._properties_iface.call_get(self._iface, name)  # type: ignore
+        return variant.value
+
+    async def set(self, name: str, value: DBusEncodable) -> None:
+        if not self._iface_handle:
+            await self._obj._connect()
+            self._iface_handle = self._obj.object.get_interface(self._iface)
+        name = dbus.proxy_object.BaseProxyInterface._to_snake_case(name)
+        await getattr(self._iface_handle, f'set_{name}')(value)
 
     def _update_props(self, iface: str, changed: dict[str, dbus.Variant], invalidated: list[str]) -> None:
         async def do_cb(cb: Callable[[str, str, Any], Awaitable[None]], iface: str, prop: str, value: Any) -> None:

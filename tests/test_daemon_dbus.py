@@ -56,4 +56,6 @@ async def test_enabled(dbus_daemon, mock_config):
     assert await props['Enabled'] is False
     await daemon.enable(True)
     assert await props['Enabled'] is True
+    await props.set('Enabled', False)
+    assert await props['Enabled'] is False
     await daemon.shutdown()
