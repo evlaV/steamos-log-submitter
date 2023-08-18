@@ -14,8 +14,8 @@ import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from . import awaitable, CustomConfig
 from . import count_hits, mock_config, patch_module  # NOQA: F401
-from .daemon import fake_socket, systemd_object  # NOQA: F401
-from .dbus import mock_dbus  # NOQA: F401
+from .daemon import dbus_daemon, fake_socket, systemd_object  # NOQA: F401
+from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
 
@@ -310,63 +310,70 @@ async def test_set_steam_info(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
-    daemon = sls.daemon.Daemon()
+async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(daemon, '_startup', 0.05)
-    monkeypatch.setattr(daemon, '_interval', 0.04)
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
+
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
+
     start = time.time()
-    await daemon.start()
+    daemon, bus = await dbus_daemon
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert mock_config.has_section('daemon')
     assert mock_config.has_option('daemon', 'last_trigger')
     assert count_hits.hits == 1
-    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.06
+    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.07
 
-    await asyncio.sleep(0.09)
+    await asyncio.sleep(0.13)
     assert count_hits.hits == 3
-    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.13
+    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.17
 
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
-    daemon = sls.daemon.Daemon()
+async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(daemon, '_startup', 0.05)
-    monkeypatch.setattr(daemon, '_interval', 0.04)
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.08)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
+
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
 
     mock_config.add_section('daemon')
-    mock_config.set('daemon', 'last_trigger', str(time.time() + 0.03))
     start = time.time()
-    await daemon.start()
+    mock_config.set('daemon', 'last_trigger', str(start + 0.05))
+    daemon, bus = await dbus_daemon
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert count_hits.hits == 0
-    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.02
+    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.04
 
-    await asyncio.sleep(0.03)
+    await asyncio.sleep(0.06)
     assert count_hits.hits == 1
-    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.05
+    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.11
 
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
-    daemon = sls.daemon.Daemon()
+async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(daemon, '_startup', 0.02)
-    monkeypatch.setattr(daemon, '_interval', 0.1)
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.02)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.1)
 
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
+
     start = time.time()
-    await daemon.start()
+    daemon, bus = await dbus_daemon
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.03)
@@ -381,26 +388,27 @@ async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, moc
 
 
 @pytest.mark.asyncio
-async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
-    daemon = sls.daemon.Daemon()
+async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(daemon, '_startup', 0.05)
-    monkeypatch.setattr(daemon, '_interval', 0.06)
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.07)
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
 
     start = time.time()
-    await daemon.start()
+    daemon, bus = await dbus_daemon
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
     assert count_hits.hits == 1
     assert float(mock_config.get('daemon', 'last_trigger')) - start > 0.05
 
-    await asyncio.sleep(0.02)
+    await asyncio.sleep(0.03)
     await daemon.trigger(wait=True)
     assert count_hits.hits == 2
     end = float(mock_config.get('daemon', 'last_trigger'))
-    assert end - start > 0.08
-    assert end - start < 0.1
+    assert end - start > 0.09
+    assert end - start < 0.14
 
     await asyncio.sleep(0.03)
     assert count_hits.hits == 2
