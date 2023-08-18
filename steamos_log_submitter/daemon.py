@@ -286,13 +286,14 @@ class Daemon:
         config['last_trigger'] = last_trigger
         sls.config.write_config()
         self._next_trigger = last_trigger + self._interval
-        if self._periodic_task:
-            self._periodic_task.cancel()
+        task = self._periodic_task
+        self._periodic_task = asyncio.create_task(self._trigger_periodic())
+        if task:
+            task.cancel()
             try:
-                await self._periodic_task
+                await task
             except asyncio.CancelledError:
                 pass
-        self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
     async def trigger(self, wait: bool = True) -> None:
         if self.inhibited():
