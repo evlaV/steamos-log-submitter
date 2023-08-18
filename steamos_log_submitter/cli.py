@@ -4,7 +4,9 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import argparse
+import asyncio
 import sys
+from collections.abc import Coroutine
 from types import TracebackType
 from typing import Optional, Type
 import steamos_log_submitter as sls
@@ -14,9 +16,11 @@ from steamos_log_submitter.types import JSON
 
 
 class ClientWrapper:
+    bus = 'com.valvesoftware.SteamOSLogSubmitter'
+
     def __enter__(self) -> Optional[sls.client.Client]:
         try:
-            client = sls.client.Client()
+            client = sls.client.Client(bus=self.bus)
             return client
         except FileNotFoundError:
             print("Can't connect to daemon. Is service running?", file=sys.stderr)
@@ -26,14 +30,14 @@ class ClientWrapper:
         return not exc_type
 
 
-def set_enabled(enable: bool) -> None:
+async def set_enabled(enable: bool) -> None:
     with ClientWrapper() as client:
         if not client:
             return
-        client.enable(enable)
+        await client.enable(enable)
 
 
-def set_helper_enabled(helpers: list[str], enable: bool) -> None:
+async def set_helper_enabled(helpers: list[str], enable: bool) -> None:
     with ClientWrapper() as client:
         if not client:
             return
@@ -41,22 +45,23 @@ def set_helper_enabled(helpers: list[str], enable: bool) -> None:
         if invalid_helpers:
             print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
         if enable:
-            client.enable_helpers(helpers)
+            await client.enable_helpers(helpers)
         else:
-            client.disable_helpers(helpers)
+            await client.disable_helpers(helpers)
 
 
-def do_status(args: argparse.Namespace) -> None:
+async def do_status(args: argparse.Namespace) -> None:
     with ClientWrapper() as client:
         if not client:
             return
-        status = client.status()
+        status = await client.status()
         helpers: Optional[dict[str, dict[str, JSON]]] = None
         if args.all:
-            helpers = client.helper_status()
+            helpers = await client.helper_status()
         elif args.helper:
-            valid_helpers, invalid_helpers = sls.helpers.validate_helpers(args.helper)
-            helpers = client.helper_status(valid_helpers)
+            valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
+            if valid_helpers:
+                helpers = await client.helper_status(valid_helpers)
             if invalid_helpers:
                 print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
         print('Log submission is currently ' + ('enabled' if status else 'disabled'))
@@ -65,24 +70,27 @@ def do_status(args: argparse.Namespace) -> None:
                 print(f'Helper {helper} is currently ' + ('enabled' if helper_status['enabled'] else 'disabled'))
 
 
-def do_list(args: argparse.Namespace) -> None:
-    for helper in sorted(sls.helpers.list_helpers()):
-        print(helper)
+async def do_list(args: argparse.Namespace) -> None:
+    with ClientWrapper() as client:
+        if not client:
+            return
+        for helper in sorted(await client.list()):
+            print(helper)
 
 
-def do_log_level(args: argparse.Namespace) -> None:
+async def do_log_level(args: argparse.Namespace) -> None:
     with ClientWrapper() as client:
         if not client:
             return
         if args.level is None:
-            print(client.log_level())
+            print(await client.log_level())
         elif sls.logging.valid_level(args.level):
-            client.set_log_level(args.level)
+            await client.set_log_level(args.level)
         else:
             print('Please specify a valid log level', file=sys.stderr)
 
 
-def set_steam_info(key: str, value: str) -> None:
+async def set_steam_info(key: str, value: str) -> None:
     if key == 'account-id':
         try:
             int(value)
@@ -93,17 +101,17 @@ def set_steam_info(key: str, value: str) -> None:
     with ClientWrapper() as client:
         if not client:
             return
-        client.set_steam_info(key.replace('-', '_'), value)
+        await client.set_steam_info(key.replace('-', '_'), value)
 
 
-def do_trigger(args: argparse.Namespace) -> None:
+async def do_trigger(args: argparse.Namespace) -> None:
     with ClientWrapper() as client:
         if not client:
             return
-        client.trigger(args.wait)
+        await client.trigger(args.wait)
 
 
-def main(args: Sequence[str] = sys.argv[1:]) -> None:
+def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
         description='SteamOS log collection and submission tool')
@@ -172,7 +180,11 @@ def main(args: Sequence[str] = sys.argv[1:]) -> None:
 
     parsed_args = parser.parse_args(args)
 
-    parsed_args.func(parsed_args)
+    return parsed_args.func(parsed_args)
+
+
+def main(args: Sequence[str] = sys.argv[1:]) -> None:
+    asyncio.run(amain(args))
 
 
 if __name__ == '__main__':  # pragma: no cover

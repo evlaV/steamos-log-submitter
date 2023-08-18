@@ -114,6 +114,8 @@ exception_map = {
     Reply.INVALID_COMMAND: InvalidCommandError,
     Reply.INVALID_DATA: InvalidDataError,
     Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
+
+    'org.freedesktop.DBus.Error.InvalidArgs': InvalidArgumentsError,
 }
 
 
@@ -455,7 +457,7 @@ class DaemonInterface(dbus.service.ServiceInterface):
         try:
             await self.daemon.set_steam_info(key, value)
         except InvalidArgumentsError as e:
-            raise dbus.errors.DBusError(ErrorType.INVALID_ARGS, f'Invalid argument {e.data}')
+            raise dbus.errors.DBusError(ErrorType.INVALID_ARGS, json.dumps(e.data))
 
     @dbus.service.method()
     async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722

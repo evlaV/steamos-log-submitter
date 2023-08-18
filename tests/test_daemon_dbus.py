@@ -15,16 +15,8 @@ import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from . import awaitable, CustomConfig
 from . import count_hits, mock_config, patch_module  # NOQA: F401
-from .daemon import fake_socket  # NOQA: F401
+from .daemon import dbus_daemon, fake_socket  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
-
-
-@pytest.fixture
-async def dbus_daemon(fake_socket, real_dbus):
-    bus = await real_dbus
-    daemon = sls.daemon.Daemon()
-    await daemon.start()
-    return daemon, bus
 
 
 @pytest.mark.asyncio

@@ -4,100 +4,124 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import pytest
 import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
-from . import awaitable
-from . import count_hits, mock_config, patch_module  # NOQA: F401
-from .daemon import fake_socket, sync_client, systemd_object  # NOQA: F401
-from .dbus import mock_dbus  # NOQA: F401
+from . import awaitable, setup_categories
+from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
+from .daemon import fake_socket, dbus_client, dbus_daemon, systemd_object  # NOQA: F401
+from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 
-def test_client_status(sync_client):
-    sync_client.start()
-    assert not sync_client.status()
-    sync_client.enable()
-    assert sync_client.status()
-    sync_client.disable()
-    assert not sync_client.status()
+@pytest.mark.asyncio
+async def test_client_status(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    assert not await client.status()
+    await client.enable()
+    assert await client.status()
+    await client.disable()
+    assert not await client.status()
+    await daemon.shutdown()
 
 
-def test_client_list(sync_client):
-    sync_client.start()
-    assert sync_client.list() == ['test']
+@pytest.mark.asyncio
+async def test_client_list(dbus_client, monkeypatch, helper_directory):
+    setup_categories(['test'])
+    daemon, client = await dbus_client
+    assert await client.list() == ['test']
+    await daemon.shutdown()
 
 
-def test_client_get_log_level(sync_client, mock_config):
+@pytest.mark.asyncio
+async def test_client_get_log_level(dbus_client, mock_config):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
-    sync_client.start()
-    assert sync_client.log_level() == 'INFO'
+    daemon, client = await dbus_client
+    assert await client.log_level() == 'INFO'
+    await daemon.shutdown()
 
 
-def test_client_set_log_level(sync_client, mock_config):
-    sync_client.start()
-    assert sync_client.log_level() != 'ERROR'
-    sync_client.set_log_level('ERROR')
-    assert sync_client.log_level() == 'ERROR'
+@pytest.mark.asyncio
+async def test_client_set_log_level(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    assert await client.log_level() != 'ERROR'
+    await client.set_log_level('ERROR')
+    assert await client.log_level() == 'ERROR'
+    await daemon.shutdown()
 
 
-def test_client_trigger(sync_client, mock_config, monkeypatch, count_hits):
+@pytest.mark.asyncio
+async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    sync_client.start()
-    sync_client.trigger()
+    daemon, client = await dbus_client
+    await client.trigger()
     assert count_hits.hits == 1
+    await daemon.shutdown()
 
 
-def test_client_trigger_wait(sync_client, mock_config, monkeypatch):
+@pytest.mark.asyncio
+async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
-    sync_client.start()
+    daemon, client = await dbus_client
 
     start = time.time()
-    sync_client.trigger(False)
+    await client.trigger(False)
     end = time.time()
     assert end - start < 0.1
 
+    await asyncio.sleep(0.1)
+
     start = time.time()
-    sync_client.trigger(True)
+    await client.trigger(True)
     end = time.time()
     assert end - start >= 0.1
+    await daemon.shutdown()
 
 
-def test_helper_status(sync_client):
-    sync_client.start()
-    assert sync_client.helper_status() == {'test': {'enabled': True, 'collection': True, 'submission': True}}
-    assert sync_client.helper_status(['test']) == {'test': {'enabled': True, 'collection': True, 'submission': True}}
+@pytest.mark.asyncio
+async def test_helper_status(dbus_client, helper_directory):
+    setup_categories(['test'])
+    daemon, client = await dbus_client
+    assert await client.helper_status() == {'test': {'enabled': True, 'collection': True, 'submission': True}}
+    assert await client.helper_status(['test']) == {'test': {'enabled': True, 'collection': True, 'submission': True}}
     try:
-        assert sync_client.helper_status(['test2'])
+        await client.helper_status(['test2'])
         assert False
     except sls.daemon.InvalidArgumentsError:
         pass
+    await daemon.shutdown()
 
 
-def test_enable_helpers(mock_config, sync_client):
+@pytest.mark.asyncio
+async def test_enable_helpers(mock_config, dbus_client, helper_directory):
     mock_config.add_section('helpers.test')
     mock_config.set('helpers.test', 'enable', 'off')
-    sync_client.start()
-    assert sync_client.helper_status(['test'])['test']['enabled'] is False
-    sync_client.enable_helpers(['test'])
-    assert sync_client.helper_status(['test'])['test']['enabled'] is True
+    setup_categories(['test'])
+    daemon, client = await dbus_client
+    assert (await client.helper_status(['test']))['test']['enabled'] is False
+    await client.enable_helpers(['test'])
+    assert (await client.helper_status(['test']))['test']['enabled'] is True
     try:
-        sync_client.enable_helpers(['test2'])
+        await client.enable_helpers(['test2'])
         assert False
     except sls.daemon.InvalidArgumentsError:
         pass
+    await daemon.shutdown()
 
 
-def test_set_steam_info(sync_client):
-    sync_client.start()
-    sync_client.set_steam_info('deck_serial', 'FVAA12345')
-    sync_client.set_steam_info('account_id', 12345)
+@pytest.mark.asyncio
+async def test_set_steam_info(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    await client.set_steam_info('deck_serial', 'FVAA12345')
+    await client.set_steam_info('account_id', 12345)
     try:
-        sync_client.set_steam_info('account_serial', 12345)
+        await client.set_steam_info('account_serial', 12345)
         assert False
     except sls.daemon.InvalidArgumentsError:
         pass
+    await daemon.shutdown()

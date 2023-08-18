@@ -30,7 +30,7 @@ async def transact(command: sls.daemon.Command, reader: asyncio.StreamReader, wr
 
 
 @pytest.fixture
-async def test_daemon(fake_socket):
+async def test_daemon(fake_socket, systemd_object):
     daemon = sls.daemon.Daemon()
     await daemon.start()
     reader, writer = await asyncio.open_unix_connection(path=fake_socket)
@@ -38,7 +38,7 @@ async def test_daemon(fake_socket):
 
 
 @pytest.mark.asyncio
-async def test_startup(fake_socket):
+async def test_startup(fake_socket, systemd_object):
     assert not os.access(fake_socket, os.F_OK)
     daemon = sls.daemon.Daemon()
     await daemon.start()
@@ -49,7 +49,7 @@ async def test_startup(fake_socket):
 
 
 @pytest.mark.asyncio
-async def test_shutdown(fake_socket):
+async def test_shutdown(fake_socket, systemd_object):
     assert not os.access(fake_socket, os.F_OK)
     daemon = sls.daemon.Daemon()
     await daemon.start()
@@ -310,7 +310,7 @@ async def test_set_steam_info(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config):
+async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
     daemon = sls.daemon.Daemon()
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
@@ -333,7 +333,7 @@ async def test_periodic(fake_socket, monkeypatch, count_hits, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock_config):
+async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
     daemon = sls.daemon.Daemon()
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)
@@ -357,7 +357,7 @@ async def test_periodic_after_startup(fake_socket, monkeypatch, count_hits, mock
 
 
 @pytest.mark.asyncio
-async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, mock_config):
+async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
     daemon = sls.daemon.Daemon()
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.02)
@@ -381,7 +381,7 @@ async def test_periodic_before_startup(fake_socket, monkeypatch, count_hits, moc
 
 
 @pytest.mark.asyncio
-async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config):
+async def test_periodic_delay(fake_socket, monkeypatch, count_hits, mock_config, systemd_object):
     daemon = sls.daemon.Daemon()
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(daemon, '_startup', 0.05)

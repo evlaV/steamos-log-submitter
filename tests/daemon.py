@@ -3,12 +3,9 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import asyncio
-import concurrent.futures
 import os
 import pytest
 import time
-import threading
 import steamos_log_submitter as sls
 import steamos_log_submitter.daemon
 from . import patch_module  # NOQA: F401
@@ -29,50 +26,21 @@ def fake_socket(monkeypatch):
             os.unlink(fakesocket)
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def systemd_object(mock_dbus):
     MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
 
 
-def daemon_runner(ev, box):
-    daemon = sls.daemon.Daemon(exit_on_shutdown=True)
-    loop = asyncio.new_event_loop()
-
-    async def start():
-        try:
-            await daemon.start()
-        except Exception as e:
-            box.append(e)
-            ev.set()
-            raise
-        ev.set()
-    loop.create_task(start())
-    loop.run_forever()
-
-
-class SyncClient:
-    def __init__(self):
-        self.pool = concurrent.futures.ThreadPoolExecutor()
-        self.client = None
-
-    def start(self):
-        ev = threading.Event()
-        box = []
-        self.pool.submit(daemon_runner, ev, box)
-        ev.wait()
-        if box:
-            raise box[0]
-        self.client = sls.client.Client()
-
-    def __getattr__(self, attr):
-        return getattr(self.client, attr)
+@pytest.fixture
+async def dbus_daemon(fake_socket, real_dbus):
+    bus = await real_dbus
+    daemon = sls.daemon.Daemon()
+    await daemon.start()
+    return daemon, bus
 
 
 @pytest.fixture
-def sync_client(fake_socket, mock_config, patch_module, monkeypatch):
-    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
-    monkeypatch.setattr(sls.helpers, 'create_helper', lambda _: patch_module)
-    client = SyncClient()
-    yield client
-    if client.client:
-        client.shutdown()
+async def dbus_client(dbus_daemon):
+    daemon, bus = await dbus_daemon
+    client = sls.client.Client(bus=bus)
+    return daemon, client

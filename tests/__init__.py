@@ -101,8 +101,17 @@ def patch_module(mock_config, monkeypatch):
 
     def import_module(name, package=None):
         if name.startswith('steamos_log_submitter.helpers.test'):
-            TestHelper.helper = TestHelper
-            return TestHelper
+            helper_name = name.split('.')[-1]
+            if helper_name == 'test':
+                TestHelper.helper = TestHelper
+                return TestHelper
+            else:
+                class SubTestHelper(TestHelper):
+                    name = helper_name
+
+                SubTestHelper.helper = SubTestHelper
+                SubTestHelper.config = sls.config.get_config(name)
+                return SubTestHelper
         return original_import_module(name, package)
     monkeypatch.setattr(importlib, 'import_module', import_module)
     monkeypatch.setattr(steamos_log_submitter.helpers, 'list_helpers', lambda: ['test'])
