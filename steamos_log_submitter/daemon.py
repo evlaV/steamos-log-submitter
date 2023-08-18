@@ -279,15 +279,17 @@ class Daemon:
     def inhibited(self) -> bool:
         return sls.base_config.get('inhibit', 'off') == 'on'
 
-    async def log_level(self, level: Optional[str] = None) -> dict[str, str]:
-        if level is not None:
-            if not sls.logging.valid_level(level):
-                raise InvalidArgumentsError({'level': level})
-            sls.config.migrate_key('logging', 'level')
-            sls.logging.config['level'] = level.upper()
-            sls.config.write_config()
-            sls.logging.reconfigure_logging(sls.logging.config.get('path'))
-        return {'level': sls.logging.config.get('level', 'WARNING').upper()}
+    def log_level(self) -> str:
+        return sls.logging.config.get('level', 'WARNING').upper()
+
+    async def set_log_level(self, level: str) -> None:
+        if not sls.logging.valid_level(level):
+            raise InvalidArgumentsError({'level': level})
+        sls.config.migrate_key('logging', 'level')
+        sls.logging.config['level'] = level.upper()
+        sls.config.write_config()
+        sls.logging.reconfigure_logging(sls.logging.config.get('path'))
+        self.iface.emit_properties_changed({'LogLevel': level.upper()})
 
     async def set_steam_info(self, key: str, value: str) -> None:
         if key not in (
@@ -326,11 +328,11 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
     @dbus.service.dbus_property()
     def LogLevel(self) -> 's':  # type: ignore # NOQA: F821
-        return sls.logging.config.get('level', 'WARNING').upper()
+        return self.daemon.log_level()
 
     @LogLevel.setter
     async def set_log_level(self, level: 's'):  # type: ignore # NOQA: F821
-        await self.daemon.log_level(level)
+        await self.daemon.set_log_level(level)
 
     @dbus.service.method()
     async def Trigger(self):  # type: ignore
