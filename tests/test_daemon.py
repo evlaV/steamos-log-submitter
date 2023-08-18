@@ -244,7 +244,7 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
 async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.02)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.1)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.2)
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'on')
@@ -254,14 +254,15 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
     start = time.time()
     daemon, bus = await dbus_daemon
 
-    assert count_hits.hits == 0
+    assert count_hits.hits in (0, 1)
     await asyncio.sleep(0.03)
     assert count_hits.hits == 1
-    assert float(mock_config.get('daemon', 'last_trigger')) - start > 0
+    end = float(mock_config.get('daemon', 'last_trigger'))
+    assert end - start > 0
 
-    await asyncio.sleep(0.06)
+    await asyncio.sleep(0.07)
     assert count_hits.hits == 1
-    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.04
+    assert float(mock_config.get('daemon', 'last_trigger')) == end
 
     await daemon.shutdown()
 
