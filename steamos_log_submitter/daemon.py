@@ -202,10 +202,7 @@ class Daemon:
                 continue
             if not helper_module.iface:
                 continue
-            camel_case = helper_module.__name__
-            if not camel_case.endswith('Helper'):
-                continue
-            camel_case = camel_case[:-len('Helper')]
+            camel_case = sls.util.camel_case(helper_module.name)
             sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface)
 
             for iface in helper_module.extra_ifaces.values():

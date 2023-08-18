@@ -14,6 +14,7 @@ from collections.abc import Container, Iterable
 from types import TracebackType
 from typing import Any, Optional, Type
 import steamos_log_submitter as sls
+import steamos_log_submitter.dbus
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.exceptions import HelperError
