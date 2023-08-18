@@ -32,6 +32,37 @@ async def test_dbus(dbus_daemon):
 
 
 @pytest.mark.asyncio
+async def test_shutdown(dbus_daemon):
+    daemon, bus = await dbus_daemon
+    assert daemon._periodic_task is not None
+    await daemon.shutdown()
+    assert not daemon._serving
+    assert daemon._periodic_task is None
+    assert daemon._async_trigger is None
+
+
+@pytest.mark.asyncio
+async def test_shutdown_dbus(dbus_daemon):
+    daemon, bus = await dbus_daemon
+    assert daemon._periodic_task is not None
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    await iface.shutdown()
+    assert not daemon._serving
+    assert daemon._periodic_task is None
+    assert daemon._async_trigger is None
+
+    try:
+        await iface.shutdown()
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    root = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter')
+    assert not await root.list_children()
+
+
+@pytest.mark.asyncio
 async def test_list(dbus_daemon, patch_module, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')

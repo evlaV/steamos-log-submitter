@@ -16,6 +16,16 @@ from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 
 @pytest.mark.asyncio
+async def test_shutdown(dbus_client):
+    daemon, client = await dbus_client
+    assert daemon._periodic_task is not None
+    await client.shutdown()
+    assert not daemon._serving
+    assert daemon._periodic_task is None
+    assert daemon._async_trigger is None
+
+
+@pytest.mark.asyncio
 async def test_client_status(dbus_client, mock_config):
     daemon, client = await dbus_client
     assert not await client.status()

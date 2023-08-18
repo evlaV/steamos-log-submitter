@@ -170,12 +170,35 @@ class Daemon:
     async def shutdown(self) -> None:
         logger.info('Daemon shutting down')
         self._serving = False
+        if self._async_trigger:
+            await self._async_trigger
+            self._async_trigger = None
         if self._periodic_task:
             self._periodic_task.cancel()
             try:
                 await self._periodic_task
             except asyncio.CancelledError:
                 pass
+            self._periodic_task = None
+
+        bus = sls.dbus.system_bus
+        if bus:
+            bus.unexport('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+            for helper in sls.helpers.list_helpers():
+                try:
+                    helper_module = sls.helpers.create_helper(helper)
+                except sls.exceptions.HelperError as e:
+                    logger.warning(f'Failed to enumerate helper {helper}', exc_info=e)
+                    continue
+                if not helper_module.iface:
+                    continue
+                camel_case = sls.util.camel_case(helper_module.name)
+                bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface.name)
+
+                for iface in helper_module.extra_ifaces.values():
+                    bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', iface.name)
+                for service, iface in helper_module.child_services.items():
+                    bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}/{service}', iface.name)
 
         if self._exit_on_shutdown:  # pragma: no cover
             loop = asyncio.get_event_loop()
