@@ -418,12 +418,14 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
 
 
 @pytest.mark.asyncio
-async def test_inhibit(test_daemon, monkeypatch, count_hits, mock_config):
+async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.04)
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
     start = time.time()
-    daemon, reader, writer = await test_daemon
+    daemon, bus = await dbus_daemon
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
@@ -432,8 +434,7 @@ async def test_inhibit(test_daemon, monkeypatch, count_hits, mock_config):
     assert count_hits.hits == 1
     assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.06
 
-    reply = await transact(sls.daemon.Command("inhibit", {"state": True}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
+    await daemon.inhibit(True)
     assert count_hits.hits == 1
     assert mock_config.has_option('sls', 'inhibit')
     assert mock_config.get('sls', 'inhibit') == 'on'
@@ -441,19 +442,16 @@ async def test_inhibit(test_daemon, monkeypatch, count_hits, mock_config):
     await asyncio.sleep(0.09)
     assert count_hits.hits == 1
 
-    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
+    await daemon.trigger(wait=True)
     assert count_hits.hits == 1
 
-    reply = await transact(sls.daemon.Command("inhibit", {"state": False}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
+    await daemon.inhibit(False)
     assert mock_config.has_option('sls', 'inhibit')
     assert mock_config.get('sls', 'inhibit') == 'off'
     await asyncio.sleep(0)
     assert count_hits.hits == 2
 
-    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
+    await daemon.trigger(wait=True)
     assert count_hits.hits == 3
 
     await daemon.shutdown()
