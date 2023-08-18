@@ -24,6 +24,22 @@ def test_snake_case():
     assert sls.util.snake_case('AbCa') == 'ab_ca'
 
 
+def test_snake_case_numeric():
+    assert sls.util.snake_case('1') == '1'
+    assert sls.util.snake_case('1b') == '1b'
+    assert sls.util.snake_case('1B') == '1b'
+    assert sls.util.snake_case('1bc') == '1bc'
+    assert sls.util.snake_case('1bC') == '1b_c'
+    assert sls.util.snake_case('1Bc') == '1bc'
+    assert sls.util.snake_case('1BC') == '1bc'
+    assert sls.util.snake_case('a2') == 'a2'
+    assert sls.util.snake_case('A2') == 'a2'
+    assert sls.util.snake_case('a2a') == 'a2a'
+    assert sls.util.snake_case('a2A') == 'a2_a'
+    assert sls.util.snake_case('A2a') == 'a2a'
+    assert sls.util.snake_case('A2A') == 'a2a'
+
+
 def test_camel_case():
     assert sls.util.camel_case('') == ''
     assert sls.util.camel_case('a') == 'A'

@@ -140,13 +140,16 @@ def camel_case(text: str) -> str:
 def snake_case(text: str) -> str:
     snaked = []
     for i, char in enumerate(text):
-        if char.islower():
+        if char.isnumeric() or char.islower():
             snaked.append(char)
         else:
             if i:
-                if snaked[-1].islower():
-                    snaked.append('_')
-                elif i + 1 < len(text) and text[i + 1].islower():
+                for j in range(1, len(snaked) + 1):
+                    if snaked[-j].isalpha():
+                        if snaked[-j].islower():
+                            snaked.append('_')
+                        break
+                if snaked[-1].isalpha() and i + 1 < len(text) and text[i + 1].islower():
                     snaked.append('_')
             snaked.append(char)
     return ''.join(snaked).lower()
