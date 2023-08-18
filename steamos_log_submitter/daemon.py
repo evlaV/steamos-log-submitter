@@ -443,6 +443,10 @@ class DaemonInterface(dbus.service.ServiceInterface):
         await self.daemon.trigger()
 
     @dbus.service.method()
+    async def TriggerAsync(self):  # type: ignore
+        await self.daemon.trigger(wait=False)
+
+    @dbus.service.method()
     async def Shutdown(self):  # type: ignore
         await self.daemon.shutdown()
 
