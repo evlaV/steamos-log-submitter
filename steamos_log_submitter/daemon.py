@@ -458,7 +458,7 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
     @dbus.service.method()
     async def Trigger(self):  # type: ignore
-        await self.daemon.trigger()
+        await self.daemon.trigger(wait=True)
 
     @dbus.service.method()
     async def TriggerAsync(self):  # type: ignore

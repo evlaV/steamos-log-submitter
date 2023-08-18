@@ -282,7 +282,7 @@ async def test_trigger(count_hits, monkeypatch, cli_wrapper):
 async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper):
     daemon, client = await cli_wrapper
 
-    async def trigger():
+    async def trigger(wait):
         await asyncio.sleep(0.05)
         count_hits()
 
