@@ -11,7 +11,7 @@ import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 from . import awaitable, setup_categories
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
-from .daemon import fake_socket, dbus_client, dbus_daemon, systemd_object  # NOQA: F401
+from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 

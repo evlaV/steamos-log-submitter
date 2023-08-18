@@ -4,7 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import os
+import dbus_next as dbus
 import pytest
 import time
 import steamos_log_submitter as sls
@@ -14,158 +14,124 @@ import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from . import awaitable, CustomConfig
 from . import count_hits, mock_config, patch_module  # NOQA: F401
-from .daemon import dbus_daemon, fake_socket, systemd_object  # NOQA: F401
+from .daemon import dbus_daemon  # NOQA: F401
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
 
 
-async def transact(command: sls.daemon.Command, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    writer.write(command.serialize())
-    await writer.drain()
-
-    reply = await reader.readline()
-    assert reply
-    return sls.daemon.Reply.deserialize(reply)
-
-
-@pytest.fixture
-async def test_daemon(fake_socket, systemd_object):
-    daemon = sls.daemon.Daemon()
-    await daemon.start()
-    reader, writer = await asyncio.open_unix_connection(path=fake_socket)
-    return daemon, reader, writer
-
-
 @pytest.mark.asyncio
-async def test_startup(fake_socket, systemd_object):
-    assert not os.access(fake_socket, os.F_OK)
-    daemon = sls.daemon.Daemon()
-    await daemon.start()
-    assert os.access(fake_socket, os.F_OK)
-    assert os.access(fake_socket, os.R_OK | os.W_OK)
-    await daemon.shutdown()
-    assert not os.access(fake_socket, os.F_OK)
-
-
-@pytest.mark.asyncio
-async def test_shutdown(fake_socket, systemd_object):
-    assert not os.access(fake_socket, os.F_OK)
-    daemon = sls.daemon.Daemon()
-    await daemon.start()
-    assert os.access(fake_socket, os.F_OK)
-    assert os.access(fake_socket, os.R_OK | os.W_OK)
-
-    reader, writer = await asyncio.open_unix_connection(path=fake_socket)
-
-    writer.write(b'{"command":"shutdown"}\n')
-    await writer.drain()
-
-    reply = await reader.readline()
-    assert reply
-    reply = sls.daemon.Reply.deserialize(reply)
-    assert reply.status == sls.daemon.Reply.OK
-    assert not reply.data
-
-    assert not os.access(fake_socket, os.F_OK)
-
-
-@pytest.mark.asyncio
-async def test_disconnect(test_daemon):
-    daemon, reader, writer = await test_daemon
-
-    await asyncio.sleep(0.01)
-    assert len(daemon._conns) == 1
-
-    writer.close()
-    await writer.wait_closed()
-    await asyncio.sleep(0.01)
-    assert len(daemon._conns) == 0
-
+async def test_dbus(dbus_daemon):
+    daemon, bus = await dbus_daemon
+    dbemon = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter')
+    assert {child for child in await dbemon.list_children()} == {
+        '/com/valvesoftware/SteamOSLogSubmitter/Manager',
+        '/com/valvesoftware/SteamOSLogSubmitter/helpers',
+    }
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_invalid_format(test_daemon):
-    daemon, reader, writer = await test_daemon
-    writer.write(b'bad\n')
-    await writer.drain()
-
-    reply = await reader.readline()
-    assert reply
-    reply = sls.daemon.Reply.deserialize(reply)
-    assert reply.status == sls.daemon.Reply.INVALID_DATA
+async def test_list(dbus_daemon, patch_module, monkeypatch):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')
+    assert {child for child in await manager.list_children()} == {
+        '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test',
+    }
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_invalid_json(test_daemon):
-    daemon, reader, writer = await test_daemon
-    writer.write(b'{}\n')
-    await writer.drain()
-
-    reply = await reader.readline()
-    assert reply
-    reply = sls.daemon.Reply.deserialize(reply)
-    assert reply.status == sls.daemon.Reply.INVALID_DATA
+async def test_enabled(dbus_daemon, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    assert await props['Enabled'] is False
+    await daemon.enable(True)
+    assert await props['Enabled'] is True
+    await props.set('Enabled', False)
+    assert await props['Enabled'] is False
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_invalid_command(test_daemon):
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("foo"), reader, writer)
-    assert reply
-    assert reply.status == sls.daemon.Reply.INVALID_COMMAND
+async def test_helper_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    assert await props['Enabled'] is True
+    await props.set('Enabled', False)
+    assert await props['Enabled'] is False
+    assert mock_config.get('helpers.test', 'enable') == 'off'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_broken_command(test_daemon, monkeypatch):
-    async def raise_now(self):
-        raise Exception
-
-    daemon, reader, writer = await test_daemon
-    monkeypatch.setitem(daemon._commands, 'raise', raise_now)
-    reply = await transact(sls.daemon.Command("raise"), reader, writer)
-    assert reply.status == sls.daemon.Reply.UNKNOWN_ERROR
+async def test_helper_collect_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    assert await props['CollectEnabled'] is True
+    await props.set('CollectEnabled', False)
+    assert await props['CollectEnabled'] is False
+    assert mock_config.get('helpers.test', 'collect') == 'off'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_list(test_daemon, monkeypatch, patch_module):
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("list"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == ['test']
+async def test_helper_submit_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    assert await props['SubmitEnabled'] is True
+    await props.set('SubmitEnabled', False)
+    assert await props['SubmitEnabled'] is False
+    assert mock_config.get('helpers.test', 'submit') == 'off'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_get_log_level(test_daemon, mock_config):
+async def test_inhibited(dbus_daemon, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    assert await props['Inhibited'] is False
+    await daemon.inhibit(True)
+    assert await props['Inhibited'] is True
+    await props.set('Inhibited', False)
+    assert await props['Inhibited'] is False
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_get_log_level(dbus_daemon, mock_config):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("log-level"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {'level': 'INFO'}
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    assert await props['LogLevel'] == 'INFO'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_set_log_level(test_daemon, mock_config):
+async def test_set_log_level(dbus_daemon, mock_config):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("log-level", {"level": "WARNING"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {'level': 'WARNING'}
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    await props.set('LogLevel', 'WARNING')
     assert mock_config.get('logging', 'level') == 'WARNING'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_set_log_level_migrate(test_daemon, monkeypatch):
+async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
     custom_config = CustomConfig(monkeypatch)
     custom_config.user.add_section('logging')
     custom_config.user.set('logging', 'level', 'WARNING')
@@ -178,134 +144,16 @@ async def test_set_log_level_migrate(test_daemon, monkeypatch):
     assert sls.config.config.get('logging', 'level') == 'WARNING'
     assert not sls.config.local_config.has_section('logging')
 
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("log-level", {"level": "WARNING"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {'level': 'WARNING'}
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    await props.set('LogLevel', 'WARNING')
 
     sls.config.reload_config()
     assert not sls.config.config.has_option('logging', 'level')
     assert sls.config.local_config.has_section('logging')
     assert sls.config.local_config.get('logging', 'level') == 'WARNING'
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_status(test_daemon, mock_config):
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("status"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data['enabled'] is False
-
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
-    reply = await transact(sls.daemon.Command("status"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data['enabled'] is True
-
-    mock_config.set('sls', 'enable', 'off')
-    reply = await transact(sls.daemon.Command("status"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data['enabled'] is False
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_helper_status(test_daemon, mock_config, monkeypatch, patch_module):
-    daemon, reader, writer = await test_daemon
-
-    reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": True, "collection": True, "submission": True}}
-
-    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": True, "collection": True, "submission": True}}
-
-    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test2"]}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    assert reply.data == {"invalid-helper": ["test2"]}
-
-    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test", "test2"]}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    assert reply.data == {"invalid-helper": ["test2"]}
-
-    mock_config.add_section('helpers.test')
-    mock_config.set('helpers.test', 'enable', 'off')
-
-    reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": False, "collection": True, "submission": True}}
-
-    reply = await transact(sls.daemon.Command("helper-status", {"helpers": ["test"]}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert reply.data == {"test": {"enabled": False, "collection": True, "submission": True}}
-
-
-@pytest.mark.asyncio
-async def test_enable(test_daemon, mock_config):
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("enable", {"state": True}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-
-    assert mock_config.has_section('sls')
-    assert mock_config.get('sls', 'enable') == 'on'
-
-    reply = await transact(sls.daemon.Command("enable", {"state": False}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-
-    assert mock_config.get('sls', 'enable') == 'off'
-
-    reply = await transact(sls.daemon.Command("enable", {"state": "on"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-
-    reply = await transact(sls.daemon.Command("enable"), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_enable_helpers(test_daemon, mock_config, monkeypatch):
-    daemon, reader, writer = await test_daemon
-    monkeypatch.setattr(sls.helpers, 'list_helpers', lambda: ['test'])
-
-    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test": True}}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-
-    assert mock_config.has_section('helpers.test')
-    assert mock_config.get('helpers.test', 'enable') == 'on'
-
-    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test2": True}}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    assert reply.data == {'invalid-helper': ['test2']}
-
-    reply = await transact(sls.daemon.Command("enable-helpers", {"helpers": {"test": "off"}}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    assert reply.data == {'invalid-state': ['test', 'off']}
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_set_steam_info(test_daemon, mock_config):
-    daemon, reader, writer = await test_daemon
-    reply = await transact(sls.daemon.Command("set-steam-info"), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-
-    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "invalid", "value": "foo"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.INVALID_ARGUMENTS
-    assert reply.data == {"key": "invalid"}
-
-    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "account_name", "value": "gaben"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert sls.steam.get_steam_account_name() == 'gaben'
-
-    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "account_id", "value": 12345}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert sls.steam.get_steam_account_id() == 12345
-
-    reply = await transact(sls.daemon.Command("set-steam-info", {"key": "deck_serial", "value": "HEV Mark IV"}), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
-    assert sls.steam.get_deck_serial() == 'HEV Mark IV'
+    assert await props['LogLevel'] == 'WARNING'
     await daemon.shutdown()
 
 
@@ -418,6 +266,29 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
 
 
 @pytest.mark.asyncio
+async def test_set_steam_info(dbus_daemon, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    await iface.set_steam_info('account_name', 'gaben')
+    assert sls.steam.get_steam_account_name() == 'gaben'
+
+    await iface.set_steam_info('account_id', '12345')
+    assert sls.steam.get_steam_account_id() == 12345
+
+    await iface.set_steam_info('deck_serial', 'HEV Mark IV')
+    assert sls.steam.get_deck_serial() == 'HEV Mark IV'
+
+    try:
+        await iface.set_steam_info('invalid', 'foo')
+        assert False
+    except dbus.errors.DBusError as e:
+        assert e.type == 'org.freedesktop.DBus.Error.InvalidArgs'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
@@ -458,36 +329,40 @@ async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_trigger_called(test_daemon, monkeypatch, count_hits, mock_config):
-    daemon, reader, writer = await test_daemon
+async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
     monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
     monkeypatch.setattr(sls.runner, 'submit', awaitable(count_hits))
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'on')
 
-    reply = await transact(sls.daemon.Command("trigger"), reader, writer)
-    assert reply.status == sls.daemon.Reply.OK
+    await iface.trigger()
     assert count_hits.hits == 2
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_trigger_wait(test_daemon, monkeypatch, mock_config):
+async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
     async def trigger():
         await asyncio.sleep(0.1)
+        count_hits()
 
-    daemon, reader, writer = await test_daemon
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
 
     start = time.time()
-    reply = await transact(sls.daemon.Command("trigger", {"wait": False}), reader, writer)
+    await iface.trigger_async()
     end = time.time()
-    assert reply.status == sls.daemon.Reply.OK
     assert end - start < 0.1
+    assert count_hits.hits == 0
 
     start = time.time()
-    reply = await transact(sls.daemon.Command("trigger", {"wait": True}), reader, writer)
+    await iface.trigger()
     end = time.time()
-    assert reply.status == sls.daemon.Reply.OK
     assert end - start >= 0.1
+    assert count_hits.hits > 0

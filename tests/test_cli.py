@@ -12,7 +12,7 @@ import steamos_log_submitter.runner as runner
 import steamos_log_submitter.steam as steam
 from . import always_raise, awaitable
 from . import count_hits, drop_root, mock_config, patch_module  # NOQA: F401
-from .daemon import dbus_client, dbus_daemon, fake_socket  # NOQA: F401
+from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
 
 
