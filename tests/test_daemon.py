@@ -12,8 +12,8 @@ import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from . import awaitable, setup_categories, CustomConfig
-from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
+from . import awaitable, CustomConfig
+from . import count_hits, mock_config, patch_module  # NOQA: F401
 from .daemon import fake_socket, systemd_object  # NOQA: F401
 from .dbus import mock_dbus  # NOQA: F401
 
@@ -133,12 +133,7 @@ async def test_broken_command(test_daemon, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_list(test_daemon, monkeypatch, helper_directory):
-    def list_helpers():
-        return ['test']
-
-    monkeypatch.setattr(sls.helpers, 'list_helpers', list_helpers)
-
+async def test_list(test_daemon, monkeypatch, patch_module):
     daemon, reader, writer = await test_daemon
     reply = await transact(sls.daemon.Command("list"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK
@@ -216,9 +211,8 @@ async def test_status(test_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_helper_status(test_daemon, mock_config, monkeypatch, helper_directory):
+async def test_helper_status(test_daemon, mock_config, monkeypatch, patch_module):
     daemon, reader, writer = await test_daemon
-    setup_categories(['test'])
 
     reply = await transact(sls.daemon.Command("helper-status"), reader, writer)
     assert reply.status == sls.daemon.Reply.OK

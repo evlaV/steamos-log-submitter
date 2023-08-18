@@ -11,7 +11,7 @@ import steamos_log_submitter.daemon
 import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
+from . import count_hits, mock_config, patch_module  # NOQA: F401
 from .daemon import fake_socket  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
 
@@ -36,11 +36,7 @@ async def test_dbus(dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_list(dbus_daemon, helper_directory, monkeypatch):
-    def list_helpers():
-        return ['test']
-
-    monkeypatch.setattr(sls.helpers, 'list_helpers', list_helpers)
+async def test_list(dbus_daemon, patch_module, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')
     assert {child for child in await manager.list_children()} == {
@@ -63,11 +59,7 @@ async def test_enabled(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_helper_enabled(dbus_daemon, helper_directory, mock_config, monkeypatch):
-    def list_helpers():
-        return ['test']
-
-    monkeypatch.setattr(sls.helpers, 'list_helpers', list_helpers)
+async def test_helper_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
@@ -79,11 +71,7 @@ async def test_helper_enabled(dbus_daemon, helper_directory, mock_config, monkey
 
 
 @pytest.mark.asyncio
-async def test_helper_collect_enabled(dbus_daemon, helper_directory, mock_config, monkeypatch):
-    def list_helpers():
-        return ['test']
-
-    monkeypatch.setattr(sls.helpers, 'list_helpers', list_helpers)
+async def test_helper_collect_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
@@ -95,11 +83,7 @@ async def test_helper_collect_enabled(dbus_daemon, helper_directory, mock_config
 
 
 @pytest.mark.asyncio
-async def test_helper_submit_enabled(dbus_daemon, helper_directory, mock_config, monkeypatch):
-    def list_helpers():
-        return ['test']
-
-    monkeypatch.setattr(sls.helpers, 'list_helpers', list_helpers)
+async def test_helper_submit_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')

@@ -86,7 +86,7 @@ def always_raise(exc):
 
 
 @pytest.fixture
-def patch_module(mock_config):
+def patch_module(mock_config, monkeypatch):
     class TestHelper(sls.helpers.Helper):
         defaults = None
 
@@ -96,6 +96,17 @@ def patch_module(mock_config):
 
     TestHelper.name = 'test'
     TestHelper.config = sls.config.get_config('steamos_log_submitter.helpers.test')
+
+    original_import_module = importlib.import_module
+
+    def import_module(name, package=None):
+        if name.startswith('steamos_log_submitter.helpers.test'):
+            TestHelper.helper = TestHelper
+            return TestHelper
+        return original_import_module(name, package)
+    monkeypatch.setattr(importlib, 'import_module', import_module)
+    monkeypatch.setattr(steamos_log_submitter.helpers, 'list_helpers', lambda: ['test'])
+
     return TestHelper
 
 
@@ -111,15 +122,6 @@ def helper_directory(monkeypatch, patch_module):
     monkeypatch.setattr(sls, 'pending', pending)
     monkeypatch.setattr(sls, 'uploaded', uploaded)
     monkeypatch.setattr(sls, 'failed', failed)
-
-    original_import_module = importlib.import_module
-
-    def import_module(name, package=None):
-        if name.startswith('steamos_log_submitter.helpers.test'):
-            patch_module.helper = patch_module
-            return patch_module
-        return original_import_module(name, package)
-    monkeypatch.setattr(importlib, 'import_module', import_module)
 
     def list_helpers():
         nonlocal d
