@@ -127,6 +127,7 @@ class Daemon:
         self._conns: list[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = []
         self._exit_on_shutdown = exit_on_shutdown
         self._periodic_task: Optional[asyncio.Task[None]] = None
+        self._async_trigger: Optional[asyncio.Task[None]] = None
         self._serving = False
         self._suspend = 'inactive'
         self._trigger_active = False
@@ -280,33 +281,47 @@ class Daemon:
 
     async def _trigger(self) -> None:
         if self.inhibited():
+            self._async_trigger = None
             return
+        if self._trigger_active:
+            self._async_trigger = None
+            return
+        self._trigger_active = True
         await sls.runner.trigger()
         last_trigger = time.time()
         config['last_trigger'] = last_trigger
         sls.config.write_config()
         self._next_trigger = last_trigger + self._interval
         task = self._periodic_task
-        self._periodic_task = asyncio.create_task(self._trigger_periodic())
+        if self._serving:
+            self._periodic_task = asyncio.create_task(self._trigger_periodic())
         if task:
             task.cancel()
             try:
                 await task
             except asyncio.CancelledError:
                 pass
+        self._trigger_active = False
+        self._async_trigger = None
 
     async def trigger(self, wait: bool = True) -> None:
         if self.inhibited():
             return
         if self._trigger_active:
+            if not wait:
+                return
+            stored_coro = self._async_trigger or self._periodic_task
+            if not stored_coro:
+                logger.error('Neither async trigger nor periodic trigger active. Who owns the trigger lock?')
+                return
+            await stored_coro
+            assert not self._trigger_active
             return
         coro = self._trigger()
         if wait:
-            self._trigger_active = True
             await coro
-            self._trigger_active = False
         else:
-            asyncio.create_task(coro)
+            self._async_trigger = asyncio.create_task(coro)
 
     def enabled(self) -> bool:
         return sls.base_config.get('enable', 'off') == 'on'
