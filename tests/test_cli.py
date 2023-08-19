@@ -280,6 +280,7 @@ async def test_set_steam_key_invalid(mock_config, cli_wrapper):
 async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
     daemon, client = await cli_wrapper
+    await cli.amain(['enable'])
     await cli.amain(['trigger'])
     await asyncio.sleep(0.01)
     assert count_hits.hits == 1
@@ -289,6 +290,7 @@ async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
 @pytest.mark.asyncio
 async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
     daemon, client = await cli_wrapper
+    await cli.amain(['enable'])
 
     async def trigger():
         await asyncio.sleep(0.04)
@@ -309,6 +311,7 @@ async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
 @pytest.mark.asyncio
 async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
     daemon, client = await cli_wrapper
+    await cli.amain(['enable'])
 
     async def trigger():
         await asyncio.sleep(0.04)

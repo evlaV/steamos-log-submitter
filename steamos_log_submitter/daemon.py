@@ -149,7 +149,7 @@ class Daemon:
             if next_trigger > self._next_trigger:
                 self._next_trigger = next_trigger
 
-        if not self.inhibited():
+        if not self.inhibited() and self.enabled():
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
         await sls.dbus.connect()
@@ -205,7 +205,7 @@ class Daemon:
             loop.stop()
 
     async def _trigger(self) -> None:
-        if self.inhibited():
+        if self.inhibited() or not self.enabled():
             self._async_trigger = None
             return
         if self._trigger_active:
@@ -230,7 +230,7 @@ class Daemon:
         self._async_trigger = None
 
     async def trigger(self, wait: bool = True) -> None:
-        if self.inhibited():
+        if self.inhibited() or not self.enabled():
             return
         if self._trigger_active:
             if not wait:
@@ -256,28 +256,31 @@ class Daemon:
             raise InvalidArgumentsError({'state': state})
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
+        await self._update_schedule()
         if self.iface:
             self.iface.emit_properties_changed({'Enabled': self.enabled()})
 
+    def inhibited(self) -> bool:
+        return sls.base_config.get('inhibit', 'off') == 'on'
+
     async def inhibit(self, state: bool) -> None:
-        if not isinstance(state, bool):
-            return Reply(Reply.INVALID_ARGUMENTS, data={'state': state})
         sls.base_config['inhibit'] = 'on' if state else 'off'
         sls.config.write_config()
+        await self._update_schedule()
         if self.iface:
             self.iface.emit_properties_changed({'Inhibited': self.inhibited()})
-        if state and self._periodic_task:
+
+    async def _update_schedule(self) -> None:
+        inhibited = self.inhibited() or not self.enabled()
+        if inhibited and self._periodic_task:
             self._periodic_task.cancel()
             try:
                 await self._periodic_task
             except asyncio.CancelledError:
                 pass
             self._periodic_task = None
-        elif not state and not self._periodic_task:
+        elif not inhibited and not self._periodic_task:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
-
-    def inhibited(self) -> bool:
-        return sls.base_config.get('inhibit', 'off') == 'on'
 
     def log_level(self) -> str:
         return sls.logging.config.get('level', 'WARNING').upper()

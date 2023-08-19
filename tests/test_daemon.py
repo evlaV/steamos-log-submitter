@@ -34,7 +34,6 @@ async def test_dbus(dbus_daemon):
 @pytest.mark.asyncio
 async def test_shutdown(dbus_daemon):
     daemon, bus = await dbus_daemon
-    assert daemon._periodic_task is not None
     await daemon.shutdown()
     assert not daemon._serving
     assert daemon._periodic_task is None
@@ -44,7 +43,6 @@ async def test_shutdown(dbus_daemon):
 @pytest.mark.asyncio
 async def test_shutdown_dbus(dbus_daemon):
     daemon, bus = await dbus_daemon
-    assert daemon._periodic_task is not None
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
     iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
     await iface.shutdown()
@@ -194,11 +192,9 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
 
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
-
     start = time.time()
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
@@ -220,13 +216,11 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.08)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
 
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
-
     mock_config.add_section('daemon')
     start = time.time()
     mock_config.set('daemon', 'last_trigger', str(start + 0.05))
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
@@ -243,19 +237,18 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
 @pytest.mark.asyncio
 async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.02)
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.2)
 
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
 
     start = time.time()
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
 
-    assert count_hits.hits in (0, 1)
-    await asyncio.sleep(0.03)
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.06)
     assert count_hits.hits == 1
     end = float(mock_config.get('daemon', 'last_trigger'))
     assert end - start > 0
@@ -272,11 +265,10 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.07)
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
 
     start = time.time()
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
@@ -325,10 +317,9 @@ async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.04)
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
     start = time.time()
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
 
     assert count_hits.hits == 0
     await asyncio.sleep(0.06)
@@ -368,9 +359,7 @@ async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config)
     monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
     monkeypatch.setattr(sls.runner, 'submit', awaitable(count_hits))
 
-    mock_config.add_section('sls')
-    mock_config.set('sls', 'enable', 'on')
-
+    await daemon.enable(True)
     await iface.trigger()
     assert count_hits.hits == 2
     await daemon.shutdown()
@@ -383,6 +372,7 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
         count_hits()
 
     daemon, bus = await dbus_daemon
+    await daemon.enable(True)
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
     iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
@@ -397,4 +387,4 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
     await iface.trigger()
     end = time.time()
     assert end - start >= 0.1
-    assert count_hits.hits > 0
+    assert count_hits.hits in (1, 2)

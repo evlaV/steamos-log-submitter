@@ -18,7 +18,6 @@ from .dbus import mock_dbus, real_dbus  # NOQA: F401
 @pytest.mark.asyncio
 async def test_shutdown(dbus_client):
     daemon, client = await dbus_client
-    assert daemon._periodic_task is not None
     await client.shutdown()
     assert not daemon._serving
     assert daemon._periodic_task is None
@@ -66,6 +65,7 @@ async def test_client_set_log_level(dbus_client, mock_config):
 async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     daemon, client = await dbus_client
+    await client.enable()
     await client.trigger()
     assert count_hits.hits == 1
     await daemon.shutdown()
@@ -78,6 +78,7 @@ async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
     daemon, client = await dbus_client
+    await client.enable()
 
     start = time.time()
     await client.trigger(False)
@@ -98,6 +99,7 @@ async def test_client_trigger_wait2(dbus_client, mock_config, monkeypatch):
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
     daemon, client = await dbus_client
+    await client.enable()
 
     start = time.time()
     await client.trigger(True)
