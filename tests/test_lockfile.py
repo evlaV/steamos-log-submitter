@@ -6,20 +6,23 @@
 import builtins
 import os
 import pytest
+import time
 from steamos_log_submitter.lockfile import Lockfile, LockHeldError, LockNotHeldError, LockRetry
 
 
 @pytest.fixture(scope='function')
 def lockfile():
+    ts = (time.time_ns() >> 10) & 0xFFFFFF
+    lock = f'.{ts:06x}.lock'
     try:
-        os.remove('.tmp.lock')
+        os.remove(lock)
     except FileNotFoundError:
         pass
 
-    yield '.tmp.lock'
+    yield lock
 
     try:
-        os.remove('.tmp.lock')
+        os.remove(lock)
     except FileNotFoundError:
         pass
 
