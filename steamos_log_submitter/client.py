@@ -133,6 +133,6 @@ class Client:
             if wait:
                 await self._iface.trigger()
             else:
-                await self._iface.trigger(flags=dbus.MessageFlag.NO_REPLY_EXPECTED)
+                await self._iface.trigger_async()
         except Exception as e:
             self._rethrow(e)

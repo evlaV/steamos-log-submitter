@@ -201,6 +201,7 @@ async def test_enable_invalid_helper(capsys, mock_config, monkeypatch, cli_wrapp
     await cli.amain(['enable-helper', 'test2'])
     assert not mock_config.has_section('helpers.test2')
     assert capsys.readouterr().err.strip() == 'Invalid helpers: test2'
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -215,6 +216,7 @@ async def test_disable_helpers(mock_config, monkeypatch, cli_wrapper, patch_modu
     await cli.amain(['disable-helper', 'test', 'test2'])
     assert mock_config.get('helpers.test', 'enable') == 'off'
     assert mock_config.get('helpers.test2', 'enable') == 'off'
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -225,6 +227,7 @@ async def test_set_steam_key_account_name(mock_config, monkeypatch, cli_wrapper)
     assert mock_config.has_section('steam')
     assert mock_config.get('steam', 'account_name') == 'gaben'
     assert steam.get_steam_account_name() == 'gaben'
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -235,6 +238,7 @@ async def test_set_steam_key_account_id(mock_config, monkeypatch, cli_wrapper):
     assert mock_config.has_section('steam')
     assert mock_config.get('steam', 'account_id') == '42'
     assert steam.get_steam_account_id() == 42
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -245,6 +249,7 @@ async def test_set_steam_key_account_id_invalid(mock_config, monkeypatch, cli_wr
     await cli.amain(['set-steam-info', 'account-id', 'gaben'])
     assert not mock_config.has_section('steam')
     assert steam.get_steam_account_id() is None
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -255,6 +260,7 @@ async def test_set_steam_key_deck_serial(mock_config, monkeypatch, cli_wrapper):
     assert mock_config.has_section('steam')
     assert mock_config.get('steam', 'deck_serial') == 'AAAA0000'
     assert steam.get_deck_serial() == 'AAAA0000'
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
@@ -267,30 +273,54 @@ async def test_set_steam_key_invalid(mock_config, cli_wrapper):
     except SystemExit:
         pass
     assert not mock_config.has_section('steam')
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_trigger(count_hits, monkeypatch, cli_wrapper):
+async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
     daemon, client = await cli_wrapper
     await cli.amain(['trigger'])
     await asyncio.sleep(0.01)
     assert count_hits.hits == 1
+    await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper):
+async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
     daemon, client = await cli_wrapper
 
-    async def trigger(wait):
-        await asyncio.sleep(0.05)
+    async def trigger():
+        await asyncio.sleep(0.04)
         count_hits()
 
-    monkeypatch.setattr(daemon, 'trigger', trigger)
+    monkeypatch.setattr(daemon, '_trigger', trigger)
+
+    await cli.amain(['trigger'])
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.05)
+    assert count_hits.hits == 1
+
+    await cli.amain(['trigger', '--wait'])
+    assert count_hits.hits == 2
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
+    daemon, client = await cli_wrapper
+
+    async def trigger():
+        await asyncio.sleep(0.04)
+        count_hits()
+
+    monkeypatch.setattr(daemon, '_trigger', trigger)
 
     await cli.amain(['trigger', '--wait'])
     assert count_hits.hits == 1
+
     await cli.amain(['trigger'])
     assert count_hits.hits == 1
-    await asyncio.sleep(0.06)
+    await asyncio.sleep(0.05)
     assert count_hits.hits == 2
+    await daemon.shutdown()

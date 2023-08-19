@@ -84,12 +84,30 @@ async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
     end = time.time()
     assert end - start < 0.1
 
-    await asyncio.sleep(0.1)
+    start = time.time()
+    await client.trigger(True)
+    end = time.time()
+    assert end - start >= 0.1
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_client_trigger_wait2(dbus_client, mock_config, monkeypatch):
+    async def trigger():
+        await asyncio.sleep(0.1)
+
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+    daemon, client = await dbus_client
 
     start = time.time()
     await client.trigger(True)
     end = time.time()
     assert end - start >= 0.1
+
+    start = time.time()
+    await client.trigger(False)
+    end = time.time()
+    assert end - start < 0.1
     await daemon.shutdown()
 
 

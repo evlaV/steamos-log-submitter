@@ -13,4 +13,4 @@ logger = logging.getLogger(__name__)
 
 
 def trigger() -> None:
-    asyncio.run(sls.client.Client().trigger())
+    asyncio.run(sls.client.Client().trigger(wait=False))
