@@ -7,13 +7,14 @@ import asyncio
 import dbus_next as dbus
 import gc
 import importlib.machinery
+import inspect
 import json
 import logging
 import os
 import psutil
 import time
-from dbus_next.constants import ErrorType
-from typing import Optional
+from collections.abc import Callable
+from typing import Optional, Self, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -26,56 +27,42 @@ config = sls.config.get_config(__loader__.name)
 logger = logging.getLogger(__loader__.name)
 
 
-class Reply:
-    OK = 0
-    UNKNOWN_ERROR = -1
-    INVALID_COMMAND = -2
-    INVALID_DATA = -3
-    INVALID_ARGUMENTS = -4
-
-    def __init__(self, status: int, data: Optional[JSONEncodable] = None):
-        self.status = status
-        self.data = data
-
-
 class DaemonError(RuntimeError):
-    def __init__(self, status: int, data: Optional[JSONEncodable] = None):
+    map: dict[str, Type[Self]] = {}
+    name: str
+
+    @classmethod
+    def __init_subclass__(cls) -> None:
+        cls.name = f'com.valvesoftware.SteamOSLogSubmitter.{cls.__name__}'
+        cls.map[cls.__name__] = cls
+        cls.map[cls.name] = cls
+
+    def __init__(self, data: Optional[JSONEncodable] = None):
         if data:
             super().__init__(data)
         else:
             super().__init__()
         self.data = data
-        self.status = status
 
 
 class UnknownError(DaemonError):
     def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(Reply.UNKNOWN_ERROR, data)
+        super().__init__(data)
 
 
 class InvalidCommandError(DaemonError):
     def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(Reply.INVALID_COMMAND, data)
+        super().__init__(data)
 
 
 class InvalidDataError(DaemonError):
     def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(Reply.INVALID_DATA, data)
+        super().__init__(data)
 
 
 class InvalidArgumentsError(DaemonError):
     def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(Reply.INVALID_ARGUMENTS, data)
-
-
-exception_map = {
-    Reply.UNKNOWN_ERROR: UnknownError,
-    Reply.INVALID_COMMAND: InvalidCommandError,
-    Reply.INVALID_DATA: InvalidDataError,
-    Reply.INVALID_ARGUMENTS: InvalidArgumentsError,
-
-    'org.freedesktop.DBus.Error.InvalidArgs': InvalidArgumentsError,
-}
+        super().__init__(data)
 
 
 class Daemon:
@@ -308,55 +295,92 @@ class Daemon:
         sls.config.write_config()
 
 
+def _reraise(exc: DaemonError) -> None:
+    blob = json.dumps(exc.data)
+    raise dbus.errors.DBusError(exc.name, blob) from exc
+
+
+def exc_awrap(fn: Callable) -> Callable:
+    async def wrapped(*args, **kwargs):  # type: ignore
+        try:
+            return await fn(*args, **kwargs)
+        except DaemonError as e:
+            _reraise(e)
+
+    wrapped.__signature__ = inspect.signature(fn)  # type: ignore
+    wrapped.__name__ = fn.__name__
+    return wrapped
+
+
+def exc_wrap(fn: Callable) -> Callable:
+    def wrapped(*args, **kwargs):  # type: ignore
+        try:
+            return fn(*args, **kwargs)
+        except DaemonError as e:
+            _reraise(e)
+
+    wrapped.__signature__ = inspect.signature(fn)  # type: ignore
+    wrapped.__name__ = fn.__name__
+    return wrapped
+
+
 class DaemonInterface(dbus.service.ServiceInterface):
     def __init__(self, daemon: 'sls.daemon.Daemon'):
         super().__init__(f'{sls.dbus.bus_name}.Manager')
         self.daemon = daemon
 
     @dbus.service.dbus_property()
+    @exc_wrap
     def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
         return self.daemon.enabled()
 
     @Enabled.setter
+    @exc_awrap
     async def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
         await self.daemon.enable(enable)
 
     @dbus.service.dbus_property()
+    @exc_wrap
     def Inhibited(self) -> 'b':  # type: ignore # NOQA: F821
         return self.daemon.inhibited()
 
     @Inhibited.setter
+    @exc_awrap
     async def set_inhibited(self, inhibit: 'b'):  # type: ignore # NOQA: F821
         await self.daemon.inhibit(inhibit)
 
     @dbus.service.dbus_property()
+    @exc_wrap
     def LogLevel(self) -> 's':  # type: ignore # NOQA: F821
         return self.daemon.log_level()
 
     @LogLevel.setter
+    @exc_awrap
     async def set_log_level(self, level: 's'):  # type: ignore # NOQA: F821
         await self.daemon.set_log_level(level)
 
     @dbus.service.method()
+    @exc_awrap
     async def Trigger(self):  # type: ignore
         await self.daemon.trigger(wait=True)
 
     @dbus.service.method()
+    @exc_awrap
     async def TriggerAsync(self):  # type: ignore
         await self.daemon.trigger(wait=False)
 
     @dbus.service.method()
+    @exc_awrap
     async def Shutdown(self):  # type: ignore
         await self.daemon.shutdown()
 
     @dbus.service.method()
+    @exc_awrap
     async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore # NOQA: F821
-        try:
-            await self.daemon.set_steam_info(key, value)
-        except InvalidArgumentsError as e:
-            raise dbus.errors.DBusError(ErrorType.INVALID_ARGS, json.dumps(e.data))
+        await self.daemon.set_steam_info(key, value)
 
     @dbus.service.method()
+    @exc_awrap
     async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722
         pending: list[str] = []
         for helper in sls.helpers.list_helpers():

@@ -31,11 +31,10 @@ class Client:
     @staticmethod
     def _rethrow(exc: BaseException) -> NoReturn:
         if isinstance(exc, dbus.errors.DBusError):
-            new_exc = daemon.exception_map.get(exc.type)
-            blob = json.loads(exc.text)
-            if new_exc:
-                raise new_exc(blob) from exc
-            raise sls.daemon.UnknownError(blob) from exc
+            if exc.type in daemon.DaemonError.map:
+                new_exc = daemon.DaemonError.map[exc.type]
+                raise new_exc(json.loads(exc.text)) from exc
+            raise daemon.UnknownError({'text': exc.text}) from exc
         raise exc
 
     @staticmethod
