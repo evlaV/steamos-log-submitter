@@ -57,12 +57,8 @@ class Daemon:
         self.iface = DaemonInterface(self)
         sls.dbus.system_bus.export(f'{DBUS_ROOT}/Manager', self.iface)
         for helper in sls.helpers.list_helpers():
-            try:
-                helper_module = sls.helpers.create_helper(helper)
-            except sls.exceptions.HelperError as e:
-                logger.warning(f'Failed to enumerate helper {helper}', exc_info=e)
-                continue
-            if not helper_module.iface:
+            helper_module = sls.helpers.create_helper(helper)
+            if not helper_module or not helper_module.iface:
                 continue
             camel_case = sls.util.camel_case(helper_module.name)
             sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface)
@@ -134,12 +130,8 @@ class Daemon:
         if bus:
             bus.unexport(f'{DBUS_ROOT}/Manager', self.iface)
             for helper in sls.helpers.list_helpers():
-                try:
-                    helper_module = sls.helpers.create_helper(helper)
-                except sls.exceptions.HelperError as e:
-                    logger.warning(f'Failed to enumerate helper {helper}', exc_info=e)
-                    continue
-                if not helper_module.iface:
+                helper_module = sls.helpers.create_helper(helper)
+                if not helper_module or not helper_module.iface:
                     continue
                 camel_case = sls.util.camel_case(helper_module.name)
                 bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface.name)
@@ -347,7 +339,8 @@ class DaemonInterface(dbus.service.ServiceInterface):
         pending: list[str] = []
         for helper in sls.helpers.list_helpers():
             helper_module = sls.helpers.create_helper(helper)
-            pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
+            if helper_module:
+                pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
         return pending
 
 

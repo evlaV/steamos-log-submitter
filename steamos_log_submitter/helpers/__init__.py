@@ -13,13 +13,15 @@ import tempfile
 from collections.abc import Container, Iterable
 from types import TracebackType
 from typing import Any, Optional, Type
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.constants import DBUS_NAME
-from steamos_log_submitter.exceptions import HelperError
 from steamos_log_submitter.types import JSONEncodable
+
+logger = logging.getLogger(__name__)
 
 
 class HelperResult:
@@ -178,14 +180,16 @@ class SentryHelper(Helper):
         return HelperResult.check(ok)
 
 
-def create_helper(category: str) -> Helper:
+def create_helper(category: str) -> Optional[Helper]:
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
         if not hasattr(helper, 'helper'):
-            raise HelperError('Helper module does not contain submit function')
+            logger.error('Helper module does not contain helper class')
+            return None
         helper.helper._setup()
-    except ModuleNotFoundError as e:
-        raise HelperError from e
+    except ModuleNotFoundError:
+        logger.error('Helper module not found')
+        return None
     return helper.helper
 
 

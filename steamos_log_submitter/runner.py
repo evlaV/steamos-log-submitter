@@ -33,10 +33,8 @@ async def collect() -> None:
     logger.info('Starting log collection')
     tasks = []
     for category in sls.helpers.list_helpers():
-        try:
-            helper = sls.helpers.create_helper(category)
-        except Exception as e:
-            logger.error(f'Encountered error getting helper for {category}', exc_info=e)
+        helper = sls.helpers.create_helper(category)
+        if not helper:
             continue
 
         if not helper.enabled() or not helper.collect_enabled():
@@ -81,10 +79,8 @@ async def submit() -> None:
 
     tasks = []
     for category in sls.helpers.list_helpers():
-        try:
-            helper = sls.helpers.create_helper(category)
-        except Exception as e:
-            logger.error(f'Encountered error getting helper for {category}', exc_info=e)
+        helper = sls.helpers.create_helper(category)
+        if not helper:
             continue
 
         if not helper.enabled() or not helper.submit_enabled():

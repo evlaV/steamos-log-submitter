@@ -34,10 +34,6 @@ class InvalidArgumentsError(Error):
     pass
 
 
-class HelperError(Error):
-    pass
-
-
 class LockHeldError(Error):
     pass
 
