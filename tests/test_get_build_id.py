@@ -35,3 +35,13 @@ BUILD_ID=definitely fake
 """
     open_shim(os_release)
     assert util.get_build_id() == 'definitely fake'
+
+
+def test_no_file(open_shim):
+    open_shim.enoent()
+    assert util.get_build_id() is None
+
+
+def test_eacces_file(open_shim):
+    open_shim.eacces()
+    assert util.get_build_id() is None

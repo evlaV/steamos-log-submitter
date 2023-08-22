@@ -95,6 +95,7 @@ def test_should_collect():
     assert not hook.should_collect('/tmp/.mount_not_a_virus')
     assert hook.should_collect('/home/deck/.local/bin/ruby')
     assert not hook.should_collect('/home/deck/.local/share/Steam/ubuntu12_64/secret')
+    assert not hook.should_collect('/app/bin/ikea')
 
 
 def test_basic(monkeypatch):
