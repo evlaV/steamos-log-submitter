@@ -6,7 +6,7 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Coroutine, Sequence
+from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from types import TracebackType
 from typing import Optional, Type
 
@@ -19,27 +19,37 @@ from steamos_log_submitter.types import JSON
 class ClientWrapper:
     bus = DBUS_NAME
 
-    def __enter__(self) -> Optional[sls.client.Client]:
+    async def __aenter__(self) -> Optional[sls.client.Client]:
         try:
             client = sls.client.Client(bus=self.bus)
+            await client._connect()
             return client
-        except FileNotFoundError:
-            print("Can't connect to daemon. Is service running?", file=sys.stderr)
+        except ConnectionRefusedError:
             return None
 
-    def __exit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> bool:
+    async def __aexit__(self, exc_type: Optional[Type[BaseException]], exc_value: Optional[BaseException], traceback: Optional[TracebackType]) -> bool:
         return not exc_type
 
 
+def command(fn: Callable[[sls.client.Client, argparse.Namespace], Awaitable[None]]) -> Callable[[argparse.Namespace], Awaitable[None]]:
+    async def wrapped(args: argparse.Namespace) -> None:
+        async with ClientWrapper() as client:
+            if not client:
+                return
+            await fn(client, args)
+
+    return wrapped
+
+
 async def set_enabled(enable: bool) -> None:
-    with ClientWrapper() as client:
+    async with ClientWrapper() as client:
         if not client:
             return
         await client.enable(enable)
 
 
 async def set_helper_enabled(helpers: list[str], enable: bool) -> None:
-    with ClientWrapper() as client:
+    async with ClientWrapper() as client:
         if not client:
             return
         helpers, invalid_helpers = sls.helpers.validate_helpers(helpers)
@@ -51,44 +61,38 @@ async def set_helper_enabled(helpers: list[str], enable: bool) -> None:
             await client.disable_helpers(helpers)
 
 
-async def do_status(args: argparse.Namespace) -> None:
-    with ClientWrapper() as client:
-        if not client:
-            return
-        status = await client.status()
-        helpers: Optional[dict[str, dict[str, JSON]]] = None
-        if args.all:
-            helpers = await client.helper_status()
-        elif args.helper:
-            valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
-            if valid_helpers:
-                helpers = await client.helper_status(valid_helpers)
-            if invalid_helpers:
-                print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
-        print('Log submission is currently ' + ('enabled' if status else 'disabled'))
-        if helpers:
-            for helper, helper_status in helpers.items():
-                print(f'Helper {helper} is currently ' + ('enabled' if helper_status['enabled'] else 'disabled'))
+@command
+async def do_status(client: sls.client.Client, args: argparse.Namespace) -> None:
+    status = await client.status()
+    helpers: Optional[dict[str, dict[str, JSON]]] = None
+    if args.all:
+        helpers = await client.helper_status()
+    elif args.helper:
+        valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
+        if valid_helpers:
+            helpers = await client.helper_status(valid_helpers)
+        if invalid_helpers:
+            print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
+    print('Log submission is currently ' + ('enabled' if status else 'disabled'))
+    if helpers:
+        for helper, helper_status in helpers.items():
+            print(f'Helper {helper} is currently ' + ('enabled' if helper_status['enabled'] else 'disabled'))
 
 
-async def do_list(args: argparse.Namespace) -> None:
-    with ClientWrapper() as client:
-        if not client:
-            return
-        for helper in sorted(await client.list()):
-            print(helper)
+@command
+async def do_list(client: sls.client.Client, args: argparse.Namespace) -> None:
+    for helper in sorted(await client.list()):
+        print(helper)
 
 
-async def do_log_level(args: argparse.Namespace) -> None:
-    with ClientWrapper() as client:
-        if not client:
-            return
-        if args.level is None:
-            print(await client.log_level())
-        elif sls.logging.valid_level(args.level):
-            await client.set_log_level(args.level)
-        else:
-            print('Please specify a valid log level', file=sys.stderr)
+@command
+async def do_log_level(client: sls.client.Client, args: argparse.Namespace) -> None:
+    if args.level is None:
+        print(await client.log_level())
+    elif sls.logging.valid_level(args.level):
+        await client.set_log_level(args.level)
+    else:
+        print('Please specify a valid log level', file=sys.stderr)
 
 
 async def set_steam_info(key: str, value: str) -> None:
@@ -99,17 +103,15 @@ async def set_steam_info(key: str, value: str) -> None:
             print('Account ID must be numeric', file=sys.stderr)
             return
 
-    with ClientWrapper() as client:
+    async with ClientWrapper() as client:
         if not client:
             return
         await client.set_steam_info(key.replace('-', '_'), value)
 
 
-async def do_trigger(args: argparse.Namespace) -> None:
-    with ClientWrapper() as client:
-        if not client:
-            return
-        await client.trigger(args.wait)
+@command
+async def do_trigger(client: sls.client.Client, args: argparse.Namespace) -> None:
+    await client.trigger(args.wait)
 
 
 def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:

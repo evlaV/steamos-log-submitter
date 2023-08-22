@@ -17,6 +17,17 @@ from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 
 @pytest.mark.asyncio
+async def test_inactive(real_dbus):
+    bus = await real_dbus
+    client = sls.client.Client(bus=bus)
+    try:
+        await client._connect()
+        assert False
+    except ConnectionRefusedError:
+        pass
+
+
+@pytest.mark.asyncio
 async def test_shutdown(dbus_client):
     daemon, client = await dbus_client
     await client.shutdown()

@@ -24,6 +24,15 @@ async def cli_wrapper(dbus_client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_no_daemon(monkeypatch, real_dbus):
+    bus = await real_dbus
+    monkeypatch.setattr(cli.ClientWrapper, 'bus', bus)
+
+    async with cli.ClientWrapper() as client:
+        assert client is None
+
+
+@pytest.mark.asyncio
 async def test_status(capsys, mock_config, cli_wrapper):
     daemon, client = await cli_wrapper
 

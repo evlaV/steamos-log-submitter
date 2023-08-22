@@ -13,4 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def trigger() -> None:
-    asyncio.run(sls.client.Client().trigger(wait=False))
+    try:
+        asyncio.run(sls.client.Client().trigger(wait=False))
+    except Exception as e:
+        logger.warning("Couldn't trigger submission, exiting", exc_info=e)
