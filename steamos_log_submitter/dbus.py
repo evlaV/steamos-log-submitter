@@ -82,7 +82,7 @@ def dbusify(fn: DBusCallable) -> Callable[..., Any]:
         def wrapped(*args: Any, **kwargs: Any) -> Any:
             return fn(*args, **kwargs)
 
-    wrapped.__signature__ = fn_signature(fn)  # type: ignore
+    wrapped.__signature__ = fn_signature(fn)  # type: ignore[attr-defined]
     return wrapped
 
 
@@ -115,7 +115,7 @@ class DBusProperties:
         if not self._properties_iface:
             await self._obj._connect()
             self._properties_iface = self._obj.object.get_interface('org.freedesktop.DBus.Properties')
-        variant = await self._properties_iface.call_get(self._iface, name)  # type: ignore
+        variant = await self._properties_iface.call_get(self._iface, name)  # type: ignore[attr-defined]
         return variant.value
 
     async def set(self, name: str, value: DBusEncodable) -> None:
@@ -128,7 +128,8 @@ class DBusProperties:
     def _update_props(self, iface: str, changed: dict[str, dbus.Variant], invalidated: list[str]) -> None:
         async def do_cb(cb: Callable[[str, str, Any], Awaitable[None]], iface: str, prop: str, value: Any) -> None:
             if value is None:
-                value = await self._properties_iface.call_get(self._iface, prop)  # type: ignore
+                assert self._properties_iface
+                value = await self._properties_iface.call_get(self._iface, prop)  # type: ignore[attr-defined]
             value = value.value
             await cb(iface, prop, value)
 
@@ -147,7 +148,7 @@ class DBusProperties:
         await self._obj._connect()
         if not self._subscribed:
             iface_handle = self._obj.object.get_interface('org.freedesktop.DBus.Properties')
-            iface_handle.on_properties_changed(self._update_props)  # type: ignore
+            iface_handle.on_properties_changed(self._update_props)  # type: ignore[attr-defined]
         self._subscribed[prop] = self._subscribed.get(prop, [])
         self._subscribed[prop].append(cb)
 

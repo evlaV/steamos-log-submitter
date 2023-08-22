@@ -325,7 +325,7 @@ class SysinfoHelper(Helper):
 
 class SysinfoInterface(dbus.service.ServiceInterface):
     @dbus.service.method()
-    async def GetJson(self) -> 's':  # type: ignore # NOQA: F821
+    async def GetJson(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
         return json.dumps(await self.fn())
 
     def __init__(self, device_type: str):

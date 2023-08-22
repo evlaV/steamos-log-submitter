@@ -6,7 +6,7 @@
 import logging
 import pwd
 import subprocess
-import vdf  # type: ignore
+import vdf  # type: ignore[import]
 import steamos_log_submitter as sls
 from typing import Optional
 

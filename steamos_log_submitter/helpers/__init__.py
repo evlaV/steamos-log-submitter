@@ -45,35 +45,35 @@ class HelperInterface(dbus.service.ServiceInterface):
         self.helper = helper
 
     @dbus.service.dbus_property()
-    def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
+    def Enabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return self.helper.enabled()
 
     @Enabled.setter
-    def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+    def set_enabled(self, enable: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         return self.helper.enable(enable)
 
     @dbus.service.dbus_property()
-    def CollectEnabled(self) -> 'b':  # type: ignore # NOQA: F821
+    def CollectEnabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return self.helper.collect_enabled()
 
     @CollectEnabled.setter
-    def set_collect_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+    def set_collect_enabled(self, enable: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         return self.helper.enable_collect(enable)
 
     @dbus.service.dbus_property()
-    def SubmitEnabled(self) -> 'b':  # type: ignore # NOQA: F821
+    def SubmitEnabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return self.helper.submit_enabled()
 
     @SubmitEnabled.setter
-    def set_submit_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+    def set_submit_enabled(self, enable: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         return self.helper.enable_submit(enable)
 
     @dbus.service.method()
-    async def Collect(self) -> 'b':  # type: ignore # NOQA: F821
+    async def Collect(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return await self.helper.collect()
 
     @dbus.service.method()
-    async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722
+    async def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return list(self.helper.list_pending())
 
 
@@ -99,7 +99,7 @@ class Helper:
         cls.child_services = {}
         if module == __name__:
             return
-        sys.modules[module].helper = cls  # type: ignore
+        sys.modules[module].helper = cls  # type: ignore[attr-defined]
 
     @classmethod
     def _setup(cls) -> None:

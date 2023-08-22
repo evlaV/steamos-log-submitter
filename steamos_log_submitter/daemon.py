@@ -263,25 +263,25 @@ def _reraise(exc: sls.exceptions.Error) -> None:
 
 
 def exc_awrap(fn: Callable) -> Callable:
-    async def wrapped(*args, **kwargs):  # type: ignore
+    async def wrapped(*args, **kwargs):  # type: ignore[no-untyped-def]
         try:
             return await fn(*args, **kwargs)
         except sls.exceptions.Error as e:
             _reraise(e)
 
-    wrapped.__signature__ = inspect.signature(fn)  # type: ignore
+    wrapped.__signature__ = inspect.signature(fn)  # type: ignore[attr-defined]
     wrapped.__name__ = fn.__name__
     return wrapped
 
 
 def exc_wrap(fn: Callable) -> Callable:
-    def wrapped(*args, **kwargs):  # type: ignore
+    def wrapped(*args, **kwargs):  # type: ignore[no-untyped-def]
         try:
             return fn(*args, **kwargs)
         except sls.exceptions.Error as e:
             _reraise(e)
 
-    wrapped.__signature__ = inspect.signature(fn)  # type: ignore
+    wrapped.__signature__ = inspect.signature(fn)  # type: ignore[attr-defined]
     wrapped.__name__ = fn.__name__
     return wrapped
 
@@ -293,57 +293,57 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
     @dbus.service.dbus_property()
     @exc_wrap
-    def Enabled(self) -> 'b':  # type: ignore # NOQA: F821
+    def Enabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return self.daemon.enabled()
 
     @Enabled.setter
     @exc_awrap
-    async def set_enabled(self, enable: 'b'):  # type: ignore # NOQA: F821
+    async def set_enabled(self, enable: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.enable(enable)
 
     @dbus.service.dbus_property()
     @exc_wrap
-    def Inhibited(self) -> 'b':  # type: ignore # NOQA: F821
+    def Inhibited(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
         return self.daemon.inhibited()
 
     @Inhibited.setter
     @exc_awrap
-    async def set_inhibited(self, inhibit: 'b'):  # type: ignore # NOQA: F821
+    async def set_inhibited(self, inhibit: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.inhibit(inhibit)
 
     @dbus.service.dbus_property()
     @exc_wrap
-    def LogLevel(self) -> 's':  # type: ignore # NOQA: F821
+    def LogLevel(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
         return self.daemon.log_level()
 
     @LogLevel.setter
     @exc_awrap
-    async def set_log_level(self, level: 's'):  # type: ignore # NOQA: F821
+    async def set_log_level(self, level: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.set_log_level(level)
 
     @dbus.service.method()
     @exc_awrap
-    async def Trigger(self):  # type: ignore
+    async def Trigger(self):  # type: ignore[no-untyped-def]
         await self.daemon.trigger(wait=True)
 
     @dbus.service.method()
     @exc_awrap
-    async def TriggerAsync(self):  # type: ignore
+    async def TriggerAsync(self):  # type: ignore[no-untyped-def]
         await self.daemon.trigger(wait=False)
 
     @dbus.service.method()
     @exc_awrap
-    async def Shutdown(self):  # type: ignore
+    async def Shutdown(self):  # type: ignore[no-untyped-def]
         await self.daemon.shutdown()
 
     @dbus.service.method()
     @exc_awrap
-    async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore # NOQA: F821
+    async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.set_steam_info(key, value)
 
     @dbus.service.method()
     @exc_awrap
-    async def ListPending(self) -> 'as':  # type: ignore # NOQA: F821, F722
+    async def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         pending: list[str] = []
         for helper in sls.helpers.list_helpers():
             helper_module = sls.helpers.create_helper(helper)
