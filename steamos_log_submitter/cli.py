@@ -128,22 +128,11 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     status.add_argument('helper', nargs='*', help='Which helpers to show the status of')
     status.set_defaults(func=do_status)
 
-    list_cmd = subparsers.add_parser('list',
-                                     description='''List all available helper modules. Each helper
-                                                    module handles one or more types of logs that have
-                                                    a common method of collection and submission.''',
-                                     help='List helper modules')
-    list_cmd.set_defaults(func=do_list)
-
-    log_level = subparsers.add_parser('log-level',
-                                      description='''Set or get the log level. If no argument is passed,
-                                                     print the current log level, otherwise set a new
-                                                     log level.''',
-                                      help='Set or get the log level')
-    log_level.add_argument('level', type=str, nargs='?',
-                           help='''Which new log level to set. The possible levels are DEBUG, INFO,
-                                   WARNING, ERROR, and CRITICAL, in order from least to most severe.''')
-    log_level.set_defaults(func=do_log_level)
+    trigger = subparsers.add_parser('trigger',
+                                    description='Trigger an immediate log collection and submission',
+                                    help='Trigger collection/submission')
+    trigger.add_argument('--wait', action='store_true', help='Wait until complete')
+    trigger.set_defaults(func=do_trigger)
 
     enable = subparsers.add_parser('enable',
                                    description='Enable the log collection service.',
@@ -154,6 +143,13 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                                     description='Disable the log collection service.',
                                     help='Disable log collection')
     disable.set_defaults(func=lambda _: set_enabled(False))
+
+    list_cmd = subparsers.add_parser('list',
+                                     description='''List all available helper modules. Each helper
+                                                    module handles one or more types of logs that have
+                                                    a common method of collection and submission.''',
+                                     help='List helper modules')
+    list_cmd.set_defaults(func=do_list)
 
     enable_helper = subparsers.add_parser('enable-helper',
                                           description='Enable one or more specific helper modules.',
@@ -167,11 +163,15 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     disable_helper.add_argument('helper', nargs='+')
     disable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, False))
 
-    trigger = subparsers.add_parser('trigger',
-                                    description='Trigger an immediate log collection and submission',
-                                    help='Trigger collection/submission')
-    trigger.add_argument('--wait', action='store_true', help='Wait until complete')
-    trigger.set_defaults(func=do_trigger)
+    log_level = subparsers.add_parser('log-level',
+                                      description='''Set or get the log level. If no argument is passed,
+                                                     print the current log level, otherwise set a new
+                                                     log level.''',
+                                      help='Set or get the log level')
+    log_level.add_argument('level', type=str, nargs='?',
+                           help='''Which new log level to set. The possible levels are DEBUG, INFO,
+                                   WARNING, ERROR, and CRITICAL, in order from least to most severe.''')
+    log_level.set_defaults(func=do_log_level)
 
     set_steam = subparsers.add_parser('set-steam-info',
                                       description='''Set a value relating to the current Steam configuration.
