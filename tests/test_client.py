@@ -59,6 +59,21 @@ async def test_client_set_log_level(dbus_client, mock_config):
     assert await client.log_level() != 'ERROR'
     await client.set_log_level('ERROR')
     assert await client.log_level() == 'ERROR'
+
+    await client.set_log_level('warning')
+    assert await client.log_level() == 'WARNING'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_client_set_log_level_invalid(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    try:
+        await client.set_log_level('VERBOSE')
+        assert False
+    except sls.exceptions.InvalidArgumentsError as e:
+        assert e.data == {'level': 'VERBOSE'}
+    assert await client.log_level() != 'VERBOSE'
     await daemon.shutdown()
 
 
