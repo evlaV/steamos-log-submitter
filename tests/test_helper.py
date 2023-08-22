@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import importlib
 import os
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
@@ -38,3 +39,21 @@ def test_list_filtering(patch_module):
     patch_module.valid_extensions = {'.json'}
     assert patch_module.filter_log('xyz.abc') is False
     assert patch_module.filter_log('xyz.json') is True
+
+
+def test_invalid_helper_module(patch_module):
+    assert helpers.create_helper('test') is not None
+    assert helpers.create_helper('foo') is None
+
+
+def test_invalid_broken_module(monkeypatch):
+    original_import_module = importlib.import_module
+
+    def import_module(name, package=None):
+        if name.startswith('steamos_log_submitter.helpers.test'):
+            return ()
+        return original_import_module(name, package)
+    monkeypatch.setattr(importlib, 'import_module', import_module)
+    monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
+
+    assert helpers.create_helper('test') is None

@@ -183,13 +183,13 @@ class SentryHelper(Helper):
 def create_helper(category: str) -> Optional[Helper]:
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
-        if not hasattr(helper, 'helper'):
-            logger.error('Helper module does not contain helper class')
-            return None
-        helper.helper._setup()
     except ModuleNotFoundError:
         logger.error('Helper module not found')
         return None
+    if not hasattr(helper, 'helper'):
+        logger.error('Helper module does not contain helper class')
+        return None
+    helper.helper._setup()
     return helper.helper
 
 
