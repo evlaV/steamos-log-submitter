@@ -3,17 +3,48 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-class HelperError(NotImplementedError):
+from steamos_log_submitter.constants import DBUS_NAME
+from steamos_log_submitter.types import JSONEncodable
+from typing import Optional, Self, Type
+
+
+class Error(RuntimeError):
+    map: dict[str, Type[Self]] = {}
+    name: str
+
+    @classmethod
+    def __init_subclass__(cls) -> None:
+        cls.name = f'{DBUS_NAME}.{cls.__name__}'
+        cls.map[cls.__name__] = cls
+        cls.map[cls.name] = cls
+
+    def __init__(self, data: Optional[JSONEncodable] = None):
+        if data:
+            super().__init__(data)
+        else:
+            super().__init__()
+        self.data = data
+
+
+class UnknownError(Error):
     pass
 
 
-class LockHeldError(RuntimeError):
+class InvalidArgumentsError(Error):
     pass
 
 
-class LockNotHeldError(RuntimeError):
+class HelperError(Error):
     pass
 
 
-class RateLimitingError(RuntimeError):
+class LockHeldError(Error):
+    pass
+
+
+class LockNotHeldError(Error):
+    pass
+
+
+class RateLimitingError(Error):
     pass

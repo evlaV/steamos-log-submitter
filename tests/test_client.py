@@ -9,6 +9,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
+import steamos_log_submitter.exceptions
 from . import awaitable, setup_categories
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
@@ -122,7 +123,7 @@ async def test_helper_status(dbus_client, helper_directory):
     try:
         await client.helper_status(['test2'])
         assert False
-    except sls.daemon.InvalidArgumentsError:
+    except sls.exceptions.InvalidArgumentsError:
         pass
     await daemon.shutdown()
 
@@ -139,7 +140,7 @@ async def test_enable_helpers(mock_config, dbus_client, helper_directory):
     try:
         await client.enable_helpers(['test2'])
         assert False
-    except sls.daemon.InvalidArgumentsError:
+    except sls.exceptions.InvalidArgumentsError:
         pass
     await daemon.shutdown()
 
@@ -152,6 +153,6 @@ async def test_set_steam_info(dbus_client, mock_config):
     try:
         await client.set_steam_info('account_serial', 12345)
         assert False
-    except sls.daemon.InvalidArgumentsError:
+    except sls.exceptions.InvalidArgumentsError:
         pass
     await daemon.shutdown()

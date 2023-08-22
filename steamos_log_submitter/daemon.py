@@ -14,55 +14,17 @@ import os
 import psutil
 import time
 from collections.abc import Callable
-from typing import Optional, Self, Type
+from typing import Optional
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from steamos_log_submitter.types import JSONEncodable
+from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
 
 __loader__: importlib.machinery.SourceFileLoader
 config = sls.config.get_config(__loader__.name)
 logger = logging.getLogger(__loader__.name)
-
-
-class DaemonError(RuntimeError):
-    map: dict[str, Type[Self]] = {}
-    name: str
-
-    @classmethod
-    def __init_subclass__(cls) -> None:
-        cls.name = f'com.valvesoftware.SteamOSLogSubmitter.{cls.__name__}'
-        cls.map[cls.__name__] = cls
-        cls.map[cls.name] = cls
-
-    def __init__(self, data: Optional[JSONEncodable] = None):
-        if data:
-            super().__init__(data)
-        else:
-            super().__init__()
-        self.data = data
-
-
-class UnknownError(DaemonError):
-    def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(data)
-
-
-class InvalidCommandError(DaemonError):
-    def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(data)
-
-
-class InvalidDataError(DaemonError):
-    def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(data)
-
-
-class InvalidArgumentsError(DaemonError):
-    def __init__(self, data: Optional[JSONEncodable] = None):
-        super().__init__(data)
 
 
 class Daemon:
@@ -93,7 +55,7 @@ class Daemon:
     def _setup_dbus(self) -> None:
         assert sls.dbus.system_bus
         self.iface = DaemonInterface(self)
-        sls.dbus.system_bus.export('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+        sls.dbus.system_bus.export(f'{DBUS_ROOT}/Manager', self.iface)
         for helper in sls.helpers.list_helpers():
             try:
                 helper_module = sls.helpers.create_helper(helper)
@@ -103,12 +65,12 @@ class Daemon:
             if not helper_module.iface:
                 continue
             camel_case = sls.util.camel_case(helper_module.name)
-            sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface)
+            sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface)
 
             for iface in helper_module.extra_ifaces.values():
-                sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', iface)
+                sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', iface)
             for service, iface in helper_module.child_services.items():
-                sls.dbus.system_bus.export(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}/{service}', iface)
+                sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}/{service}', iface)
 
     async def _leave_suspend(self, iface: str, prop: str, value: str) -> None:
         if value == self._suspend:
@@ -142,7 +104,7 @@ class Daemon:
         await sls.dbus.connect()
         assert sls.dbus.system_bus
         try:
-            await sls.dbus.system_bus.request_name(sls.dbus.bus_name)
+            await sls.dbus.system_bus.request_name(DBUS_NAME)
         except (dbus.errors.DBusError, RuntimeError) as e:
             logger.error('Failed to claim D-Bus bus name', exc_info=e)
         self._setup_dbus()
@@ -170,7 +132,7 @@ class Daemon:
 
         bus = sls.dbus.system_bus
         if bus:
-            bus.unexport('/com/valvesoftware/SteamOSLogSubmitter/Manager', self.iface)
+            bus.unexport(f'{DBUS_ROOT}/Manager', self.iface)
             for helper in sls.helpers.list_helpers():
                 try:
                     helper_module = sls.helpers.create_helper(helper)
@@ -180,12 +142,12 @@ class Daemon:
                 if not helper_module.iface:
                     continue
                 camel_case = sls.util.camel_case(helper_module.name)
-                bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', helper_module.iface.name)
+                bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface.name)
 
                 for iface in helper_module.extra_ifaces.values():
-                    bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}', iface.name)
+                    bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}', iface.name)
                 for service, iface in helper_module.child_services.items():
-                    bus.unexport(f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}/{service}', iface.name)
+                    bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}/{service}', iface.name)
 
         if self._exit_on_shutdown:  # pragma: no cover
             loop = asyncio.get_event_loop()
@@ -240,7 +202,7 @@ class Daemon:
 
     async def enable(self, state: bool) -> None:
         if not isinstance(state, bool):
-            raise InvalidArgumentsError({'state': state})
+            raise sls.dbus.InvalidArgumentsError({'state': state})
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
         await self._update_schedule()
@@ -274,7 +236,7 @@ class Daemon:
 
     async def set_log_level(self, level: str) -> None:
         if not sls.logging.valid_level(level):
-            raise InvalidArgumentsError({'level': level})
+            raise sls.exceptions.InvalidArgumentsError({'level': level})
         sls.config.migrate_key('logging', 'level')
         sls.logging.config['level'] = level.upper()
         sls.config.write_config()
@@ -288,14 +250,14 @@ class Daemon:
             'account_name'
         ):
             logger.warning(f'Got Steam info change for invalid key {key}')
-            raise InvalidArgumentsError({'key': key})
+            raise sls.exceptions.InvalidArgumentsError({'key': key})
 
         logger.debug(f'Changing Steam info key {key} to {value}')
         sls.steam.config[key] = value
         sls.config.write_config()
 
 
-def _reraise(exc: DaemonError) -> None:
+def _reraise(exc: sls.exceptions.Error) -> None:
     blob = json.dumps(exc.data)
     raise dbus.errors.DBusError(exc.name, blob) from exc
 
@@ -304,7 +266,7 @@ def exc_awrap(fn: Callable) -> Callable:
     async def wrapped(*args, **kwargs):  # type: ignore
         try:
             return await fn(*args, **kwargs)
-        except DaemonError as e:
+        except sls.exceptions.Error as e:
             _reraise(e)
 
     wrapped.__signature__ = inspect.signature(fn)  # type: ignore
@@ -316,7 +278,7 @@ def exc_wrap(fn: Callable) -> Callable:
     def wrapped(*args, **kwargs):  # type: ignore
         try:
             return fn(*args, **kwargs)
-        except DaemonError as e:
+        except sls.exceptions.Error as e:
             _reraise(e)
 
     wrapped.__signature__ = inspect.signature(fn)  # type: ignore
@@ -326,7 +288,7 @@ def exc_wrap(fn: Callable) -> Callable:
 
 class DaemonInterface(dbus.service.ServiceInterface):
     def __init__(self, daemon: 'sls.daemon.Daemon'):
-        super().__init__(f'{sls.dbus.bus_name}.Manager')
+        super().__init__(f'{DBUS_NAME}.Manager')
         self.daemon = daemon
 
     @dbus.service.dbus_property()

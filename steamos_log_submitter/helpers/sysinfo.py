@@ -15,6 +15,7 @@ from typing import Optional, Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.dbus
+from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.dbus import DBusObject
 from steamos_log_submitter.types import JSON
 from . import Helper, HelperResult
@@ -328,6 +329,6 @@ class SysinfoInterface(dbus.service.ServiceInterface):
         return json.dumps(await self.fn())
 
     def __init__(self, device_type: str):
-        super().__init__(f'{sls.dbus.bus_name}.Sysinfo')
+        super().__init__(f'{DBUS_NAME}.Sysinfo')
 
         self.fn = getattr(SysinfoHelper, f'list_{device_type}')

@@ -15,7 +15,6 @@ from steamos_log_submitter.types import DBusCallable, DBusEncodable
 
 connected = False
 system_bus = None
-bus_name = 'com.valvesoftware.SteamOSLogSubmitter'
 
 
 async def connect() -> None:  # pragma: no cover

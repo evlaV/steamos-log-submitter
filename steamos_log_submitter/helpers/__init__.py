@@ -17,6 +17,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
+from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.exceptions import HelperError
 from steamos_log_submitter.types import JSONEncodable
 
@@ -40,7 +41,7 @@ class HelperResult:
 
 class HelperInterface(dbus.service.ServiceInterface):
     def __init__(self, helper: Type['Helper']):
-        super().__init__(f'{sls.dbus.bus_name}.Helper')
+        super().__init__(f'{DBUS_NAME}.Helper')
         self.helper = helper
 
     @dbus.service.dbus_property()

@@ -10,31 +10,32 @@ from collections.abc import Callable, Iterable
 from typing import Any, NoReturn, Optional, Self
 
 import steamos_log_submitter as sls
-import steamos_log_submitter.daemon as daemon
 import steamos_log_submitter.dbus
+import steamos_log_submitter.exceptions
+from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
 from steamos_log_submitter.types import JSON
 
 logger = logging.getLogger(__name__)
 
 
 class Client:
-    def __init__(self, *, bus: str = 'com.valvesoftware.SteamOSLogSubmitter'):
+    def __init__(self, *, bus: str = DBUS_NAME):
         self._bus = bus
-        self._manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-        self._properties = self._manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+        self._manager = sls.dbus.DBusObject(bus, f'{DBUS_ROOT}/Manager')
+        self._properties = self._manager.properties(f'{DBUS_NAME}.Manager')
         self._iface: Optional[sls.dbus.DBusInterface] = None
 
     async def _connect(self) -> None:
         if not self._iface:
-            self._iface = await self._manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+            self._iface = await self._manager.interface(f'{DBUS_NAME}.Manager')
 
     @staticmethod
     def _rethrow(exc: BaseException) -> NoReturn:
         if isinstance(exc, dbus.errors.DBusError):
-            if exc.type in daemon.DaemonError.map:
-                new_exc = daemon.DaemonError.map[exc.type]
+            new_exc = sls.exceptions.Error.map.get(exc.type)  # type: ignore[misc] # I have no idea why this is needed
+            if new_exc:
                 raise new_exc(json.loads(exc.text)) from exc
-            raise daemon.UnknownError({'text': exc.text}) from exc
+            raise sls.exceptions.UnknownError({'text': exc.text}) from exc
         raise exc
 
     @staticmethod
@@ -70,11 +71,11 @@ class Client:
     async def set_helpers_enabled(self, helpers: dict[str, bool]) -> None:
         valid_helpers, invalid_helpers = await self.validate_helpers(helpers.keys())
         if invalid_helpers:
-            raise daemon.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
+            raise sls.exceptions.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
         for helper in valid_helpers:
             camel_case = sls.util.camel_case(helper)
-            dbus_object = sls.dbus.DBusObject(self._bus, f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}')
-            props = dbus_object.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+            dbus_object = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers/{camel_case}')
+            props = dbus_object.properties(f'{DBUS_NAME}.Helper')
             await props.set('Enabled', helpers[helper])
 
     @command
@@ -88,13 +89,13 @@ class Client:
         else:
             helpers, invalid_helpers = await self.validate_helpers(helpers)
             if invalid_helpers:
-                raise daemon.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
+                raise sls.exceptions.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
         status = {}
         assert helpers is not None  # mypy bug: both branches set helpers to be not None, but mypy can't deduce that
         for helper in helpers:
             camel_case = sls.util.camel_case(helper)
-            dbus_object = sls.dbus.DBusObject(self._bus, f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}')
-            props = dbus_object.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+            dbus_object = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers/{camel_case}')
+            props = dbus_object.properties(f'{DBUS_NAME}.Helper')
             status[helper] = {
                 'enabled': await props['Enabled'],
                 'collection': await props['CollectEnabled'],
@@ -104,7 +105,7 @@ class Client:
 
     @command
     async def list(self) -> list[str]:
-        helpers = sls.dbus.DBusObject(self._bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')
+        helpers = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers')
         return [sls.util.snake_case(child.rsplit('/')[-1]) for child in await helpers.list_children()]
 
     @command

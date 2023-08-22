@@ -308,7 +308,7 @@ async def test_set_steam_info(dbus_daemon, mock_config):
         await iface.set_steam_info('invalid', 'foo')
         assert False
     except dbus.errors.DBusError as e:
-        assert e.type == 'org.freedesktop.DBus.Error.InvalidArgs'
+        assert e.type == 'com.valvesoftware.SteamOSLogSubmitter.InvalidArgumentsError'
     await daemon.shutdown()
 
 

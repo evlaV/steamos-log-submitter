@@ -6,17 +6,18 @@
 import argparse
 import asyncio
 import sys
-from collections.abc import Coroutine
+from collections.abc import Coroutine, Sequence
 from types import TracebackType
 from typing import Optional, Type
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
-from collections.abc import Sequence
+from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.types import JSON
 
 
 class ClientWrapper:
-    bus = 'com.valvesoftware.SteamOSLogSubmitter'
+    bus = DBUS_NAME
 
     def __enter__(self) -> Optional[sls.client.Client]:
         try:
