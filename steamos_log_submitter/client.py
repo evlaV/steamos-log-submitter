@@ -6,8 +6,8 @@
 import dbus_next as dbus
 import json
 import logging
-from collections.abc import Iterable
-from typing import Any, NoReturn, Optional
+from collections.abc import Callable, Iterable
+from typing import Any, NoReturn, Optional, Self
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.daemon as daemon
@@ -28,24 +28,35 @@ class Client:
         if not self._iface:
             self._iface = await self._manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
 
-    def _rethrow(self, exc: BaseException) -> NoReturn:
+    @staticmethod
+    def _rethrow(exc: BaseException) -> NoReturn:
         if isinstance(exc, dbus.errors.DBusError):
             new_exc = daemon.exception_map.get(exc.type)
+            blob = json.loads(exc.text)
             if new_exc:
-                raise new_exc(json.loads(exc.text)) from exc
+                raise new_exc(blob) from exc
+            raise sls.daemon.UnknownError(blob) from exc
         raise exc
+
+    @staticmethod
+    def command(fn: Callable) -> Callable:
+        async def wrapped(self: Self, *args: Any, **kwargs: Any) -> Any:
+            await self._connect()
+            try:
+                return await fn(self, *args, **kwargs)
+            except Exception as e:
+                self._rethrow(e)
+
+        return wrapped
 
     async def validate_helpers(self, requested_helpers: Iterable[str]) -> tuple[list[str], list[str]]:
         valid_names = set(await self.list())
         requested_names = set(requested_helpers)
         return sorted(valid_names & requested_names), sorted(requested_names - valid_names)
 
+    @command
     async def enable(self, state: bool = True) -> None:
-        await self._connect()
-        try:
-            await self._properties.set('Enabled', state)
-        except Exception as e:
-            self._rethrow(e)
+        await self._properties.set('Enabled', state)
 
     async def disable(self) -> None:
         await self.enable(False)
@@ -56,6 +67,7 @@ class Client:
     async def disable_helpers(self, helpers: list[str]) -> None:
         await self.set_helpers_enabled({helper: False for helper in helpers})
 
+    @command
     async def set_helpers_enabled(self, helpers: dict[str, bool]) -> None:
         valid_helpers, invalid_helpers = await self.validate_helpers(helpers.keys())
         if invalid_helpers:
@@ -66,13 +78,11 @@ class Client:
             props = dbus_object.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
             await props.set('Enabled', helpers[helper])
 
+    @command
     async def status(self) -> bool:
-        await self._connect()
-        try:
-            return await self._properties['Enabled']
-        except Exception as e:
-            self._rethrow(e)
+        return await self._properties['Enabled']
 
+    @command
     async def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, JSON]]:
         if not helpers:
             helpers = await self.list()
@@ -81,6 +91,7 @@ class Client:
             if invalid_helpers:
                 raise daemon.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
         status = {}
+        assert helpers is not None  # mypy bug: both branches set helpers to be not None, but mypy can't deduce that
         for helper in helpers:
             camel_case = sls.util.camel_case(helper)
             dbus_object = sls.dbus.DBusObject(self._bus, f'/com/valvesoftware/SteamOSLogSubmitter/helpers/{camel_case}')
@@ -92,47 +103,33 @@ class Client:
             }
         return status
 
+    @command
     async def list(self) -> list[str]:
         helpers = sls.dbus.DBusObject(self._bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')
         return [sls.util.snake_case(child.rsplit('/')[-1]) for child in await helpers.list_children()]
 
+    @command
     async def log_level(self) -> str:
-        await self._connect()
-        try:
-            return await self._properties['LogLevel']
-        except Exception as e:
-            self._rethrow(e)
+        return await self._properties['LogLevel']
 
+    @command
     async def set_log_level(self, level: str) -> None:
-        await self._connect()
-        try:
-            return await self._properties.set('LogLevel', level)
-        except Exception as e:
-            self._rethrow(e)
+        return await self._properties.set('LogLevel', level)
 
+    @command
     async def set_steam_info(self, key: str, value: Any) -> None:
-        await self._connect()
         assert self._iface
-        try:
-            await self._iface.set_steam_info(key, str(value))
-        except Exception as e:
-            self._rethrow(e)
+        await self._iface.set_steam_info(key, str(value))
 
+    @command
     async def shutdown(self) -> None:
-        await self._connect()
         assert self._iface
-        try:
-            await self._iface.shutdown()
-        except Exception as e:
-            self._rethrow(e)
+        await self._iface.shutdown()
 
+    @command
     async def trigger(self, wait: bool = True) -> None:
-        await self._connect()
         assert self._iface
-        try:
-            if wait:
-                await self._iface.trigger()
-            else:
-                await self._iface.trigger_async()
-        except Exception as e:
-            self._rethrow(e)
+        if wait:
+            await self._iface.trigger()
+        else:
+            await self._iface.trigger_async()
