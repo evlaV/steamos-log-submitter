@@ -6,7 +6,7 @@
 import dbus_next as dbus
 import json
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import AsyncIterator, Callable, Iterable
 from typing import Any, NoReturn, Optional, Self
 
 import steamos_log_submitter as sls
@@ -60,6 +60,17 @@ class Client:
         requested_names = set(requested_helpers)
         return sorted(valid_names & requested_names), sorted(requested_names - valid_names)
 
+    async def _helper_objects(self, helpers: Optional[Iterable[str]]) -> AsyncIterator[tuple[str, sls.dbus.DBusObject]]:
+        if helpers is None:
+            valid_helpers = await self.list()
+        else:
+            valid_helpers, invalid_helpers = await self.validate_helpers(helpers)
+            if invalid_helpers:
+                raise sls.exceptions.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
+        for helper in valid_helpers:
+            camel_case = sls.util.camel_case(helper)
+            yield helper, sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers/{camel_case}')
+
     @command
     async def enable(self, state: bool = True) -> None:
         await self._properties.set('Enabled', state)
@@ -67,6 +78,7 @@ class Client:
     async def disable(self) -> None:
         await self.enable(False)
 
+    @command
     async def enable_helpers(self, helpers: list[str]) -> None:
         await self.set_helpers_enabled({helper: True for helper in helpers})
 
@@ -75,12 +87,7 @@ class Client:
 
     @command
     async def set_helpers_enabled(self, helpers: dict[str, bool]) -> None:
-        valid_helpers, invalid_helpers = await self.validate_helpers(helpers.keys())
-        if invalid_helpers:
-            raise sls.exceptions.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
-        for helper in valid_helpers:
-            camel_case = sls.util.camel_case(helper)
-            dbus_object = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers/{camel_case}')
+        async for helper, dbus_object in self._helper_objects(helpers.keys()):
             props = dbus_object.properties(f'{DBUS_NAME}.Helper')
             await props.set('Enabled', helpers[helper])
 
@@ -90,17 +97,8 @@ class Client:
 
     @command
     async def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, JSON]]:
-        if not helpers:
-            helpers = await self.list()
-        else:
-            helpers, invalid_helpers = await self.validate_helpers(helpers)
-            if invalid_helpers:
-                raise sls.exceptions.InvalidArgumentsError({'invalid-helper': list(invalid_helpers)})
         status = {}
-        assert helpers is not None  # mypy bug: both branches set helpers to be not None, but mypy can't deduce that
-        for helper in helpers:
-            camel_case = sls.util.camel_case(helper)
-            dbus_object = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers/{camel_case}')
+        async for helper, dbus_object in self._helper_objects(helpers):
             props = dbus_object.properties(f'{DBUS_NAME}.Helper')
             status[helper] = {
                 'enabled': await props['Enabled'],
