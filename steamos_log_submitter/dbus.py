@@ -17,7 +17,7 @@ connected = False
 system_bus = None
 
 
-async def connect() -> None:  # pragma: no cover
+async def connect() -> None:
     global system_bus
     global connected
     if connected:
@@ -177,12 +177,6 @@ class DBusObject:
     async def interface(self, iface: str) -> DBusInterface:
         await self._connect()
         return DBusInterface(self, iface)
-
-    async def subscribe(self, iface: str, signal: str, cb: Callable[[str, str, Any], None]) -> None:
-        await self._connect()
-        iface_handle = self.object.get_interface(iface)
-        name = dbus.proxy_object.BaseProxyInterface._to_snake_case(signal)
-        getattr(iface_handle, f'on_{name}')(cb)
 
     async def list_children(self) -> Iterable[str]:
         await self._connect()
