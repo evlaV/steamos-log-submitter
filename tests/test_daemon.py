@@ -261,6 +261,28 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
 
 
 @pytest.mark.asyncio
+async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mock_config):
+    monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.08)
+    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.2)
+
+    mock_config.add_section('sls')
+    mock_config.set('sls', 'enable', 'on')
+    mock_config.add_section('daemon')
+    mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
+
+    start = time.time()
+    daemon, bus = await dbus_daemon
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.09)
+    assert count_hits.hits == 1
+    end = float(mock_config.get('daemon', 'last_trigger'))
+    assert end - start > 0
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
@@ -388,3 +410,32 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
     end = time.time()
     assert end - start >= 0.1
     assert count_hits.hits in (1, 2)
+
+
+@pytest.mark.asyncio
+async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
+    async def trigger():
+        await asyncio.sleep(0.15)
+        count_hits()
+
+    daemon, bus = await dbus_daemon
+    await daemon.enable(True)
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+
+    start = time.time()
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.15
+    assert count_hits.hits == 0
+
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.15
+    assert count_hits.hits == 0
+
+    await asyncio.sleep(0.17)
+    assert count_hits.hits == 1
+    await asyncio.sleep(0.03)
+    assert count_hits.hits == 1
