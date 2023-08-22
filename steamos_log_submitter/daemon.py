@@ -193,8 +193,10 @@ class Daemon:
         return sls.base_config.get('enable', 'off') == 'on'
 
     async def enable(self, state: bool) -> None:
-        if not isinstance(state, bool):
-            raise sls.dbus.InvalidArgumentsError({'state': state})
+        if self.enabled() is state:
+            return
+        if not state and self._async_trigger:
+            await self._async_trigger
         sls.base_config['enable'] = 'on' if state else 'off'
         sls.config.write_config()
         await self._update_schedule()
@@ -205,6 +207,10 @@ class Daemon:
         return sls.base_config.get('inhibit', 'off') == 'on'
 
     async def inhibit(self, state: bool) -> None:
+        if self.inhibited() is state:
+            return
+        if state and self._async_trigger:
+            await self._async_trigger
         sls.base_config['inhibit'] = 'on' if state else 'off'
         sls.config.write_config()
         await self._update_schedule()

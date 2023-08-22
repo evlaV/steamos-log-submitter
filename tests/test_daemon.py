@@ -439,3 +439,56 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
     assert count_hits.hits == 1
     await asyncio.sleep(0.03)
     assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_trigger_then_disable(count_hits, dbus_daemon, mock_config, monkeypatch):
+    async def trigger():
+        await asyncio.sleep(0.05)
+        count_hits()
+
+    daemon, bus = await dbus_daemon
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+
+    await daemon.enable(True)
+
+    assert count_hits.hits == 0
+    await daemon.trigger(wait=False)
+    assert count_hits.hits == 0
+
+    await daemon.enable(False)
+    assert count_hits.hits == 1
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
+    await daemon.enable(True)
+    assert count_hits.hits == 1
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_trigger_then_inhibit(count_hits, dbus_daemon, mock_config, monkeypatch):
+    async def trigger():
+        await asyncio.sleep(0.05)
+        count_hits()
+
+    daemon, bus = await dbus_daemon
+    monkeypatch.setattr(sls.runner, 'trigger', trigger)
+
+    await daemon.enable(True)
+    await daemon.inhibit(False)
+
+    assert count_hits.hits == 0
+    await daemon.trigger(wait=False)
+    assert count_hits.hits == 0
+
+    await daemon.inhibit(True)
+    assert count_hits.hits == 1
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
+    await daemon.inhibit(False)
+    assert count_hits.hits == 1
+
+    await daemon.shutdown()
