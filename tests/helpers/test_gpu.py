@@ -169,7 +169,7 @@ async def test_kernel(monkeypatch, open_shim):
 
 
 @pytest.mark.asyncio
-async def test_kernel(monkeypatch, open_shim):
+async def test_mesa(monkeypatch, open_shim):
     hit = False
 
     async def check_now(dsn, **kwargs):
