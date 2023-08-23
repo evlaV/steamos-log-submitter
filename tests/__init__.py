@@ -149,6 +149,13 @@ def setup_categories(categories):
         os.mkdir(f'{sls.failed}/{category}')
 
 
+def setup_logs(helper_directory, logs):
+    for fname, text in logs.items():
+        with open(f'{sls.pending}/{fname}', 'w') as f:
+            if text:
+                f.write(text)
+
+
 @pytest.fixture
 def mock_config(monkeypatch):
     testconf = configparser.ConfigParser()

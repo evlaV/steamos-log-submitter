@@ -10,7 +10,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 import steamos_log_submitter.exceptions
-from . import awaitable, setup_categories
+from . import awaitable, setup_categories, setup_logs
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
@@ -168,6 +168,20 @@ async def test_enable_helpers(mock_config, dbus_client, helper_directory):
         assert False
     except sls.exceptions.InvalidArgumentsError:
         pass
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_list_pending(dbus_client, helper_directory):
+    setup_categories(['test', 'test2', 'test3'])
+    setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
+    daemon, client = await dbus_client
+
+    assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
+    assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.list_pending(['test2'])) == {'test2/c'}
+    assert set(await client.list_pending(['test3'])) == set()
+    assert set(await client.list_pending(['test', 'test2'])) == {'test/a', 'test/b', 'test2/c'}
     await daemon.shutdown()
 
 

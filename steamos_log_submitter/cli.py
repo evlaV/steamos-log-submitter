@@ -86,6 +86,20 @@ async def do_list(client: sls.client.Client, args: argparse.Namespace) -> None:
 
 
 @command
+async def do_pending(client: sls.client.Client, args: argparse.Namespace) -> None:
+    logs: list[str] = []
+    if args.helper:
+        valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
+        if valid_helpers:
+            logs = await client.list_pending(valid_helpers)
+        if invalid_helpers:
+            print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
+    else:
+        logs = await client.list_pending()
+    print(*logs, sep='\n')
+
+
+@command
 async def do_log_level(client: sls.client.Client, args: argparse.Namespace) -> None:
     if args.level is None:
         print(await client.log_level())
@@ -143,6 +157,14 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                                     description='Disable the log collection service.',
                                     help='Disable log collection')
     disable.set_defaults(func=lambda _: set_enabled(False))
+
+    pending = subparsers.add_parser('pending',
+                                    description='''Output a list of log files that are
+                                                   currently pending submission.''',
+                                    help='List log files pending submission')
+    pending.add_argument('helper', nargs='*', help='''Which helpers to show the pending logs for.
+                                                      If not specified, all pending logs are shown.''')
+    pending.set_defaults(func=do_pending)
 
     list_cmd = subparsers.add_parser('list',
                                      description='''List all available helper modules. Each helper

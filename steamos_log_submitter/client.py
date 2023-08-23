@@ -108,9 +108,16 @@ class Client:
         return status
 
     @command
-    async def list(self) -> list[str]:
-        helpers = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers')
-        return [sls.util.snake_case(child.rsplit('/')[-1]) for child in await helpers.list_children()]
+    async def list_pending(self, helpers: Optional[list[str]] = None) -> Iterable[str]:
+        if helpers is not None:
+            logs: list[str] = []
+            async for helper, dbus_object in self._helper_objects(helpers):
+                iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
+                logs.extend(f'{helper}/{log}' for log in await iface.list_pending())
+            return sorted(logs)
+        else:
+            assert self._iface
+            return sorted(await self._iface.list_pending())
 
     @command
     async def log_level(self) -> str:
@@ -137,3 +144,8 @@ class Client:
             await self._iface.trigger()
         else:
             await self._iface.trigger_async()
+
+    @command
+    async def list(self) -> list[str]:
+        helpers = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers')
+        return [sls.util.snake_case(child.rsplit('/')[-1]) for child in await helpers.list_children()]

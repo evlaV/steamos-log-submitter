@@ -12,20 +12,13 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
 from steamos_log_submitter.runner import submit
-from . import awaitable, setup_categories, unreachable
+from . import awaitable, setup_categories, setup_logs, unreachable
 from . import helper_directory, mock_config, patch_module, count_hits  # NOQA: F401
 
 
 @pytest.fixture
 def online(monkeypatch):
     monkeypatch.setattr(sls.util, 'check_network', lambda: True)
-
-
-def setup_logs(helper_directory, logs):
-    for fname, text in logs.items():
-        with open(f'{sls.pending}/{fname}', 'w') as f:
-            if text:
-                f.write(text)
 
 
 @pytest.mark.asyncio

@@ -10,8 +10,8 @@ import steamos_log_submitter.cli as cli
 import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.runner as runner
 import steamos_log_submitter.steam as steam
-from . import always_raise, awaitable
-from . import count_hits, drop_root, mock_config, patch_module  # NOQA: F401
+from . import always_raise, awaitable, setup_categories, setup_logs
+from . import count_hits, drop_root, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
 
@@ -225,6 +225,29 @@ async def test_disable_helpers(mock_config, monkeypatch, cli_wrapper, patch_modu
     await cli.amain(['disable-helper', 'test', 'test2'])
     assert mock_config.get('helpers.test', 'enable') == 'off'
     assert mock_config.get('helpers.test2', 'enable') == 'off'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
+    setup_categories(['test', 'test2', 'test3'])
+    setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
+    daemon, client = await cli_wrapper
+
+    await cli.amain(['pending'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['pending', 'test'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b']
+
+    await cli.amain(['pending', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test2/c']
+
+    await cli.amain(['pending', 'test3'])
+    assert capsys.readouterr().out.strip() == ''
+
+    await cli.amain(['pending', 'test', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
     await daemon.shutdown()
 
 
