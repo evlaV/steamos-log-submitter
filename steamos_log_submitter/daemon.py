@@ -28,8 +28,9 @@ logger = logging.getLogger(__loader__.name)
 
 
 class Daemon:
-    _startup = 20
-    _interval = 3600
+    STARTUP = 20
+    INTERVAL = 3600
+    WAKEUP_DELAY = 10
 
     def __init__(self, *, exit_on_shutdown: bool = False):
         self._exit_on_shutdown = exit_on_shutdown
@@ -77,7 +78,7 @@ class Daemon:
             if self._trigger_active:
                 return
             logger.info('Woke up from suspend, attempting to submit logs')
-            await asyncio.sleep(5)
+            await asyncio.sleep(self.WAKEUP_DELAY)
             await self.trigger(wait=True)
 
     async def start(self) -> None:
@@ -87,10 +88,10 @@ class Daemon:
         sls.config.upgrade()
         self._serving = True
 
-        self._next_trigger = time.time() + self._startup
+        self._next_trigger = time.time() + self.STARTUP
         last_trigger = config.get('last_trigger')
         if last_trigger is not None:
-            next_trigger = float(last_trigger) + self._interval
+            next_trigger = float(last_trigger) + self.INTERVAL
             if next_trigger > self._next_trigger:
                 self._next_trigger = next_trigger
 
@@ -157,7 +158,7 @@ class Daemon:
         last_trigger = time.time()
         config['last_trigger'] = last_trigger
         sls.config.write_config()
-        self._next_trigger = last_trigger + self._interval
+        self._next_trigger = last_trigger + self.INTERVAL
         task = self._periodic_task
         if self._serving:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())

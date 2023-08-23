@@ -189,8 +189,8 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
 @pytest.mark.asyncio
 async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
 
     start = time.time()
     daemon, bus = await dbus_daemon
@@ -213,8 +213,8 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
 @pytest.mark.asyncio
 async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.08)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.06)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
 
     mock_config.add_section('daemon')
     start = time.time()
@@ -237,8 +237,8 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
 @pytest.mark.asyncio
 async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.2)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
 
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
@@ -263,8 +263,8 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
 @pytest.mark.asyncio
 async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.08)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.2)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'on')
@@ -285,8 +285,8 @@ async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mo
 @pytest.mark.asyncio
 async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.07)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.07)
 
     start = time.time()
     daemon, bus = await dbus_daemon
@@ -337,8 +337,8 @@ async def test_set_steam_info(dbus_daemon, mock_config):
 @pytest.mark.asyncio
 async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    monkeypatch.setattr(sls.daemon.Daemon, '_startup', 0.05)
-    monkeypatch.setattr(sls.daemon.Daemon, '_interval', 0.04)
+    monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.04)
     start = time.time()
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
