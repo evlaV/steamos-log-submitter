@@ -58,6 +58,11 @@ class GPUHelper(SentryHelper):
             tags['kernel'] = kernel
             fingerprint.append(f'kernel:{kernel}')
 
+        mesa = log.get('mesa')
+        if mesa:
+            tags['mesa'] = mesa
+            fingerprint.append(f'mesa:{mesa}')
+
         attachments = [{
             'mime-type': 'application/json',
             'filename': os.path.basename(fname),

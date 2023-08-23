@@ -166,3 +166,21 @@ async def test_kernel(monkeypatch, open_shim):
 
     assert (await helper.submit('fake.json')).code == HelperResult.OK
     assert hit
+
+
+@pytest.mark.asyncio
+async def test_kernel(monkeypatch, open_shim):
+    hit = False
+
+    async def check_now(dsn, **kwargs):
+        nonlocal hit
+        hit = True
+        assert kwargs['tags']['mesa'] == '23.1.3.170235.radeonsi_3.5.1-1'
+        assert 'mesa:23.1.3.170235.radeonsi_3.5.1-1' in kwargs['fingerprint']
+        return True
+
+    monkeypatch.setattr(sentry, 'send_event', check_now)
+    open_shim(b'{"mesa":"23.1.3.170235.radeonsi_3.5.1-1"}')
+
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert hit
