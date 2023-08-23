@@ -15,6 +15,7 @@ import steamos_log_submitter.steam
 from . import awaitable, CustomConfig
 from . import count_hits, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_daemon  # NOQA: F401
+from .dbus import MockDBusObject, MockDBusProperties
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
@@ -492,3 +493,65 @@ async def test_trigger_then_inhibit(count_hits, dbus_daemon, mock_config, monkey
     assert count_hits.hits == 1
 
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_suspend_sleep(count_hits, mock_dbus, mock_config, monkeypatch):
+    target = MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
+    target.properties['org.freedesktop.systemd1.Unit'] = {
+        'ActiveState': 'inactive'
+    }
+    props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+
+    daemon = sls.daemon.Daemon()
+    daemon.trigger = awaitable(count_hits)
+    daemon.WAKEUP_DELAY = 0.01
+    await daemon.start()
+
+    assert daemon._suspend == 'inactive'
+    props['ActiveState'] = 'active'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'active'
+    assert count_hits.hits == 0
+
+
+@pytest.mark.asyncio
+async def test_suspend_wake(count_hits, mock_dbus, mock_config, monkeypatch):
+    target = MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
+    target.properties['org.freedesktop.systemd1.Unit'] = {
+        'ActiveState': 'inactive'
+    }
+    props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+
+    daemon = sls.daemon.Daemon()
+    daemon.trigger = awaitable(count_hits)
+    daemon.WAKEUP_DELAY = 0.01
+    await daemon.start()
+
+    props['ActiveState'] = 'active'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'active'
+    props['ActiveState'] = 'inactive'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'inactive'
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_suspend_double_wake(count_hits, mock_dbus, mock_config, monkeypatch):
+    target = MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
+    target.properties['org.freedesktop.systemd1.Unit'] = {
+        'ActiveState': 'inactive'
+    }
+    props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+
+    daemon = sls.daemon.Daemon()
+    daemon.trigger = awaitable(count_hits)
+    daemon.WAKEUP_DELAY = 0.01
+    await daemon.start()
+
+    assert daemon._suspend == 'inactive'
+    props['ActiveState'] = 'inactive'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'inactive'
+    assert count_hits.hits == 0
