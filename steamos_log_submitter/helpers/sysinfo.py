@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
@@ -17,7 +17,7 @@ import steamos_log_submitter.crash as crash
 import steamos_log_submitter.dbus
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.dbus import DBusObject
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import JSON, JSONEncodable
 from . import Helper, HelperResult
 
 
@@ -123,22 +123,14 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    async def list_filesystems(cls) -> list[dict[str, JSON]]:
+    async def list_filesystems(cls) -> Optional[list[dict[str, JSON]]]:
         bus = 'org.freedesktop.UDisks2'
-        try:
-            findmnt = await asyncio.create_subprocess_exec('findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list', stdout=asyncio.subprocess.PIPE)
-            assert findmnt.stdout
-            stdout = await findmnt.stdout.read()
-        except OSError as e:
-            cls.logger.error('Failed to exec findmnt', exc_info=e)
-            return []
-        try:
-            mntinfo = json.loads(stdout.decode(errors='replace'))
-        except json.decoder.JSONDecodeError as e:
-            cls.logger.error('Got invalid JSON from findmnt', exc_info=e)
-            return []
+        findmnt = await asyncio.create_subprocess_exec('findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list', stdout=asyncio.subprocess.PIPE)
+        assert findmnt.stdout
+        stdout = await findmnt.stdout.read()
+        mntinfo = json.loads(stdout.decode(errors='replace'))
         if 'filesystems' not in mntinfo:
-            return []
+            return None
         filesystems = []
         for fs in mntinfo['filesystems']:
             if fs['fstype'].lower().endswith('.appimage'):
@@ -159,7 +151,7 @@ class SysinfoHelper(Helper):
                 except (AttributeError, dbus.errors.DBusError) as e:
                     cls.logger.info(f'Failed to get size of device {source}', exc_info=e)
 
-        return filesystems
+        return None or filesystems
 
     @classmethod
     async def get_vram(cls) -> Optional[str]:
@@ -259,9 +251,17 @@ class SysinfoHelper(Helper):
     ]
 
     @classmethod
+    async def list(cls, type: str) -> Optional[JSONEncodable]:
+        try:
+            return await getattr(cls, f'list_{type}')()
+        except Exception as e:
+            cls.logger.error(f'Failed to list {type}', exc_info=e)
+        return None
+
+    @classmethod
     async def collect(cls) -> bool:
-        results = await asyncio.gather(*[getattr(cls, f'list_{type}')() for type in cls.device_types])
-        devices = {type: result for type, result in zip(cls.device_types, results)}
+        results = await asyncio.gather(*[cls.list(type) for type in cls.device_types])
+        devices = {type: result for type, result in zip(cls.device_types, results) if result is not None}
         os.makedirs(sls.data.data_root, exist_ok=True)
         known = {}
         try:

@@ -222,21 +222,19 @@ async def test_collect_monitors_edid(monkeypatch):
 @pytest.mark.asyncio
 async def test_collect_filesystems_raise(monkeypatch):
     monkeypatch.setattr(asyncio, 'create_subprocess_exec', always_raise(OSError))
-    assert await helper.list_filesystems() == []
+    assert await helper.list('filesystems') is None
 
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_malformed(fake_async_subprocess):
     fake_async_subprocess(stdout=b'!')
-    fs = await helper.list_filesystems()
-    assert fs == []
+    assert await helper.list('filesystems') is None
 
 
 @pytest.mark.asyncio
 async def test_collect_filesystems_missing(fake_async_subprocess):
     fake_async_subprocess(stdout=b'{"wrong_things":"go_here"}')
-    fs = await helper.list_filesystems()
-    assert fs == []
+    assert await helper.list_filesystems() is None
 
 
 @pytest.mark.asyncio
@@ -409,6 +407,19 @@ async def test_collect(monkeypatch, data_directory, helper_directory, mock_confi
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         output = json.load(f)
     assert output == {'usb': []}
+
+
+@pytest.mark.asyncio
+async def test_collect_skip(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(always_raise(RuntimeError)))
+
+    assert not await helper.collect()
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        output = json.load(f)
+    assert output == {}
 
 
 @pytest.mark.asyncio
