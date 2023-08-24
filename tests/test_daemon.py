@@ -12,8 +12,8 @@ import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
-from . import awaitable, CustomConfig
-from . import count_hits, mock_config, patch_module  # NOQA: F401
+from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig
+from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_daemon  # NOQA: F401
 from .dbus import MockDBusObject, MockDBusProperties
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
@@ -85,38 +85,87 @@ async def test_enabled(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_helper_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+async def test_helper_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
+    patch_module.collect = awaitable(count_hits)
+    patch_module.submit = awaitable(count_hits)
+
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
     assert await props['Enabled'] is True
+
     await props.set('Enabled', False)
     assert await props['Enabled'] is False
     assert mock_config.get('helpers.test', 'enable') == 'off'
+    await daemon.enable(True)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 0
+
+    await props.set('Enabled', True)
+    assert await props['Enabled'] is True
+    assert mock_config.get('helpers.test', 'enable') == 'on'
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 2
+
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_helper_collect_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+async def test_helper_collect_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+    setup_categories(['test'])
+    patch_module.collect = awaitable(count_hits)
+    patch_module.submit = awaitable(unreachable)
+
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    assert await props['Enabled'] is True
     assert await props['CollectEnabled'] is True
+
     await props.set('CollectEnabled', False)
     assert await props['CollectEnabled'] is False
     assert mock_config.get('helpers.test', 'collect') == 'off'
+    await daemon.enable(True)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 0
+
+    await props.set('CollectEnabled', True)
+    assert await props['CollectEnabled'] is True
+    assert mock_config.get('helpers.test', 'collect') == 'on'
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_helper_submit_enabled(dbus_daemon, patch_module, mock_config, monkeypatch):
+async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
+    patch_module.collect = awaitable(lambda: False)
+    patch_module.submit = awaitable(count_hits)
+
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
     props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    assert await props['Enabled'] is True
     assert await props['SubmitEnabled'] is True
+
     await props.set('SubmitEnabled', False)
     assert await props['SubmitEnabled'] is False
     assert mock_config.get('helpers.test', 'submit') == 'off'
+    await daemon.enable(True)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 0
+
+    await props.set('SubmitEnabled', True)
+    assert await props['SubmitEnabled'] is True
+    assert mock_config.get('helpers.test', 'submit') == 'on'
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
     await daemon.shutdown()
 
 
