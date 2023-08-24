@@ -424,6 +424,55 @@ async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_trigger_collect(dbus_daemon, helper_directory, monkeypatch, count_hits, mock_config, patch_module):
+    setup_categories(['test'])
+    patch_module.collect = awaitable(count_hits)
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    assert await props['Enabled'] is False
+    assert await props['CollectEnabled'] is True
+
+    await props.set('CollectEnabled', False)
+    assert await props['CollectEnabled'] is False
+    await daemon.enable(True)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 0
+
+    await props.set('CollectEnabled', True)
+    assert await props['CollectEnabled'] is True
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_trigger_submit(dbus_daemon, helper_directory, monkeypatch, count_hits, mock_config, patch_module):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
+    patch_module.submit = awaitable(count_hits)
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    assert await props['Enabled'] is False
+    assert await props['SubmitEnabled'] is True
+
+    await props.set('SubmitEnabled', False)
+    assert await props['SubmitEnabled'] is False
+    await daemon.enable(True)
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 0
+
+    await props.set('SubmitEnabled', True)
+    assert await props['SubmitEnabled'] is True
+    await daemon.trigger(wait=True)
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
 async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')

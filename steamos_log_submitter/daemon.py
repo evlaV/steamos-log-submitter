@@ -312,6 +312,28 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
     @dbus.service.dbus_property()
     @exc_wrap
+    def CollectEnabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
+        return sls.base_config.get('collect', 'on') == 'on'
+
+    @CollectEnabled.setter
+    @exc_wrap
+    def set_collect_enabled(self, enabled: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
+        sls.base_config['collect'] = 'on' if enabled else 'off'
+        sls.config.write_config()
+
+    @dbus.service.dbus_property()
+    @exc_wrap
+    def SubmitEnabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
+        return sls.base_config.get('submit', 'on') == 'on'
+
+    @SubmitEnabled.setter
+    @exc_wrap
+    def set_submit_enabled(self, enabled: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
+        sls.base_config['submit'] = 'on' if enabled else 'off'
+        sls.config.write_config()
+
+    @dbus.service.dbus_property()
+    @exc_wrap
     def LogLevel(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
         return self.daemon.log_level()
 
