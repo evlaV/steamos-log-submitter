@@ -1,0 +1,114 @@
+SteamOS Log Submitter D-Bus API
+===============================
+
+SteamOS Log Submitter has a D-Bus-based API for management of the behavior of
+the daemon as it's running. The service claims the bus name
+`com.valvesoftware.SteamOSLogSubmitter` on the system bus, and all objects are
+under the `/com/valvesoftware/SteamOSLogSubmitter` path. The following objects
+are defined
+
+## Manager
+
+The manager handles central behavior of the daemon, such as enable or inhibit
+state, triggering collection and submission, and various nuances therein.
+
+There is only one manager object, located at the path:
+`/com/valvesoftware/SteamOSLogSubmitter/Manager`
+
+It implements one interface, `com.valvesoftware.SteamOSLogSubmitter.Manager`,
+which has the following methods and properties:
+
+### Methods
+
+- `ListPending`: Takes no argument, returns `as` value. Get a list of currently
+  pending log files that have yet to be submitted. The format is
+  `[helper]/[logfile]`.
+- `SetSteamInfo`: Takes `ss` arguments (`key`, `value`), has no return value.
+  Sets the cached value of a Steam-related informational key that can be used
+  by SLS for richer metadata. If these values are not set, then SLS will try to
+  access the user's Steam directory to get the information, which is likely to
+  fail. The following keys are accepted:
+  - `deck_serial`: The serial number of the Steam Deck's main board, e.g.
+	`FVAA12345678`
+  - `account_id`: The numeric ID of the logged in Steam user
+  - `account_name`: The login name of the logged in Steam user
+- `Shutdown`: Takes no arguments, has no return value. Tell the daemon to
+  gracefully stop.
+- `Trigger`: Takes no arguments, has no return value. Trigger collection and
+  submission if enabled, otherwise do nothing. Waits for the process to finish.
+- `TriggerAsync`: Takes no arguments, has no return value. Trigger collection
+  and submission if enabled, otherwise do nothing. Does not wait for the
+  process to finish.
+
+### Properties
+
+- `CollectEnabled` (`b`): Whether or not the collection phase is enabled. If
+  this is disabled, helpers that require the collection phase to collect or
+  generate logs for submission will not be polled for collection, and only
+  submit logs that are ready (if the submission phase is enabled, see below).
+- `Enabled` (`b`): Whether or not collection and submission are enabled at the
+  global level. There is more fine-grained control at a lower level, but if
+  this is false, the daemon does nothing.
+- `Inhibited` (`b`): Whether or not the daemon should temporarily refrain from
+  collecting and submitting logs. Useful for when a game is running and
+  background activity should be minimized, without having to worry about the
+  current value of `Enabled`.
+- `LogLevel` (`s`): How verbose SLS's internal logging should be. Possible
+  levels, from least verbose to most, are `CRITICAL`, `ERROR`, `WARNING`,
+  `INFO`, `DEBUG`.
+- `SubmitEnabled` (`b`): Whether or not the submission phase is enabled. If
+  this is disabled, logs that are pending submission will not be submitted and
+  will be retained locally instead. Note that pending logs will expire (by
+  default after 2 weeks) so this should be used with caution.
+
+## Helpers
+
+Helpers manage collection and submission processes for specific categories of
+log, as documented in the README.md file.
+
+There is one helper object per helper module, located under the path:
+`/com/valvesoftware/SteamOSLogSubmitter/helpers`
+
+For example, the "minidump" module would be located at this path:
+`/com/valvesoftware/SteamOSLogSubmitter/helpers/Minidump`
+
+They implement one interface, `com.valvesoftware.SteamOSLogSubmitter.Helper`,
+which has the following methods and properties:
+
+### Methods
+
+- `ListPending`: Takes no argument, returns `as` value. Get a list of currently
+  pending log files that have yet to be submitted. The format is just the
+  filename, as the helper name is implicit.
+- `Collect`: Takes no arguments, returns `b` value. Run the submission phase
+  for this helper. Returns `true` if one or more new logs are ready for
+  submission.
+
+### Properties
+
+- `CollectEnabled` (`b`): Whether or not the collection phase is enabled. If
+  this is disabled, helpers that require the collection phase to collect or
+  generate logs for submission will not be polled for collection, and only
+  submit logs that are ready (if the submission phase is enabled, see below).
+- `Enabled` (`b`): Whether or not collection and submission are enabled at the
+  helper level. If disabled, neither the collection nor submission phases will
+  run for this helper.
+- `SubmitEnabled` (`b`): Whether or not the submission phase is enabled. If
+  this is disabled, logs that are pending submission will not be submitted and
+  will be retained locally instead. Note that pending logs will expire (by
+  default after 2 weeks) so this should be used with caution.
+
+### Sysinfo helper
+
+The sysinfo helper gathers several different types of information about the
+running system for telemetry purposes. Some of this information may be useful
+for other programs and can be exported by using objects located under the path:
+`/com/valvesoftware/SteamOSLogSubmitter/helpers/Sysinfo`
+
+They implement one interface, `com.valvesoftware.SteamOSLogSubmitter.Sysinfo`,
+which has the following method:
+
+#### Methods
+
+- `GetJson`: Takes no arguments, returns `s` value. Get the information
+  associated with this information type and return it in JSON format.
