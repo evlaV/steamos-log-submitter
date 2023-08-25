@@ -184,6 +184,10 @@ class Daemon:
             await stored_coro
             assert not self._trigger_active
             return
+        if self._async_trigger:
+            if wait:
+                await self._async_trigger
+            return
         coro = self._trigger()
         if wait:
             await coro

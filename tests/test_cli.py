@@ -328,7 +328,7 @@ async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
         await asyncio.sleep(0.04)
         count_hits()
 
-    monkeypatch.setattr(daemon, '_trigger', trigger)
+    monkeypatch.setattr(runner, 'trigger', trigger)
 
     await cli.amain(['trigger'])
     assert count_hits.hits == 0
@@ -349,7 +349,7 @@ async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
         await asyncio.sleep(0.04)
         count_hits()
 
-    monkeypatch.setattr(daemon, '_trigger', trigger)
+    monkeypatch.setattr(runner, 'trigger', trigger)
 
     await cli.amain(['trigger', '--wait'])
     assert count_hits.hits == 1

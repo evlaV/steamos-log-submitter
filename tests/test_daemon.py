@@ -514,7 +514,7 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
 @pytest.mark.asyncio
 async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
     async def trigger():
-        await asyncio.sleep(0.15)
+        await asyncio.sleep(0.1)
         count_hits()
 
     daemon, bus = await dbus_daemon
@@ -526,17 +526,81 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
     start = time.time()
     await iface.trigger_async()
     end = time.time()
-    assert end - start < 0.15
+    assert end - start < 0.1
     assert count_hits.hits == 0
 
     await iface.trigger_async()
     end = time.time()
-    assert end - start < 0.15
+    assert end - start < 0.1
     assert count_hits.hits == 0
 
-    await asyncio.sleep(0.17)
+    await asyncio.sleep(0.12)
     assert count_hits.hits == 1
     await asyncio.sleep(0.03)
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_trigger_dedup_slow(dbus_daemon, monkeypatch, mock_config, count_hits):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    original_trigger = daemon._trigger
+
+    async def trigger():
+        await asyncio.sleep(0.1)
+        count_hits()
+        await original_trigger()
+
+    daemon._trigger = trigger
+    await daemon.enable(True)
+
+    start = time.time()
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.1
+    assert count_hits.hits == 0
+
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.1
+    assert count_hits.hits == 0
+
+    await asyncio.sleep(0.12)
+    assert count_hits.hits == 1
+    await asyncio.sleep(0.03)
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_trigger_dedup_slow_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    original_trigger = daemon._trigger
+
+    async def trigger():
+        await asyncio.sleep(0.1)
+        count_hits()
+        await original_trigger()
+
+    daemon._trigger = trigger
+    await daemon.enable(True)
+
+    start = time.time()
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.1
+    assert count_hits.hits == 0
+
+    await iface.trigger_async()
+    end = time.time()
+    assert end - start < 0.1
+    assert count_hits.hits == 0
+
+    await iface.trigger()
+    assert count_hits.hits == 1
+    await asyncio.sleep(0.12)
     assert count_hits.hits == 1
 
 
