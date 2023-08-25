@@ -111,7 +111,7 @@ class Daemon:
             suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
             await suspend_props.subscribe('ActiveState', self._leave_suspend)
         except dbus.errors.DBusError as e:
-            logger.error('Failed to subscript to suspend state', exc_info=e)
+            logger.error('Failed to subscribe to suspend state', exc_info=e)
 
     async def shutdown(self) -> None:
         logger.info('Daemon shutting down')
