@@ -205,7 +205,9 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
 
     parsed_args = parser.parse_args(args)
 
-    return parsed_args.func(parsed_args)
+    coro = parsed_args.func(parsed_args)
+    assert asyncio.iscoroutine(coro)
+    return coro
 
 
 def main(args: Sequence[str] = sys.argv[1:]) -> None:

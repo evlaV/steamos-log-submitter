@@ -29,9 +29,9 @@ def add_handler(handler: logging.Handler, level: int) -> None:
 
 
 def reconfigure_logging(path: Optional[str] = None) -> None:
-    level = config.get('level', 'WARNING').upper()
-    if valid_level(level):
-        level = getattr(logging, level)
+    level_name = (config.get('level') or 'WARNING').upper()
+    if valid_level(level_name):
+        level = getattr(logging, level_name)
     else:
         level = logging.WARNING
 

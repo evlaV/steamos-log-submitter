@@ -20,7 +20,7 @@ class DataStore:
     def __init__(self, name: str, *, defaults: Optional[dict[str, JSONEncodable]] = {}):
         self.name = name
         self._defaults: dict[str, JSONEncodable] = defaults or {}
-        self._data = {}
+        self._data: dict[str, JSONEncodable] = {}
         self._dirty = False
 
         try:

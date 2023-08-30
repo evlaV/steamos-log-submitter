@@ -235,7 +235,7 @@ class Daemon:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
     def log_level(self) -> str:
-        return sls.logging.config.get('level', 'WARNING').upper()
+        return (sls.logging.config.get('level') or 'WARNING').upper()
 
     async def set_log_level(self, level: str) -> None:
         if not sls.logging.valid_level(level):

@@ -10,6 +10,7 @@ import os
 import pkgutil
 import sys
 import tempfile
+import typing
 from collections.abc import Container, Iterable
 from types import TracebackType
 from typing import Any, Optional, Type
@@ -190,7 +191,8 @@ def create_helper(category: str) -> Optional[Helper]:
         logger.error('Helper module does not contain helper class')
         return None
     helper.helper._setup()
-    return helper.helper
+    assert issubclass(helper.helper, Helper)
+    return typing.cast(Helper, helper.helper)
 
 
 def list_helpers() -> Iterable[str]:

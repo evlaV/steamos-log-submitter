@@ -10,7 +10,7 @@ import json
 import os
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Optional, Union
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
@@ -34,7 +34,7 @@ class SysinfoHelper(Helper):
     def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
         try:
             with open(path, 'rb' if binary else 'r') as f:
-                data = f.read()
+                data: bytes = f.read()
                 if binary:
                     return data
                 return data.strip()
@@ -253,7 +253,8 @@ class SysinfoHelper(Helper):
     @classmethod
     async def list(cls, type: str) -> Optional[JSONEncodable]:
         try:
-            return await getattr(cls, f'list_{type}')()
+            fn: Callable[[], Awaitable[Optional[JSONEncodable]]] = getattr(cls, f'list_{type}')
+            return await fn()
         except Exception as e:
             cls.logger.error(f'Failed to list {type}', exc_info=e)
         return None
@@ -297,7 +298,7 @@ class SysinfoHelper(Helper):
         timestamp = cls.data['timestamp']
         new_file = False
         if isinstance(timestamp, int | float):
-            if now - timestamp >= cls.config.get('interval', 60 * 60 * 24 * 7):
+            if now - timestamp >= float(cls.config.get('interval') or 60 * 60 * 24 * 7):
                 # If last submitted over a week ago, submit now
                 os.rename(f'{sls.data.data_root}/sysinfo-pending.json', f'{sls.pending}/sysinfo/{now:.0f}.json')
                 new_file = True

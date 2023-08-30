@@ -24,7 +24,7 @@ default_uid = 1000
 def _setup() -> None:
     global default_uid
     try:
-        default_uid = int(config.get('uid', '1000'))
+        default_uid = int(config.get('uid') or '1000')
     except ValueError:
         default_uid = 1000
 
@@ -71,11 +71,11 @@ def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
     if 'users' not in loginusers:
         return None
 
-    for userid, data in loginusers['users'].items():
+    for user, data in loginusers['users'].items():
         if data.get('MostRecent', '0') == '1':
-            return int(userid)
+            return int(user)
         if data.get('mostrecent', '0') == '1':
-            return int(userid)
+            return int(user)
 
     return None
 
@@ -97,9 +97,9 @@ def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
 
     for data in loginusers['users'].values():
         if data.get('MostRecent', '0') == '1':
-            return data.get('AccountName')
+            return str(data.get('AccountName'))
         if data.get('mostrecent', '0') == '1':
-            return data.get('AccountName')
+            return str(data.get('AccountName'))
 
     return None
 

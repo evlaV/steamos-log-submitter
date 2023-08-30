@@ -93,7 +93,7 @@ class Client:
 
     @command
     async def status(self) -> bool:
-        return await self._properties['Enabled']
+        return bool(await self._properties['Enabled'])
 
     @command
     async def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, JSON]]:
@@ -121,7 +121,7 @@ class Client:
 
     @command
     async def log_level(self) -> str:
-        return await self._properties['LogLevel']
+        return str(await self._properties['LogLevel'])
 
     @command
     async def set_log_level(self, level: str) -> None:

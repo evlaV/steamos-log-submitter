@@ -27,11 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigSection:
-    def __init__(self, name: str, *, defaults: Optional[dict[str, Any]] = None):
+    def __init__(self, name: str, *, defaults: Optional[dict[str, str]] = None):
         self.name = name
         self._defaults = defaults or {}
 
-    def __getitem__(self, name: str) -> Any:
+    def __getitem__(self, name: str) -> str:
         if local_config.has_section(self.name) and local_config.has_option(self.name, name):
             return local_config.get(self.name, name)
         if config.has_section(self.name) and config.has_option(self.name, name):
@@ -52,14 +52,14 @@ class ConfigSection:
             return True
         return False
 
-    def get(self, name: str, default: Any = None) -> Any:
+    def get(self, name: str, default: Optional[str] = None) -> Optional[str]:
         try:
             return self[name]
         except KeyError:
             return default
 
 
-def get_config(mod: str, defaults: Optional[dict[str, Any]] = None) -> ConfigSection:
+def get_config(mod: str, defaults: Optional[dict[str, str]] = None) -> ConfigSection:
     if mod == 'steamos_log_submitter':
         return ConfigSection('sls', defaults=defaults)
     if not mod.startswith('steamos_log_submitter.'):

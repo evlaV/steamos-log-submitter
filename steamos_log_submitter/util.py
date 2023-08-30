@@ -129,7 +129,7 @@ class drop_root:
 
 def camel_case(text: str) -> str:
     def replace(match: re.Match) -> str:
-        char = match.group(2)
+        char: Optional[str] = match.group(2)
         if char:
             return char.upper()
         return ''
