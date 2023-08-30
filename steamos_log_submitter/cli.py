@@ -13,7 +13,7 @@ from typing import Optional, Type
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 from steamos_log_submitter.constants import DBUS_NAME
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import DBusEncodable
 
 
 class ClientWrapper:
@@ -64,7 +64,7 @@ async def set_helper_enabled(helpers: list[str], enable: bool) -> None:
 @command
 async def do_status(client: sls.client.Client, args: argparse.Namespace) -> None:
     status = await client.status()
-    helpers: Optional[dict[str, dict[str, JSON]]] = None
+    helpers: Optional[dict[str, dict[str, DBusEncodable]]] = None
     if args.all:
         helpers = await client.helper_status()
     elif args.helper:
@@ -87,7 +87,7 @@ async def do_list(client: sls.client.Client, args: argparse.Namespace) -> None:
 
 @command
 async def do_pending(client: sls.client.Client, args: argparse.Namespace) -> None:
-    logs: list[str] = []
+    logs: Sequence[str] = []
     if args.helper:
         valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
         if valid_helpers:

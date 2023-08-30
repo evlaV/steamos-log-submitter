@@ -1,13 +1,15 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022 Valve Software
+# Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import configparser
 import logging
 import pwd
-from typing import Any, Optional
+from typing import Optional
+
 import steamos_log_submitter as sls
+from steamos_log_submitter.types import JSONEncodable
 
 __all__ = [
     'get_config',
@@ -40,7 +42,7 @@ class ConfigSection:
             return self._defaults[name]
         raise KeyError(name)
 
-    def __setitem__(self, name: str, value: Any) -> None:
+    def __setitem__(self, name: str, value: JSONEncodable) -> None:
         if not local_config.has_section(self.name):
             local_config.add_section(self.name)
         local_config.set(self.name, name, str(value))

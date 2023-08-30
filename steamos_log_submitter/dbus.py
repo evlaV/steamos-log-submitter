@@ -9,9 +9,9 @@ import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from types import CoroutineType, UnionType
-from typing import Any, Optional, Type, Union
+from typing import Optional, Type, Union
 
-from steamos_log_submitter.types import DBusCallable, DBusEncodable
+from steamos_log_submitter.types import DBusCallable, DBusCallableAsync, DBusCallableSync, DBusEncodable
 
 connected = False
 system_bus = None
@@ -70,19 +70,19 @@ def fn_signature(fn: DBusCallable) -> inspect.Signature:
     return inspect.Signature(arguments_signature, return_annotation=return_signature)
 
 
-def dbusify(fn: DBusCallable) -> Callable[..., Any]:
-    wrapped: Callable[..., Any]
+def dbusify(fn: DBusCallable) -> DBusCallable:
+    wrapped: DBusCallable
 
     if inspect.iscoroutinefunction(fn):
-        async def wrapped(*args: Any, **kwargs: Any) -> Any:
-            coro = fn(*args, **kwargs)
+        async def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
+            coro = typing.cast(DBusCallableAsync, fn)(*args)
             assert isinstance(coro, CoroutineType)
-            return await coro
+            return typing.cast(DBusEncodable, await coro)
     else:
-        def wrapped(*args: Any, **kwargs: Any) -> Any:
-            return fn(*args, **kwargs)
+        def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
+            return typing.cast(DBusCallableSync, fn)(*args)
 
-    wrapped.__signature__ = fn_signature(fn)  # type: ignore[attr-defined]
+    wrapped.__signature__ = fn_signature(fn)  # type: ignore[union-attr]
     return wrapped
 
 
@@ -92,14 +92,14 @@ class DBusInterface:
         self._iface = iface
         self._iface_handle: Optional[dbus.aio.ProxyInterface] = None
 
-    def __getattr__(self, name: str) -> Callable:
-        async def call(*args: Any, **kwargs: Any) -> Any:
+    def __getattr__(self, name: str) -> DBusCallableAsync:
+        async def call(*args: DBusEncodable) -> Optional[DBusEncodable]:
             if not self._iface_handle:
                 await self._obj._connect()
                 self._iface_handle = self._obj.object.get_interface(self._iface)
-            method = getattr(self._iface_handle, f'call_{name}')
+            method: DBusCallableAsync = getattr(self._iface_handle, f'call_{name}')
             setattr(self, name, method)  # Memoize the method so we only have to look it up once
-            return await method(*args, **kwargs)
+            return await method(*args)
         return call
 
 
@@ -109,14 +109,14 @@ class DBusProperties:
         self._iface_handle: Optional[dbus.aio.ProxyInterface] = None
         self._obj = obj
         self._iface = iface
-        self._subscribed: dict[str, list[Callable[[str, str, Any], Awaitable[None]]]] = {}
+        self._subscribed: dict[str, list[Callable[[str, str, DBusEncodable], Awaitable[None]]]] = {}
 
-    async def __getitem__(self, name: str) -> Any:
+    async def __getitem__(self, name: str) -> DBusEncodable:
         if not self._properties_iface:
             await self._obj._connect()
             self._properties_iface = self._obj.object.get_interface('org.freedesktop.DBus.Properties')
         variant = await self._properties_iface.call_get(self._iface, name)  # type: ignore[attr-defined]
-        return variant.value
+        return typing.cast(DBusEncodable, variant.value)
 
     async def set(self, name: str, value: DBusEncodable) -> None:
         if not self._iface_handle:
@@ -126,12 +126,11 @@ class DBusProperties:
         await getattr(self._iface_handle, f'set_{name}')(value)
 
     def _update_props(self, iface: str, changed: dict[str, dbus.Variant], invalidated: list[str]) -> None:
-        async def do_cb(cb: Callable[[str, str, Any], Awaitable[None]], iface: str, prop: str, value: Any) -> None:
+        async def do_cb(cb: Callable[[str, str, DBusEncodable], Awaitable[None]], iface: str, prop: str, value: Optional[dbus.Variant]) -> None:
             if value is None:
                 assert self._properties_iface
                 value = await self._properties_iface.call_get(self._iface, prop)  # type: ignore[attr-defined]
-            value = value.value
-            await cb(iface, prop, value)
+            await cb(iface, prop, value.value)
 
         for prop, value in changed.items():
             if prop not in self._subscribed:
@@ -144,7 +143,7 @@ class DBusProperties:
             for handler in self._subscribed[prop]:
                 asyncio.create_task(do_cb(handler, iface, prop, None))
 
-    async def subscribe(self, prop: str, cb: Callable[[str, str, Any], Awaitable[None]]) -> None:
+    async def subscribe(self, prop: str, cb: Callable[[str, str, DBusEncodable], Awaitable[None]]) -> None:
         await self._obj._connect()
         if not self._subscribed:
             iface_handle = self._obj.object.get_interface('org.freedesktop.DBus.Properties')

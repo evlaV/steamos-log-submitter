@@ -6,16 +6,19 @@
 import dbus_next as dbus
 import json
 import logging
-from collections.abc import AsyncIterator, Callable, Iterable
-from typing import Any, NoReturn, Optional, Self
+import typing
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
+from typing import Concatenate, NoReturn, Optional, ParamSpec, Union
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.exceptions
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
-from steamos_log_submitter.types import JSON
+from steamos_log_submitter.types import DBusEncodable, DBusT
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec('P')
 
 
 class Client:
@@ -45,11 +48,11 @@ class Client:
         raise exc
 
     @staticmethod
-    def command(fn: Callable) -> Callable:
-        async def wrapped(self: Self, *args: Any, **kwargs: Any) -> Any:
+    def command(fn: Callable[Concatenate['Client', P], Coroutine[None, None, DBusT]]) -> Callable[Concatenate['Client', P], Coroutine[None, None, DBusT]]:
+        async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> DBusT:
             await self._connect()
             try:
-                return await fn(self, *args, **kwargs)
+                return await fn(self, *args)
             except Exception as e:
                 self._rethrow(e)
 
@@ -96,7 +99,7 @@ class Client:
         return bool(await self._properties['Enabled'])
 
     @command
-    async def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, JSON]]:
+    async def helper_status(self, helpers: Optional[list[str]] = None) -> dict[str, dict[str, DBusEncodable]]:
         status = {}
         async for helper, dbus_object in self._helper_objects(helpers):
             props = dbus_object.properties(f'{DBUS_NAME}.Helper')
@@ -108,16 +111,16 @@ class Client:
         return status
 
     @command
-    async def list_pending(self, helpers: Optional[list[str]] = None) -> Iterable[str]:
+    async def list_pending(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
         if helpers is not None:
             logs: list[str] = []
             async for helper, dbus_object in self._helper_objects(helpers):
                 iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
-                logs.extend(f'{helper}/{log}' for log in await iface.list_pending())
+                logs.extend(f'{helper}/{log}' for log in typing.cast(Iterable[str], await iface.list_pending()))
             return sorted(logs)
         else:
             assert self._iface
-            return sorted(await self._iface.list_pending())
+            return sorted(typing.cast(Iterable[str], await self._iface.list_pending()))
 
     @command
     async def log_level(self) -> str:
@@ -128,7 +131,7 @@ class Client:
         return await self._properties.set('LogLevel', level)
 
     @command
-    async def set_steam_info(self, key: str, value: Any) -> None:
+    async def set_steam_info(self, key: str, value: Union[int, str]) -> None:
         assert self._iface
         await self._iface.set_steam_info(key, str(value))
 

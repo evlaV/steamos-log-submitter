@@ -7,7 +7,9 @@ import asyncio
 import dbus_next as dbus
 import json
 import os
+from collections.abc import Iterable
 from typing import Optional
+
 import steamos_log_submitter as sls
 from steamos_log_submitter.dbus import DBusObject
 from . import HelperResult, SentryHelper
@@ -174,7 +176,7 @@ class JournalHelper(SentryHelper):
 
         tags['kernel'] = os.uname().release
 
-        attachments = [{
+        attachments: Iterable[dict[str, str | bytes]] = [{
             'mime-type': 'application/json',
             'filename': os.path.basename(fname),
             'data': attachment

@@ -6,9 +6,11 @@
 import io
 import time
 import zipfile
-import steamos_log_submitter.crash as crash
 from typing import TextIO
 from . import Helper, HelperResult
+
+import steamos_log_submitter.crash as crash
+from steamos_log_submitter.types import JSONEncodable
 
 
 class KdumpHelper(Helper):
@@ -67,7 +69,7 @@ class KdumpHelper(Helper):
         if note is None or stack is None:
             return HelperResult(HelperResult.PERMANENT_ERROR)
 
-        info = {
+        info: dict[str, JSONEncodable] = {
             'crash_time': int(time.time()),
             'stack': stack,
             'note': note,

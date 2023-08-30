@@ -6,8 +6,10 @@
 import httpx
 import logging
 import os
-from typing import Any, Optional
+from typing import Optional
+
 import steamos_log_submitter as sls
+from steamos_log_submitter.types import JSONEncodable
 
 __all__ = [
     'upload',
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 async def upload(product: str, *,
-                 info: dict[str, Any],
+                 info: dict[str, JSONEncodable],
                  build: Optional[str] = None,
                  version: Optional[str] = None,
                  dump: Optional[str] = None) -> bool:

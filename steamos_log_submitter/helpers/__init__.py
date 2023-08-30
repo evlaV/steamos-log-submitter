@@ -176,7 +176,7 @@ class Helper:
 
 class SentryHelper(Helper):
     @classmethod
-    async def send_event(cls, **kwargs: Any) -> HelperResult:
+    async def send_event(cls, **kwargs: Any) -> HelperResult:  # type: ignore[misc]
         ok = await sls.sentry.send_event(cls.config['dsn'], **kwargs)
         return HelperResult.check(ok)
 
@@ -216,7 +216,7 @@ class StagingFile:
         self._tempfile.close()
         os.rename(self.name, self._final_name)
 
-    def __getattr__(self, attr: str) -> Any:
+    def __getattr__(self, attr: str) -> Any:  # type: ignore[misc]
         return getattr(self._tempfile, attr)
 
     def __enter__(self) -> 'StagingFile':

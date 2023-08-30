@@ -147,8 +147,11 @@ class SysinfoHelper(Helper):
                 try:
                     block_dev = DBusObject(bus, f'/org/freedesktop/UDisks2/block_devices/{node}')
                     dev_props = block_dev.properties('org.freedesktop.UDisks2.Block')
-                    fs['size'] = int(await dev_props['Size'])
-                except (AttributeError, dbus.errors.DBusError) as e:
+                    size = await dev_props['Size']
+                    if not isinstance(size, (str, int, float)):
+                        raise TypeError(type(size))
+                    fs['size'] = int(size)
+                except (AttributeError, TypeError, ValueError, dbus.errors.DBusError) as e:
                     cls.logger.info(f'Failed to get size of device {source}', exc_info=e)
 
         return None or filesystems
@@ -316,7 +319,7 @@ class SysinfoHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        info = {
+        info: dict[str, JSONEncodable] = {
             'crash_time': int(time.time()),
             'stack': '',
             'note': '',

@@ -12,7 +12,7 @@ import logging
 import urllib.parse
 import uuid
 from collections.abc import Iterable
-from typing import Any, Optional
+from typing import Optional
 import steamos_log_submitter as sls
 from steamos_log_submitter.types import JSONEncodable
 
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 async def send_event(dsn: str, *,
                      appid: Optional[int] = None,
-                     attachments: Iterable[dict[str, Any]] = (),
+                     attachments: Iterable[dict[str, str | bytes]] = (),
                      tags: dict[str, JSONEncodable] = {},
                      fingerprint: Iterable[str] = (),
                      timestamp: Optional[float] = None,
@@ -103,6 +103,7 @@ async def send_event(dsn: str, *,
                     attachment_info['content_type'] = attachment['mime-type']
                 if 'filename' in attachment:
                     attachment_info['filename'] = attachment['filename']
+                assert isinstance(attachment['data'], bytes)
                 append_item(attachment_info, attachment['data'])
 
             envelope.close()

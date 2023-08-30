@@ -3,10 +3,20 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-from collections.abc import Awaitable, Callable, Mapping, Sequence
-from typing import Optional, TypeAlias, Union
+from collections.abc import Mapping, Sequence
+from typing import Optional, Protocol, TypeAlias, TypeVar, Union
 
-DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | tuple['DBusEncodable', ...] | bool | float | int | str
-DBusCallable: TypeAlias = Callable[..., Union[Optional[DBusEncodable], Awaitable[Optional[DBusEncodable]]]]
+DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | Mapping[str, 'DBusEncodable'] | Mapping[int, 'DBusEncodable'] | tuple['DBusEncodable', ...] | bool | float | int | str
+DBusCallable: TypeAlias = Union['DBusCallableAsync', 'DBusCallableSync']
 JSON: TypeAlias = list['JSON'] | dict[str, 'JSON'] | bool | float | int | str | None
 JSONEncodable: TypeAlias = Sequence['JSONEncodable'] | Mapping[str, 'JSONEncodable'] | JSON
+
+DBusT = TypeVar('DBusT', bound=Optional[DBusEncodable])
+
+
+class DBusCallableAsync(Protocol):
+    async def __call__(*args: DBusEncodable) -> Optional[DBusEncodable]: ...
+
+
+class DBusCallableSync(Protocol):
+    def __call__(*args: DBusEncodable) -> Optional[DBusEncodable]: ...

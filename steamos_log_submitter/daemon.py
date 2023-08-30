@@ -21,6 +21,7 @@ import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
+from steamos_log_submitter.types import DBusEncodable
 
 __loader__: importlib.machinery.SourceFileLoader
 config = sls.config.get_config(__loader__.name)
@@ -69,7 +70,8 @@ class Daemon:
             for service, iface in helper_module.child_services.items():
                 sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}/{service}', iface)
 
-    async def _leave_suspend(self, iface: str, prop: str, value: str) -> None:
+    async def _leave_suspend(self, iface: str, prop: str, value: DBusEncodable) -> None:
+        assert isinstance(value, str)
         if value == self._suspend:
             return
         self._suspend = value
