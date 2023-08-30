@@ -170,6 +170,60 @@ async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, 
 
 
 @pytest.mark.asyncio
+async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+    setup_categories(['test'])
+
+    class PortalIface(dbus.service.ServiceInterface):
+        def __init__(self):
+            super().__init__('com.aperture.Portal')
+
+        @dbus.service.method()
+        async def Escape(self) -> 'i':  # NOQA: F821
+            count_hits()
+            return count_hits.hits
+
+    patch_module.child_services = {
+        'Portal': PortalIface()
+    }
+
+    daemon, bus = await dbus_daemon
+    portal = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test/Portal')
+    iface = await portal.interface('com.aperture.Portal')
+
+    assert count_hits.hits == 0
+    assert await iface.escape() == 1
+    assert count_hits.hits == 1
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+    setup_categories(['test'])
+
+    class MoondustIface(dbus.service.ServiceInterface):
+        def __init__(self):
+            super().__init__('com.aperture.MoonDust')
+
+        @dbus.service.method()
+        async def Breathe(self) -> 'i':  # NOQA: F821
+            count_hits()
+            return count_hits.hits
+
+    patch_module.extra_ifaces = [MoondustIface()]
+
+    daemon, bus = await dbus_daemon
+    portal = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
+    iface = await portal.interface('com.aperture.MoonDust')
+
+    assert count_hits.hits == 0
+    assert await iface.breathe() == 1
+    assert count_hits.hits == 1
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_inhibited(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')

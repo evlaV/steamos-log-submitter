@@ -64,7 +64,7 @@ class Daemon:
             camel_case = sls.util.camel_case(helper_module.name)
             sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface)
 
-            for iface in helper_module.extra_ifaces.values():
+            for iface in helper_module.extra_ifaces:
                 sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', iface)
             for service, iface in helper_module.child_services.items():
                 sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}/{service}', iface)
@@ -137,7 +137,7 @@ class Daemon:
                 camel_case = sls.util.camel_case(helper_module.name)
                 bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface.name)
 
-                for iface in helper_module.extra_ifaces.values():
+                for iface in helper_module.extra_ifaces:
                     bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}', iface.name)
                 for service, iface in helper_module.child_services.items():
                     bus.unexport(f'{DBUS_ROOT}/helpers/{camel_case}/{service}', iface.name)
