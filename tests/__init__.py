@@ -17,7 +17,7 @@ import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from collections.abc import Awaitable, Callable
-from typing import Any
+from typing import Any, Optional, Union
 
 
 @pytest.fixture
@@ -225,6 +225,29 @@ def awaitable(fn: Callable[..., Any]) -> Awaitable[Any]:
         return fn(*args, **kwargs)
 
     return afn
+
+
+class Popen:
+    stdin: Optional[Union[io.BytesIO, io.StringIO]]
+    stdout: Optional[Union[io.BytesIO, io.StringIO]]
+    stderr: Optional[Union[io.BytesIO, io.StringIO]]
+    wait: Callable[[Optional[int]], None]
+    returncode: Optional[int]
+
+    def wait(self, timeout: Optional[int] = None) -> None:
+        pass
+
+    def __init__(self, *,
+                 stdin: Optional[Union[io.BytesIO, io.StringIO]] = None,
+                 stdout: Optional[Union[io.BytesIO, io.StringIO]] = None,
+                 stderr: Optional[Union[io.BytesIO, io.StringIO]] = None,
+                 returncode: Optional[int] = None,
+                 wait: Callable[[Optional[int]], None] = wait):
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+        self.returncode = returncode
+        self.wait = wait
 
 
 @pytest.fixture

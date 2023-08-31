@@ -11,6 +11,7 @@ import posix
 import shutil
 import subprocess
 import time
+from typing import Any
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
@@ -18,18 +19,18 @@ import steamos_log_submitter.hooks.gpu as hook
 from .. import always_raise
 
 
-def test_basic(monkeypatch):
+def test_basic(monkeypatch) -> None:
     blob = io.StringIO()
 
-    def staging_file(category, name, mode):
+    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
         blob.close = lambda: None
         assert category == 'gpu'
         assert name == '123456789.json'
         return blob
 
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
+    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
 
@@ -58,16 +59,16 @@ def test_basic(monkeypatch):
     assert value['timestamp'] == 0.123456789
 
 
-def test_invalid_pid(monkeypatch):
+def test_invalid_pid(monkeypatch) -> None:
     blob = io.StringIO()
 
-    def staging_file(category, name, mode):
+    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
+    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
 
@@ -89,16 +90,16 @@ def test_invalid_pid(monkeypatch):
     assert 'pid' not in value
 
 
-def test_invalid_appid(monkeypatch):
+def test_invalid_appid(monkeypatch) -> None:
     blob = io.StringIO()
 
-    def staging_file(category, name, mode):
+    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
+    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
 
@@ -119,16 +120,16 @@ def test_invalid_appid(monkeypatch):
     assert 'appid' not in value
 
 
-def test_invalid_exe(monkeypatch):
+def test_invalid_exe(monkeypatch) -> None:
     blob = io.StringIO()
 
-    def staging_file(category, name, mode):
+    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
+    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
 
@@ -149,10 +150,10 @@ def test_invalid_exe(monkeypatch):
     assert 'executable' not in value
 
 
-def test_invalid_mesa(monkeypatch):
+def test_invalid_mesa(monkeypatch) -> None:
     blob = io.StringIO()
 
-    def staging_file(category, name, mode):
+    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
         blob.close = lambda: None
         return blob
