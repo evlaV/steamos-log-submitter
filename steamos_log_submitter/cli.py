@@ -8,12 +8,14 @@ import asyncio
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from types import TracebackType
-from typing import Optional, Type
+from typing import Concatenate, Optional, ParamSpec, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.types import DBusEncodable
+
+P = ParamSpec('P')
 
 
 class ClientWrapper:
@@ -31,34 +33,30 @@ class ClientWrapper:
         return not exc_type
 
 
-def command(fn: Callable[[sls.client.Client, argparse.Namespace], Awaitable[None]]) -> Callable[[argparse.Namespace], Awaitable[None]]:
-    async def wrapped(args: argparse.Namespace) -> None:
+def command(fn: Callable[Concatenate[sls.client.Client, P], Awaitable[None]]) -> Callable[P, Awaitable[None]]:
+    async def wrapped(*args: P.args, **kwargs: P.kwargs) -> None:
         async with ClientWrapper() as client:
             if not client:
                 return
-            await fn(client, args)
+            await fn(client, *args, **kwargs)
 
     return wrapped
 
 
-async def set_enabled(enable: bool) -> None:
-    async with ClientWrapper() as client:
-        if not client:
-            return
-        await client.enable(enable)
+@command
+async def set_enabled(client: sls.client.Client, enable: bool) -> None:
+    await client.enable(enable)
 
 
-async def set_helper_enabled(helpers: list[str], enable: bool) -> None:
-    async with ClientWrapper() as client:
-        if not client:
-            return
-        helpers, invalid_helpers = sls.helpers.validate_helpers(helpers)
-        if invalid_helpers:
-            print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
-        if enable:
-            await client.enable_helpers(helpers)
-        else:
-            await client.disable_helpers(helpers)
+@command
+async def set_helper_enabled(client: sls.client.Client, helpers: list[str], enable: bool) -> None:
+    helpers, invalid_helpers = sls.helpers.validate_helpers(helpers)
+    if invalid_helpers:
+        print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
+    if enable:
+        await client.enable_helpers(helpers)
+    else:
+        await client.disable_helpers(helpers)
 
 
 @command
