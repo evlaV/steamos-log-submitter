@@ -9,6 +9,7 @@ import dbus_next as dbus
 import json
 import os
 import re
+import struct
 import time
 from collections.abc import Awaitable, Callable
 from typing import Optional, Union
@@ -73,17 +74,76 @@ class SysinfoHelper(Helper):
         return devices
 
     @classmethod
-    async def list_monitors(cls) -> list[dict[str, str]]:
+    def parse_display_descriptor(cls, desc: bytes) -> dict[str, str]:
+        type = desc[1]
+        if type not in (0xFC, 0xFE, 0xFF):
+            return {'type': 'unknown'}
+        value = desc[3:].decode('cp437')
+        info = {'value': value.split('\n')[0]}
+        if type == 0xFC:
+            info['type'] = 'name'
+        if type == 0xFE:
+            info['type'] = 'text'
+        if type == 0xFF:
+            info['type'] = 'serial'
+        return info
+
+    @classmethod
+    def parse_edid(cls, edid: bytes) -> Optional[dict[str, JSONEncodable]]:
+        if len(edid) < 128:
+            cls.logger.warning('Invalid EDID')
+            return None
+        info: dict[str, JSONEncodable] = {}
+        magic, pnp_id, mfg_pid, serial, major, minor, \
+            desc0, desc1, desc2, desc3 = \
+            struct.unpack('''<q HHI xx BB xxxxx xxxxxxxxxx xxx
+                             xx xx xx xx xx xx xx xx
+                             Hxxxxxxxxxxxxxxxx
+                             Hxxxxxxxxxxxxxxxx
+                             Hxxxxxxxxxxxxxxxx
+                             Hxxxxxxxxxxxxxxxx
+                             xx''', edid[:128])
+        if magic != 0xFFFFFFFFFFFF00:
+            cls.logger.warning('Invalid EDID magic')
+            return None
+        pnp_id = (pnp_id >> 8) | (pnp_id << 8)
+        info['pnp'] = chr(((pnp_id >> 10) & 0x1F) + 0x40) + \
+            chr(((pnp_id >> 5) & 0x1F) + 0x40) + \
+            chr((pnp_id & 0x1F) + 0x40)
+        info['pid'] = f'{mfg_pid:04x}'
+        info['serial'] = f'{serial:08x}'
+        info['version'] = f'{major}.{minor}'
+        info['checksum'] = (sum(edid[:128]) & 0xFF) == 0
+        if not desc0:
+            info['desc0'] = cls.parse_display_descriptor(edid[56:72])
+        if not desc1:
+            info['desc1'] = cls.parse_display_descriptor(edid[74:90])
+        if not desc2:
+            info['desc2'] = cls.parse_display_descriptor(edid[92:108])
+        if not desc3:
+            info['desc3'] = cls.parse_display_descriptor(edid[110:126])
+        return info
+
+    @classmethod
+    async def list_monitors(cls) -> list[dict[str, JSONEncodable]]:
         drm = '/sys/class/drm'
         devices = []
         for dev in os.listdir(drm):
             if not re.match(r'card\d+-', dev):
                 continue
+            info: dict[str, JSONEncodable] = {}
             edid = cls.read_file(f'{drm}/{dev}/edid', binary=True)
             if not edid:
                 continue
-            assert isinstance(edid, bytes)  # Hint to mypy
-            devices.append({'edid': edid.hex()})
+            assert isinstance(edid, bytes)
+            info['edid'] = edid.hex()
+            modes = cls.read_file(f'{drm}/{dev}/modes', binary=False)
+            if isinstance(modes, str):
+                info['modes'] = modes.split('\n')
+            parsed_edid = cls.parse_edid(edid)
+            if parsed_edid:
+                info.update(parsed_edid)
+            devices.append(info)
         return devices
 
     @classmethod

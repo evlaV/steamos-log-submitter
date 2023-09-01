@@ -208,17 +208,35 @@ async def test_collect_monitors_no_edid(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_monitors_edid(monkeypatch):
+    edid = b'''\0\xFF\xFF\xFF\xFF\xFF\xFF\0 \xB6\x23\x01AAAAxx\1\4
+    xxxxxxxxxxxxxxxxxxxxxxxxxxxxx\1\1xxxxxxxxxxxxxxxx\0\0\0\xFC\0Gordon's
+    \0\0\0\xFE\0And a crowbar\0\0\0\xFF\0MK 5\n        \0\x4E'''
+
     def read_file(fname, binary):
-        assert binary
-        assert fname.endswith('card0-DP-1/edid')
-        return b'AAAA'
+        if fname.endswith('card0-DP-1/edid'):
+            assert binary
+            return edid
+        if fname.endswith('card0-DP-1/modes'):
+            assert not binary
+            return '1024x768'
+        assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
     monkeypatch.setattr(helper, 'read_file', read_file)
     devices = await helper.list_monitors()
     assert isinstance(devices, list)
     assert len(devices) == 1
-    assert devices[0]['edid'] == '41414141'
+    assert devices[0]['edid'] == edid.hex()
+    assert devices[0]['pnp'] == 'HEV'
+    assert devices[0]['pid'] == '0123'
+    assert devices[0]['serial'] == '41414141'
+    assert devices[0]['version'] == '1.4'
+    assert devices[0]['checksum'] is True
+    assert 'desc0' not in devices[0]
+    assert devices[0]['desc1'] == {'type': 'name', 'value': 'Gordon\'s'}
+    assert devices[0]['desc2'] == {'type': 'text', 'value': 'And a crowbar'}
+    assert devices[0]['desc3'] == {'type': 'serial', 'value': 'MK 5'}
+    assert devices[0]['modes'] == ['1024x768']
 
 
 @pytest.mark.asyncio
