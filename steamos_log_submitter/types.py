@@ -14,9 +14,9 @@ JSONEncodable: TypeAlias = Sequence['JSONEncodable'] | Mapping[str, 'JSONEncodab
 DBusT = TypeVar('DBusT', bound=Optional[DBusEncodable])
 
 
-class DBusCallableAsync(Protocol):
+class DBusCallableAsync(Protocol):  # pragma: no cover
     async def __call__(*args: DBusEncodable) -> Optional[DBusEncodable]: ...
 
 
-class DBusCallableSync(Protocol):
+class DBusCallableSync(Protocol):  # pragma: no cover
     def __call__(*args: DBusEncodable) -> Optional[DBusEncodable]: ...
