@@ -132,18 +132,18 @@ class SysinfoHelper(Helper):
             if not re.match(r'card\d+-', dev):
                 continue
             info: dict[str, JSONEncodable] = {}
-            edid = cls.read_file(f'{drm}/{dev}/edid', binary=True)
-            if not edid:
-                continue
-            assert isinstance(edid, bytes)
-            info['edid'] = edid.hex()
             modes = cls.read_file(f'{drm}/{dev}/modes', binary=False)
             if isinstance(modes, str):
                 info['modes'] = modes.split('\n')
-            parsed_edid = cls.parse_edid(edid)
-            if parsed_edid:
-                info.update(parsed_edid)
-            devices.append(info)
+            edid = cls.read_file(f'{drm}/{dev}/edid', binary=True)
+            if edid:
+                assert isinstance(edid, bytes)
+                info['edid'] = edid.hex()
+                parsed_edid = cls.parse_edid(edid)
+                if parsed_edid:
+                    info.update(parsed_edid)
+            if info:
+                devices.append(info)
         return devices
 
     @classmethod
