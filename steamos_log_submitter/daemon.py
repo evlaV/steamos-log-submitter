@@ -29,9 +29,9 @@ logger = logging.getLogger(__loader__.name)
 
 
 class Daemon:
-    STARTUP = 20
-    INTERVAL = 3600
-    WAKEUP_DELAY = 10
+    STARTUP: float = 20
+    INTERVAL: float = 3600
+    WAKEUP_DELAY: float = 10
 
     def __init__(self, *, exit_on_shutdown: bool = False):
         self._exit_on_shutdown = exit_on_shutdown

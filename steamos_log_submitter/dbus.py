@@ -29,7 +29,7 @@ async def connect() -> None:
     connected = True
 
 
-def signature(type_annotation: type) -> str:
+def signature(type_annotation: Union[type, UnionType]) -> str:
     if type_annotation is int:
         return 'i'
     if type_annotation is float:
@@ -70,19 +70,21 @@ def fn_signature(fn: DBusCallable) -> inspect.Signature:
     return inspect.Signature(arguments_signature, return_annotation=return_signature)
 
 
-def dbusify(fn: DBusCallable) -> DBusCallable:
-    wrapped: DBusCallable
+def adbusify(fn: DBusCallableAsync) -> DBusCallableAsync:
+    async def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
+        coro = typing.cast(DBusCallableAsync, fn)(*args)
+        assert isinstance(coro, CoroutineType)
+        return typing.cast(DBusEncodable, await coro)
 
-    if inspect.iscoroutinefunction(fn):
-        async def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
-            coro = typing.cast(DBusCallableAsync, fn)(*args)
-            assert isinstance(coro, CoroutineType)
-            return typing.cast(DBusEncodable, await coro)
-    else:
-        def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
-            return typing.cast(DBusCallableSync, fn)(*args)
+    wrapped.__signature__ = fn_signature(fn)  # type: ignore[attr-defined]
+    return wrapped
 
-    wrapped.__signature__ = fn_signature(fn)  # type: ignore[union-attr]
+
+def dbusify(fn: DBusCallableSync) -> DBusCallableSync:
+    def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
+        return typing.cast(DBusCallableSync, fn)(*args)
+
+    wrapped.__signature__ = fn_signature(fn)  # type: ignore[attr-defined]
     return wrapped
 
 

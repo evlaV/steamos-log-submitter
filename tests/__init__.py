@@ -5,7 +5,6 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import builtins
-import collections
 import configparser
 import httpx
 import importlib
@@ -16,8 +15,11 @@ import pytest
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
-from collections.abc import Awaitable, Callable
-from typing import Any, Optional, Union
+from collections.abc import Callable, Coroutine
+from typing import Optional, ParamSpec, TypeVar, Union
+
+P = ParamSpec('P')
+T = TypeVar('T')
 
 
 @pytest.fixture
@@ -220,7 +222,7 @@ def custom_dsn(section: str, dsn: str = ''):
     return dsn_fixture
 
 
-def awaitable(fn: Callable[..., Any]) -> Awaitable[Any]:
+def awaitable(fn: Callable[P, T]) -> Callable[P, Coroutine[None, None, T]]:
     async def afn(*args, **kwargs):
         return fn(*args, **kwargs)
 
@@ -234,7 +236,7 @@ class Popen:
     wait: Callable[[Optional[int]], None]
     returncode: Optional[int]
 
-    def wait(self, timeout: Optional[int] = None) -> None:
+    def wait(self, timeout: Optional[int] = None) -> None:  # type: ignore[no-redef]
         pass
 
     def __init__(self, *,
@@ -254,16 +256,15 @@ class Popen:
 def fake_async_subprocess(monkeypatch):
     def setup(*, stdout=None, stderr=None, returncode=0):
         async def fake_subprocess(*args, **kwargs):
-            ret = collections.namedtuple('Process', ['stdout', 'stderr', 'returncode'])
-            ret.returncode = returncode
+            ret = Popen(returncode=returncode)
             if stdout:
                 ret.stdout = io.BytesIO(stdout)
-                ret.stdout.read = awaitable(ret.stdout.read)
-                ret.stdout.readline = awaitable(ret.stdout.readline)
+                ret.stdout.read = awaitable(ret.stdout.read)  # type: ignore[assignment]
+                ret.stdout.readline = awaitable(ret.stdout.readline)  # type: ignore[assignment]
             if stderr:
                 ret.stderr = io.BytesIO(stderr)
-                ret.stderr.read = awaitable(ret.stderr.read)
-                ret.stderr.readline = awaitable(ret.stderr.readline)
+                ret.stderr.read = awaitable(ret.stderr.read)  # type: ignore[assignment]
+                ret.stderr.readline = awaitable(ret.stderr.readline)  # type: ignore[assignment]
             return ret
         monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 

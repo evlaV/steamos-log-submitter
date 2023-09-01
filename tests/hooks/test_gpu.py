@@ -11,7 +11,6 @@ import posix
 import shutil
 import subprocess
 import time
-from typing import Any
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
@@ -29,7 +28,7 @@ def test_basic(monkeypatch) -> None:
         assert name == '123456789.json'
         return blob
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+    def fake_subprocess(*args, **kwargs) -> subprocess.CompletedProcess:
         ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
@@ -67,7 +66,7 @@ def test_invalid_pid(monkeypatch) -> None:
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+    def fake_subprocess(*args, **kwargs) -> subprocess.CompletedProcess:
         ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
@@ -98,7 +97,7 @@ def test_invalid_appid(monkeypatch) -> None:
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+    def fake_subprocess(*args, **kwargs) -> subprocess.CompletedProcess:
         ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret
@@ -128,7 +127,7 @@ def test_invalid_exe(monkeypatch) -> None:
         blob.close = lambda: None
         return blob
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> subprocess.CompletedProcess:
+    def fake_subprocess(*args, **kwargs) -> subprocess.CompletedProcess:
         ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'mesa 23.2.34-1\n'
         return ret

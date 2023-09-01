@@ -178,7 +178,7 @@ async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, 
             super().__init__('com.aperture.Portal')
 
         @dbus.service.method()
-        async def Escape(self) -> 'i':  # NOQA: F821
+        async def Escape(self) -> 'i':  # type: ignore[name-defined] # NOQA: F821
             count_hits()
             return count_hits.hits
 
@@ -206,7 +206,7 @@ async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, pa
             super().__init__('com.aperture.MoonDust')
 
         @dbus.service.method()
-        async def Breathe(self) -> 'i':  # NOQA: F821
+        async def Breathe(self) -> 'i':  # type: ignore[name-defined] # NOQA: F821
             count_hits()
             return count_hits.hits
 

@@ -37,4 +37,4 @@ mypy:
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
     - pip install mypy .[mypy]
-    - mypy -p steamos_log_submitter
+    - mypy -p steamos_log_submitter -p tests --no-warn-unused-ignores

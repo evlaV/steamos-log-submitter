@@ -9,8 +9,10 @@ import json
 import os
 import pytest
 import time
+import typing
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers import create_helper
+
 from .. import always_raise, awaitable, setup_categories, unreachable
 from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
 from ..daemon import dbus_daemon  # NOQA: F401
@@ -722,6 +724,6 @@ async def test_dbus_get_json(monkeypatch, dbus_daemon):
     daemon, bus = await dbus_daemon
     usb = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Sysinfo/Usb')
     iface = await usb.interface('com.valvesoftware.SteamOSLogSubmitter.Sysinfo')
-    blob = json.loads(await iface.get_json())
+    blob = json.loads(typing.cast(str, await iface.get_json()))
     assert blob == [{'vid': '1234', 'pid': '5678'}]
     await daemon.shutdown()

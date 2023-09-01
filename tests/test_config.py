@@ -42,7 +42,7 @@ def test_section_get_val_no_default(monkeypatch):
 def test_section_get_no_section_default(monkeypatch):
     testconf = configparser.ConfigParser()
     monkeypatch.setattr(config, 'config', testconf)
-    section = config.ConfigSection('test', defaults={'nothing': True})
+    section = config.ConfigSection('test', defaults={'nothing': '1'})
     try:
         assert section['nothing']
     except KeyError:
@@ -53,7 +53,7 @@ def test_section_get_no_val_default(monkeypatch):
     testconf = configparser.ConfigParser()
     testconf.add_section('test')
     monkeypatch.setattr(config, 'config', testconf)
-    section = config.ConfigSection('test', defaults={'nothing': True})
+    section = config.ConfigSection('test', defaults={'nothing': '1'})
     try:
         assert section['nothing']
     except KeyError:

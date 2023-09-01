@@ -10,7 +10,7 @@ from . import always_raise
 
 def test_success(monkeypatch):
     def fake_subprocess(*args, **kwargs):
-        ret = subprocess.CompletedProcess(args[0], 0)
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         ret.stdout = 'main\n'
         return ret
 

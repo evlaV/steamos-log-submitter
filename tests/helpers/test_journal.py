@@ -5,7 +5,6 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import builtins
-import collections
 import io
 import json
 import os
@@ -13,7 +12,7 @@ import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.helpers import create_helper, HelperResult
-from .. import always_raise, awaitable, unreachable
+from .. import always_raise, awaitable, unreachable, Popen
 from .. import data_directory, count_hits, drop_root, fake_async_subprocess, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
@@ -222,7 +221,7 @@ async def test_journal_invocation_prune(fake_async_subprocess, mock_dbus, data_d
 @pytest.mark.asyncio
 async def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
     async def fake_subprocess(*args, **kwargs):
-        ret = collections.namedtuple('Process', ['stdout'])
+        ret = Popen()
         lines = []
         for x in range(5):
             line = {
@@ -234,7 +233,7 @@ async def test_journal_invocation_merge(monkeypatch, mock_dbus, data_directory, 
             lines.append(json.dumps(line))
         lines.append('')
         ret.stdout = io.BytesIO('\n'.join(lines).encode())
-        ret.stdout.readline = awaitable(ret.stdout.readline)
+        ret.stdout.readline = awaitable(ret.stdout.readline)  # type: ignore[assignment]
         return ret
 
     os.mkdir(f'{sls.pending}/journal')

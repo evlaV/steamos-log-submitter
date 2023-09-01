@@ -3,6 +3,8 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+
+# mypy: disable-error-code="arg-type"
 import asyncio
 import dbus_next as dbus
 import inspect
@@ -46,16 +48,16 @@ def test_signature_type():
 
 def test_fn_signature_type():
     def fn__i(self) -> int:
-        pass
+        return 0
 
     def fn_i_(self, a: int):
         pass
 
     def fn_ai_ai(self, a: Sequence[int]) -> list[int]:
-        pass
+        return list(a)
 
     async def afn_ai_ai(self, a: Sequence[int]) -> list[int]:
-        pass
+        return list(a)
 
     assert sls.dbus.fn_signature(fn__i) == inspect.Signature([
         inspect.Parameter('self', inspect._ParameterKind.POSITIONAL_ONLY)
@@ -88,7 +90,7 @@ async def test_dbusify():
     def fn_ai_ai(self, a: Sequence[int]) -> list[int]:
         return list(a)
 
-    @sls.dbus.dbusify
+    @sls.dbus.adbusify
     async def afn_ai_ai(self, a: Sequence[int]) -> list[int]:
         return list(a)
 

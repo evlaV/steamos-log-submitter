@@ -9,7 +9,6 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Any
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.coredump as hook
@@ -93,7 +92,7 @@ def test_basic(monkeypatch) -> None:
     attempt = 0
     tmpfile = f'{sls.pending}/minidump/.staging-1-e-P-None.dmp'
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> Popen:
+    def fake_subprocess(*args, **kwargs) -> Popen:
         nonlocal attempt
         ret = Popen(stdin=io.BytesIO(), returncode=0)
         assert attempt < 2
@@ -126,7 +125,7 @@ def test_basic(monkeypatch) -> None:
 
 
 def test_broken_xattr(monkeypatch, count_hits) -> None:
-    def fake_subprocess(*args: Any, **kwargs: Any) -> Popen:
+    def fake_subprocess(*args, **kwargs) -> Popen:
         ret = Popen()
         ret.stdin = io.BytesIO()
         return ret
@@ -146,7 +145,7 @@ def test_broken_xattr(monkeypatch, count_hits) -> None:
 def test_no_collect(monkeypatch) -> None:
     attempt = 0
 
-    def fake_subprocess(*args: Any, **kwargs: Any) -> Popen:
+    def fake_subprocess(*args, **kwargs) -> Popen:
         nonlocal attempt
         ret = Popen()
         ret.stdin = io.BytesIO()

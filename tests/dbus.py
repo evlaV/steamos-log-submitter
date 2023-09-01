@@ -191,7 +191,10 @@ def mock_dbus(monkeypatch):
 
 @pytest.fixture
 async def real_dbus(monkeypatch):
-    monkeypatch.setattr(dbus, 'BusType', collections.namedtuple('BusType', ['SYSTEM', 'SESSION'])(dbus.BusType.SESSION, dbus.BusType.SESSION))
+    BusType = collections.namedtuple('BusType', ['SYSTEM', 'SESSION'])
+    BusType.SYSTEM = dbus.BusType.SESSION
+    BusType.SESSION = dbus.BusType.SESSION
+    monkeypatch.setattr(dbus, 'BusType', BusType)
     sls.dbus.connected = False
     await sls.dbus.connect()
     return sls.dbus.system_bus.unique_name
