@@ -23,6 +23,9 @@ which has the following methods and properties:
 - `ListPending`: Takes no argument, returns `as` value. Get a list of currently
   pending log files that have yet to be submitted. The format is
   `[helper]/[logfile]`.
+- `Log`: Takes `dsus` arguments (`timestamp`, `module`, `level`, `message`),
+  has no return value. Logs a message in the daemon's log. Used for forwarding
+  log records from an out-of-process hook, and should not be used otherwise.
 - `SetSteamInfo`: Takes `ss` arguments (`key`, `value`), has no return value.
   Sets the cached value of a Steam-related informational key that can be used
   by SLS for richer metadata. If these values are not set, then SLS will try to

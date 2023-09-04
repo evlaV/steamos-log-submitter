@@ -12,8 +12,13 @@ import steamos_log_submitter.client
 logger = logging.getLogger(__name__)
 
 
-def trigger() -> None:
+async def atrigger() -> None:
     try:
-        asyncio.run(sls.client.Client().trigger(wait=False))
+        await sls.logging.RemoteHandler.drain()
+        await sls.client.Client().trigger(wait=False)
     except Exception as e:
         logger.warning("Couldn't trigger submission, exiting", exc_info=e)
+
+
+def trigger() -> None:
+    asyncio.run(atrigger())

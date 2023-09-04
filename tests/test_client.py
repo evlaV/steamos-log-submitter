@@ -4,12 +4,17 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import logging
+import os
 import pytest
+import tempfile
 import time
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 import steamos_log_submitter.exceptions
+
 from . import awaitable, setup_categories, setup_logs
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
@@ -195,4 +200,33 @@ async def test_set_steam_info(dbus_client, mock_config):
         assert False
     except sls.exceptions.InvalidArgumentsError:
         pass
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_log_passthru(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
+
+    await client.log('steamos_log_submitter.test', logging.ERROR, 'foo')
+    assert os.access(f'{tmpdir.name}/log', os.F_OK)
+    with open(f'{tmpdir.name}/log') as f:
+        log = f.read()
+
+    assert 'ERROR' in log
+    assert 'test' in log
+    assert 'foo' in log
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_log_invalid_level(dbus_client, mock_config):
+    daemon, client = await dbus_client
+    try:
+        await client.log('steamos_log_submitter.test', 123, 'foo')
+    except sls.exceptions.InvalidArgumentsError as e:
+        assert e.data == {'level': 123}
+
     await daemon.shutdown()

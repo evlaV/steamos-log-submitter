@@ -6,6 +6,7 @@
 import dbus_next as dbus
 import json
 import logging
+import time
 import typing
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
 from typing import Concatenate, NoReturn, Optional, ParamSpec, Union
@@ -155,3 +156,8 @@ class Client:
     async def list(self) -> list[str]:
         helpers = sls.dbus.DBusObject(self._bus, f'{DBUS_ROOT}/helpers')
         return [sls.util.snake_case(child.rsplit('/')[-1]) for child in await helpers.list_children()]
+
+    @command
+    async def log(self, module: str, level: int, message: str, timestamp: Optional[float] = None) -> None:
+        assert self._iface
+        await self._iface.log(timestamp or time.time(), module, level, message)

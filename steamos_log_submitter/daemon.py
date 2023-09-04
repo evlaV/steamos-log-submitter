@@ -13,6 +13,7 @@ import logging
 import os
 import psutil
 import time
+import typing
 from collections.abc import Callable
 from typing import Optional
 
@@ -377,6 +378,19 @@ class DaemonInterface(dbus.service.ServiceInterface):
             if helper_module:
                 pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
         return pending
+
+    @dbus.service.method()
+    @exc_awrap
+    async def Log(self, timestamp: 'd', module: 's', level: 'u', message: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
+        if not sls.logging.valid_level(level):
+            raise sls.exceptions.InvalidArgumentsError({'level': level})
+        logger = logging.getLogger(module)
+        real_time = time.time
+        time.time = lambda: typing.cast(float, timestamp)
+        try:
+            logger.log(level, message)
+        finally:
+            time.time = real_time
 
 
 if __name__ == '__main__':  # pragma: no cover

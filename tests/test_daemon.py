@@ -5,13 +5,19 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next as dbus
+import json
+import logging
+import os
 import pytest
+import tempfile
 import time
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
 import steamos_log_submitter.steam
+
 from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_daemon  # NOQA: F401
@@ -771,3 +777,40 @@ async def test_suspend_double_wake(count_hits, mock_dbus, mock_config, monkeypat
     await asyncio.sleep(0.02)
     assert daemon._suspend == 'inactive'
     assert count_hits.hits == 0
+
+
+@pytest.mark.asyncio
+async def test_log_passthru(dbus_daemon, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
+    sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
+
+    await iface.log(60 * 60 * 24, 'steamos_log_submitter.test', logging.ERROR, 'foo')
+    assert os.access(f'{tmpdir.name}/log', os.F_OK)
+    with open(f'{tmpdir.name}/log') as f:
+        log = f.read()
+
+    assert 'ERROR' in log
+    assert 'test' in log
+    assert 'foo' in log
+    assert '1970' in log
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_log_invalid_level(dbus_daemon, mock_config):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
+    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+
+    try:
+        await iface.log(0.0, 'steamos_log_submitter.test', 123, 'foo')
+    except dbus.errors.DBusError as e:
+        assert e.type == sls.exceptions.InvalidArgumentsError.name
+        assert json.loads(e.text) == {'level': 123}
+
+    await daemon.shutdown()
