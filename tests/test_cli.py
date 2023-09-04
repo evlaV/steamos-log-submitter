@@ -6,6 +6,7 @@
 import asyncio
 import pwd
 import pytest
+import steamos_log_submitter as sls
 import steamos_log_submitter.cli as cli
 import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.runner as runner
@@ -14,6 +15,30 @@ from . import always_raise, awaitable, setup_categories, setup_logs
 from . import count_hits, drop_root, helper_directory, mock_config, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
+
+
+@pytest.mark.asyncio
+async def test_logging(count_hits, mock_config, monkeypatch):
+    expected_level = 'WARNING'
+
+    def expect_level(level=None):
+        nonlocal expected_level
+        count_hits()
+        assert level == expected_level
+
+    monkeypatch.setattr(sls.logging, 'reconfigure_logging', expect_level)
+
+    await cli.amain(['status'])
+    assert not mock_config.has_section('steam')
+
+    assert count_hits.hits == 1
+
+    expected_level = 'DEBUG'
+
+    await cli.amain(['--debug', 'status'])
+    assert not mock_config.has_section('steam')
+
+    assert count_hits.hits == 2
 
 
 @pytest.fixture

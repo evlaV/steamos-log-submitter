@@ -28,21 +28,21 @@ def add_handler(handler: logging.Handler, level: int) -> None:
     root_logger.addHandler(handler)
 
 
-def reconfigure_logging(path: Optional[str] = None) -> None:
-    level_name = (config.get('level') or 'WARNING').upper()
-    if valid_level(level_name):
-        level = getattr(logging, level_name)
+def reconfigure_logging(path: Optional[str] = None, level: Optional[str] = None) -> None:
+    level = (level or config.get('level') or 'WARNING').upper()
+    if valid_level(level):
+        level_int = getattr(logging, level)
     else:
-        level = logging.WARNING
+        level_int = logging.WARNING
 
     for handler in list(root_logger.handlers):
         root_logger.removeHandler(handler)
         handler.close()
-    add_handler(logging.StreamHandler(), level)
+    add_handler(logging.StreamHandler(), level_int)
 
     if path:
         try:
-            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='W6', backupCount=4, encoding='utf-8'), level)
+            add_handler(logging.handlers.TimedRotatingFileHandler(path, when='W6', backupCount=4, encoding='utf-8'), level_int)
         except OSError:
             logger.warning("Couldn't open log file")
-    root_logger.setLevel(level)
+    root_logger.setLevel(level_int)

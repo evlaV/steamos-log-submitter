@@ -130,6 +130,7 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
         description='SteamOS log collection and submission tool')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug logging')
     subparsers = parser.add_subparsers(required=True, metavar='command')
 
     status = subparsers.add_parser('status',
@@ -202,6 +203,8 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))
 
     parsed_args = parser.parse_args(args)
+
+    sls.logging.reconfigure_logging(level='DEBUG' if parsed_args.debug else 'WARNING')
 
     coro = parsed_args.func(parsed_args)
     assert asyncio.iscoroutine(coro)
