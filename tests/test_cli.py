@@ -17,30 +17,6 @@ from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
 
 
-@pytest.mark.asyncio
-async def test_logging(count_hits, mock_config, monkeypatch):
-    expected_level = 'WARNING'
-
-    def expect_level(level=None):
-        nonlocal expected_level
-        count_hits()
-        assert level == expected_level
-
-    monkeypatch.setattr(sls.logging, 'reconfigure_logging', expect_level)
-
-    await cli.amain(['status'])
-    assert not mock_config.has_section('steam')
-
-    assert count_hits.hits == 1
-
-    expected_level = 'DEBUG'
-
-    await cli.amain(['--debug', 'status'])
-    assert not mock_config.has_section('steam')
-
-    assert count_hits.hits == 2
-
-
 @pytest.fixture
 async def cli_wrapper(dbus_client, monkeypatch):
     daemon, client = await dbus_client
@@ -383,4 +359,31 @@ async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
     assert count_hits.hits == 1
     await asyncio.sleep(0.05)
     assert count_hits.hits == 2
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper
+    expected_level = 'WARNING'
+
+    def expect_level(level=None):
+        nonlocal expected_level
+        count_hits()
+        assert level == expected_level
+
+    monkeypatch.setattr(sls.logging, 'reconfigure_logging', expect_level)
+
+    await cli.amain(['status'])
+    assert not mock_config.has_section('steam')
+
+    assert count_hits.hits == 1
+
+    expected_level = 'DEBUG'
+
+    await cli.amain(['--debug', 'status'])
+    assert not mock_config.has_section('steam')
+
+    assert count_hits.hits == 2
+
     await daemon.shutdown()
