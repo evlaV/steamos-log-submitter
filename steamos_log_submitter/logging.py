@@ -46,3 +46,7 @@ def reconfigure_logging(path: Optional[str] = None, level: Optional[str] = None)
         except OSError:
             logger.warning("Couldn't open log file")
     root_logger.setLevel(level_int)
+
+    if level_int < logging.INFO:
+        foreign_logger = logging.getLogger('asyncio')
+        foreign_logger.setLevel(logging.INFO)
