@@ -34,6 +34,14 @@ async def test_no_daemon(monkeypatch, real_dbus):
 
 
 @pytest.mark.asyncio
+async def test_no_daemon_message(monkeypatch, real_dbus, capsys):
+    bus = await real_dbus
+    monkeypatch.setattr(cli.ClientWrapper, 'bus', bus)
+    await cli.amain(['status'])
+    assert "Can't connect to daemon." in capsys.readouterr().err.strip()
+
+
+@pytest.mark.asyncio
 async def test_status(capsys, mock_config, cli_wrapper):
     daemon, client = await cli_wrapper
 

@@ -34,7 +34,10 @@ class Client:
                 peer = await self._manager.interface('org.freedesktop.DBus.Peer')
                 await peer.ping()
             except (dbus.errors.DBusError, dbus.errors.InterfaceNotFoundError) as e:
-                logger.error("Can't connect to daemon. Is the service running?", exc_info=e)
+                if isinstance(e, dbus.errors.DBusError) and e.type == 'org.freedesktop.DBus.Error.ServiceUnknown':
+                    logger.error("Can't connect to daemon. Service does not appear to be running.")
+                else:
+                    logger.error("Can't connect to daemon. Is the service running?", exc_info=e)
                 raise ConnectionRefusedError from e
             self._iface = await self._manager.interface(f'{DBUS_NAME}.Manager')
 
