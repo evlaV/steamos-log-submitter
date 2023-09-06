@@ -251,7 +251,7 @@ async def test_get_log_level(dbus_daemon, mock_config):
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
-    assert await props['LogLevel'] == 'INFO'
+    assert await props['LogLevel'] == logging.INFO
     await daemon.shutdown()
 
 
@@ -264,7 +264,7 @@ async def test_set_log_level(dbus_daemon, mock_config):
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
-    await props.set('LogLevel', 'WARNING')
+    await props.set('LogLevel', logging.WARNING)
     assert mock_config.get('logging', 'level') == 'WARNING'
     await daemon.shutdown()
 
@@ -286,13 +286,13 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
-    await props.set('LogLevel', 'WARNING')
+    await props.set('LogLevel', logging.WARNING)
 
     sls.config.reload_config()
     assert not sls.config.config.has_option('logging', 'level')
     assert sls.config.local_config.has_section('logging')
     assert sls.config.local_config.get('logging', 'level') == 'WARNING'
-    assert await props['LogLevel'] == 'WARNING'
+    assert await props['LogLevel'] == logging.WARNING
     await daemon.shutdown()
 
 

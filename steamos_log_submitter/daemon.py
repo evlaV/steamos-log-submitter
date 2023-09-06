@@ -237,17 +237,17 @@ class Daemon:
         elif not inhibited and not self._periodic_task:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
-    def log_level(self) -> str:
-        return (sls.logging.config.get('level') or 'WARNING').upper()
+    def log_level(self) -> int:
+        return typing.cast(int, getattr(logging, (sls.logging.config.get('level') or 'WARNING').upper()))
 
-    async def set_log_level(self, level: str) -> None:
+    async def set_log_level(self, level: int) -> None:
         if not sls.logging.valid_level(level):
             raise sls.exceptions.InvalidArgumentsError({'level': level})
         sls.config.migrate_key('logging', 'level')
-        sls.logging.config['level'] = level.upper()
+        sls.logging.config['level'] = logging.getLevelName(level)
         sls.config.write_config()
         sls.logging.reconfigure_logging(sls.logging.config.get('path'))
-        self.iface.emit_properties_changed({'LogLevel': level.upper()})
+        self.iface.emit_properties_changed({'LogLevel': level})
 
     async def set_steam_info(self, key: str, value: str) -> None:
         if key not in (
@@ -345,12 +345,12 @@ class DaemonInterface(dbus.service.ServiceInterface):
 
     @dbus.service.dbus_property()
     @exc_wrap
-    def LogLevel(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
+    def LogLevel(self) -> 'u':  # type: ignore[name-defined] # NOQA: F821
         return self.daemon.log_level()
 
     @LogLevel.setter
     @exc_awrap
-    async def set_log_level(self, level: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
+    async def set_log_level(self, level: 'u'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.set_log_level(level)
 
     @dbus.service.method()

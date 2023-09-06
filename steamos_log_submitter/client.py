@@ -127,11 +127,11 @@ class Client:
             return sorted(typing.cast(Iterable[str], await self._iface.list_pending()))
 
     @command
-    async def log_level(self) -> str:
-        return str(await self._properties['LogLevel'])
+    async def log_level(self) -> int:
+        return typing.cast(int, await self._properties['LogLevel'])
 
     @command
-    async def set_log_level(self, level: str) -> None:
+    async def set_log_level(self, level: int) -> None:
         return await self._properties.set('LogLevel', level)
 
     @command

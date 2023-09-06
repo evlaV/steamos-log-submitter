@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import argparse
 import asyncio
+import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from types import TracebackType
@@ -101,9 +102,9 @@ async def do_pending(client: sls.client.Client, args: argparse.Namespace) -> Non
 @command
 async def do_log_level(client: sls.client.Client, args: argparse.Namespace) -> None:
     if args.level is None:
-        print(await client.log_level())
+        print(logging.getLevelName(await client.log_level()))
     elif sls.logging.valid_level(args.level):
-        await client.set_log_level(args.level)
+        await client.set_log_level(getattr(logging, args.level.upper()))
     else:
         print('Please specify a valid log level', file=sys.stderr)
 

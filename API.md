@@ -56,9 +56,10 @@ which has the following methods and properties:
   collecting and submitting logs. Useful for when a game is running and
   background activity should be minimized, without having to worry about the
   current value of `Enabled`.
-- `LogLevel` (`s`): How verbose SLS's internal logging should be. Possible
-  levels, from least verbose to most, are `CRITICAL`, `ERROR`, `WARNING`,
-  `INFO`, `DEBUG`.
+- `LogLevel` (`u`): How verbose SLS's internal logging should be. Possible
+  levels are taken from the Python `logging` module, and correspond to the
+  values of the constants, from least verbose to most, `CRITICAL`, `ERROR`,
+  `WARNING`, `INFO`, `DEBUG`.
 - `SubmitEnabled` (`b`): Whether or not the submission phase is enabled. If
   this is disabled, logs that are pending submission will not be submitted and
   will be retained locally instead. Note that pending logs will expire (by
