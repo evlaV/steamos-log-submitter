@@ -825,6 +825,115 @@ SwapFree:       36444924 kB
 
 
 @pytest.mark.asyncio
+async def test_collect_network_no_ifaces(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    assert await helper.list_network() == []
+
+
+@pytest.mark.asyncio
+async def test_collect_network_skip_lo(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    lo = MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices/1', mock_dbus)
+    lo.properties['org.freedesktop.NetworkManager.Device'] = {
+        'Interface': 'lo',
+        'DeviceType': 32,
+        'Mtu': 65536,
+    }
+    assert await helper.list_network() == []
+
+
+@pytest.mark.asyncio
+async def test_collect_network_eth_no_carrier(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    eth = MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices/2', mock_dbus)
+    eth.properties['org.freedesktop.NetworkManager.Device'] = {
+        'Interface': 'eth0',
+        'DeviceType': 1,
+        'Mtu': 1500,
+    }
+    eth.properties['org.freedesktop.NetworkManager.Device.Wired'] = {
+        'Carrier': False,
+        'Speed': 0,
+    }
+    assert await helper.list_network() == [{
+        'interface': 'eth0',
+        'device_type': 'ethernet',
+        'mtu': 1500,
+        'carrier': False,
+    }]
+
+
+@pytest.mark.asyncio
+async def test_collect_network_eth_speed(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    eth = MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices/2', mock_dbus)
+    eth.properties['org.freedesktop.NetworkManager.Device'] = {
+        'Interface': 'eth0',
+        'DeviceType': 1,
+        'Mtu': 1500,
+    }
+    eth.properties['org.freedesktop.NetworkManager.Device.Wired'] = {
+        'Carrier': True,
+        'Speed': 1000,
+    }
+    assert await helper.list_network() == [{
+        'interface': 'eth0',
+        'device_type': 'ethernet',
+        'mtu': 1500,
+        'carrier': True,
+        'bitrate': 1_000_000,
+    }]
+
+
+@pytest.mark.asyncio
+async def test_collect_network_wifi_speed(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    eth = MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices/2', mock_dbus)
+    eth.properties['org.freedesktop.NetworkManager.Device'] = {
+        'Interface': 'wlan0',
+        'DeviceType': 2,
+        'Mtu': 1500,
+    }
+    eth.properties['org.freedesktop.NetworkManager.Device.Wireless'] = {
+        'Bitrate': 433300,
+    }
+    assert await helper.list_network() == [{
+        'interface': 'wlan0',
+        'device_type': 'wifi',
+        'mtu': 1500,
+        'bitrate': 433300,
+    }]
+
+
+@pytest.mark.asyncio
+async def test_collect_network_other(mock_dbus):
+    bus = 'org.freedesktop.NetworkManager'
+    mock_dbus.add_bus(bus)
+    MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices', mock_dbus)
+    eth = MockDBusObject(bus, '/org/freedesktop/NetworkManager/Devices/2', mock_dbus)
+    eth.properties['org.freedesktop.NetworkManager.Device'] = {
+        'Interface': 'wg0',
+        'DeviceType': 29,
+        'Mtu': 1500,
+    }
+    assert await helper.list_network() == [{
+        'interface': 'wg0',
+        'device_type': 'wireguard',
+        'mtu': 1500,
+    }]
+
+
+@pytest.mark.asyncio
 async def test_collect_append(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)

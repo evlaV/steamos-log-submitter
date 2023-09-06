@@ -11,8 +11,10 @@ import os
 import re
 import struct
 import time
+import typing
 from collections.abc import Awaitable, Callable
 from typing import Optional, Union
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.crash as crash
 import steamos_log_submitter.dbus
@@ -304,6 +306,77 @@ class SysinfoHelper(Helper):
 
         return devices
 
+    @classmethod
+    async def list_network(cls) -> list[dict[str, JSON]]:
+        bus = 'org.freedesktop.NetworkManager'
+        nm_device_types = {
+            0: 'unknown',
+            1: 'ethernet',
+            2: 'wifi',
+            5: 'bt',
+            6: 'olpc_mesh',
+            7: 'wimax',
+            8: 'modem',
+            9: 'infiniband',
+            10: 'bond',
+            11: 'vlan',
+            12: 'adsl',
+            13: 'bridge',
+            14: 'generic',
+            15: 'team',
+            16: 'tun',
+            17: 'tunnel',
+            18: 'macvlan',
+            19: 'vxlan',
+            20: 'veth',
+            21: 'macsec',
+            22: 'dummy',
+            23: 'ppp',
+            24: 'ovs_interface',
+            25: 'ovs_port',
+            26: 'ovs_bridge',
+            27: 'wpan',
+            28: '6lowpan',
+            29: 'wireguard',
+            30: 'wifi_p2p',
+            31: 'vrf',
+        }
+        device_tree = DBusObject(bus, '/org/freedesktop/NetworkManager/Devices')
+        children = await device_tree.list_children()
+        devices: list[dict[str, JSON]] = []
+        for child in children:
+            dev_object = DBusObject(bus, child)
+            dev_props = dev_object.properties('org.freedesktop.NetworkManager.Device')
+            if str(await dev_props['Interface']).startswith('lo'):
+                continue
+            dev_type = await dev_props['DeviceType']
+            assert isinstance(dev_type, int)
+            dev_dict: dict[str, JSON] = {
+                'device_type': nm_device_types.get(dev_type, f'unknown_{dev_type}')
+            }
+            conversions: list[tuple[str, Callable]] = [
+                ('Interface', str),
+                ('Mtu', int),
+            ]
+            for name, convert in conversions:
+                try:
+                    dev_dict[sls.util.snake_case(name)] = convert(await dev_props[name])
+                except KeyError:
+                    pass
+            if dev_type == 1:
+                # Ethernet
+                eth_props = dev_object.properties('org.freedesktop.NetworkManager.Device.Wired')
+                dev_dict['carrier'] = bool(await eth_props['Carrier'])
+                if dev_dict['carrier']:
+                    dev_dict['bitrate'] = typing.cast(int, await eth_props['Speed']) * 1000
+            elif dev_type == 2:
+                # Wi-Fi
+                wifi_props = dev_object.properties('org.freedesktop.NetworkManager.Device.Wireless')
+                dev_dict['bitrate'] = typing.cast(int, await wifi_props['Bitrate'])
+                pass
+            devices.append(dev_dict)
+        return devices
+
     device_types = [
         'usb',
         'bluetooth',
@@ -311,6 +384,7 @@ class SysinfoHelper(Helper):
         'filesystems',
         'system',
         'batteries',
+        'network',
     ]
 
     @classmethod
