@@ -3,8 +3,8 @@ SteamOS Log Submitter D-Bus API
 
 SteamOS Log Submitter has a D-Bus-based API for management of the behavior of
 the daemon as it's running. The service claims the bus name
-`com.valvesoftware.SteamOSLogSubmitter` on the system bus, and all objects are
-under the `/com/valvesoftware/SteamOSLogSubmitter` path. The following objects
+`com.steampowered.SteamOSLogSubmitter` on the system bus, and all objects are
+under the `/com/steampowered/SteamOSLogSubmitter` path. The following objects
 are defined
 
 ## Manager
@@ -13,9 +13,9 @@ The manager handles central behavior of the daemon, such as enable or inhibit
 state, triggering collection and submission, and various nuances therein.
 
 There is only one manager object, located at the path:
-`/com/valvesoftware/SteamOSLogSubmitter/Manager`
+`/com/steampowered/SteamOSLogSubmitter/Manager`
 
-It implements one interface, `com.valvesoftware.SteamOSLogSubmitter.Manager`,
+It implements one interface, `com.steampowered.SteamOSLogSubmitter.Manager`,
 which has the following methods and properties:
 
 ### Methods
@@ -70,12 +70,12 @@ Helpers manage collection and submission processes for specific categories of
 log, as documented in the README.md file.
 
 There is one helper object per helper module, located under the path:
-`/com/valvesoftware/SteamOSLogSubmitter/helpers`
+`/com/steampowered/SteamOSLogSubmitter/helpers`
 
 For example, the "minidump" module would be located at this path:
-`/com/valvesoftware/SteamOSLogSubmitter/helpers/Minidump`
+`/com/steampowered/SteamOSLogSubmitter/helpers/Minidump`
 
-They implement one interface, `com.valvesoftware.SteamOSLogSubmitter.Helper`,
+They implement one interface, `com.steampowered.SteamOSLogSubmitter.Helper`,
 which has the following methods and properties:
 
 ### Methods
@@ -106,9 +106,9 @@ which has the following methods and properties:
 The sysinfo helper gathers several different types of information about the
 running system for telemetry purposes. Some of this information may be useful
 for other programs and can be exported by using objects located under the path:
-`/com/valvesoftware/SteamOSLogSubmitter/helpers/Sysinfo`
+`/com/steampowered/SteamOSLogSubmitter/helpers/Sysinfo`
 
-They implement one interface, `com.valvesoftware.SteamOSLogSubmitter.Sysinfo`,
+They implement one interface, `com.steampowered.SteamOSLogSubmitter.Sysinfo`,
 which has the following method:
 
 #### Methods

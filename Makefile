@@ -33,7 +33,7 @@ clean:
 		$< > $@
 
 install: all $(infiles)
-	install -D -m0644 dbus/com.valvesoftware.SteamOSLogSubmitter.conf $(DESTDIR)$(dbuspolicydir)/com.valvesoftware.SteamOSLogSubmitter.conf
+	install -D -m0644 dbus/com.steampowered.SteamOSLogSubmitter.conf $(DESTDIR)$(dbuspolicydir)/com.steampowered.SteamOSLogSubmitter.conf
 	install -D -m0644 systemd/var-lib-steamos-log-submitter.mount $(DESTDIR)$(systemdunitsdir)/var-lib-steamos\\x2dlog\\x2dsubmitter.mount
 	install -D -m0644 systemd/steamos-log-submitter.service $(DESTDIR)$(systemdunitsdir)/steamos-log-submitter.service
 	install -D -m0644 systemd/sysusers.conf $(DESTDIR)$(sysusersdir)/steamos-log-submitter.conf

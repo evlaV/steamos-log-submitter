@@ -3,5 +3,5 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-DBUS_NAME = 'com.valvesoftware.SteamOSLogSubmitter'
-DBUS_ROOT = '/com/valvesoftware/SteamOSLogSubmitter'
+DBUS_NAME = 'com.steampowered.SteamOSLogSubmitter'
+DBUS_ROOT = '/com/steampowered/SteamOSLogSubmitter'

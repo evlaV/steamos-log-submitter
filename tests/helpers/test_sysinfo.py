@@ -906,8 +906,8 @@ async def test_dbus_get_json(monkeypatch, dbus_daemon):
     monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
 
     daemon, bus = await dbus_daemon
-    usb = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Sysinfo/Usb')
-    iface = await usb.interface('com.valvesoftware.SteamOSLogSubmitter.Sysinfo')
+    usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysinfo/Usb')
+    iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysinfo')
     blob = json.loads(typing.cast(str, await iface.get_json()))
     assert blob == [{'vid': '1234', 'pid': '5678'}]
     await daemon.shutdown()

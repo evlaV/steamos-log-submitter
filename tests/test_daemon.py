@@ -30,10 +30,10 @@ pytest_plugins = ('pytest_asyncio',)
 @pytest.mark.asyncio
 async def test_dbus(dbus_daemon):
     daemon, bus = await dbus_daemon
-    dbemon = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter')
+    dbemon = sls.dbus.DBusObject(bus, sls.constants.DBUS_ROOT)
     assert {child for child in await dbemon.list_children()} == {
-        '/com/valvesoftware/SteamOSLogSubmitter/Manager',
-        '/com/valvesoftware/SteamOSLogSubmitter/helpers',
+        f'{sls.constants.DBUS_ROOT}/Manager',
+        f'{sls.constants.DBUS_ROOT}/helpers',
     }
     await daemon.shutdown()
 
@@ -50,8 +50,8 @@ async def test_shutdown(dbus_daemon):
 @pytest.mark.asyncio
 async def test_shutdown_dbus(dbus_daemon):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     await iface.shutdown()
     assert not daemon._serving
     assert daemon._periodic_task is None
@@ -63,16 +63,16 @@ async def test_shutdown_dbus(dbus_daemon):
     except dbus.errors.DBusError:
         pass
 
-    root = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter')
+    root = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}')
     assert not await root.list_children()
 
 
 @pytest.mark.asyncio
 async def test_list(dbus_daemon, patch_module, monkeypatch):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers')
     assert {child for child in await manager.list_children()} == {
-        '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test',
+        f'{sls.constants.DBUS_ROOT}/helpers/Test',
     }
     await daemon.shutdown()
 
@@ -80,8 +80,8 @@ async def test_list(dbus_daemon, patch_module, monkeypatch):
 @pytest.mark.asyncio
 async def test_enabled(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     assert await props['Enabled'] is False
     await daemon.enable(True)
     assert await props['Enabled'] is True
@@ -98,8 +98,8 @@ async def test_helper_enabled(count_hits, dbus_daemon, helper_directory, patch_m
     patch_module.submit = awaitable(count_hits)
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
 
     await props.set('Enabled', False)
@@ -125,8 +125,8 @@ async def test_helper_collect_enabled(count_hits, dbus_daemon, helper_directory,
     patch_module.submit = awaitable(unreachable)
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
     assert await props['CollectEnabled'] is True
 
@@ -154,8 +154,8 @@ async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, 
     patch_module.submit = awaitable(count_hits)
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Helper')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
     assert await props['SubmitEnabled'] is True
 
@@ -193,7 +193,7 @@ async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, 
     }
 
     daemon, bus = await dbus_daemon
-    portal = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test/Portal')
+    portal = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test/Portal')
     iface = await portal.interface('com.aperture.Portal')
 
     assert count_hits.hits == 0
@@ -219,7 +219,7 @@ async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, pa
     patch_module.extra_ifaces = [MoondustIface()]
 
     daemon, bus = await dbus_daemon
-    portal = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/helpers/Test')
+    portal = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     iface = await portal.interface('com.aperture.MoonDust')
 
     assert count_hits.hits == 0
@@ -232,8 +232,8 @@ async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, pa
 @pytest.mark.asyncio
 async def test_inhibited(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     assert await props['Inhibited'] is False
     await daemon.inhibit(True)
     assert await props['Inhibited'] is True
@@ -248,8 +248,8 @@ async def test_get_log_level(dbus_daemon, mock_config):
     mock_config.set('logging', 'level', 'INFO')
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
     assert await props['LogLevel'] == 'INFO'
     await daemon.shutdown()
@@ -261,8 +261,8 @@ async def test_set_log_level(dbus_daemon, mock_config):
     mock_config.set('logging', 'level', 'INFO')
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
     await props.set('LogLevel', 'WARNING')
     assert mock_config.get('logging', 'level') == 'WARNING'
@@ -284,8 +284,8 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
     assert not sls.config.local_config.has_section('logging')
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     await props.set('LogLevel', 'WARNING')
 
     sls.config.reload_config()
@@ -424,8 +424,8 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
 @pytest.mark.asyncio
 async def test_set_steam_info(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
     await iface.set_steam_info('account_name', 'gaben')
     assert sls.steam.get_steam_account_name() == 'gaben'
@@ -440,7 +440,7 @@ async def test_set_steam_info(dbus_daemon, mock_config):
         await iface.set_steam_info('invalid', 'foo')
         assert False
     except dbus.errors.DBusError as e:
-        assert e.type == 'com.valvesoftware.SteamOSLogSubmitter.InvalidArgumentsError'
+        assert e.type == f'{sls.constants.DBUS_NAME}.InvalidArgumentsError'
     await daemon.shutdown()
 
 
@@ -489,8 +489,8 @@ async def test_trigger_collect(dbus_daemon, helper_directory, monkeypatch, count
     patch_module.collect = awaitable(count_hits)
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
     assert await props['Enabled'] is False
     assert await props['CollectEnabled'] is True
@@ -514,8 +514,8 @@ async def test_trigger_submit(dbus_daemon, helper_directory, monkeypatch, count_
     patch_module.submit = awaitable(count_hits)
 
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    props = manager.properties('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
     assert await props['Enabled'] is False
     assert await props['SubmitEnabled'] is True
@@ -535,8 +535,8 @@ async def test_trigger_submit(dbus_daemon, helper_directory, monkeypatch, count_
 @pytest.mark.asyncio
 async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
     monkeypatch.setattr(sls.runner, 'submit', awaitable(count_hits))
 
@@ -554,8 +554,8 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
 
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
 
     start = time.time()
@@ -579,8 +579,8 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
 
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
 
     start = time.time()
@@ -603,8 +603,8 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
 @pytest.mark.asyncio
 async def test_trigger_dedup_slow(dbus_daemon, monkeypatch, mock_config, count_hits):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     original_trigger = daemon._trigger
 
     async def trigger():
@@ -635,8 +635,8 @@ async def test_trigger_dedup_slow(dbus_daemon, monkeypatch, mock_config, count_h
 @pytest.mark.asyncio
 async def test_trigger_dedup_slow_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     original_trigger = daemon._trigger
 
     async def trigger():
@@ -782,8 +782,8 @@ async def test_suspend_double_wake(count_hits, mock_dbus, mock_config, monkeypat
 @pytest.mark.asyncio
 async def test_log_passthru(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
     sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
@@ -804,8 +804,8 @@ async def test_log_passthru(dbus_daemon, mock_config):
 @pytest.mark.asyncio
 async def test_log_invalid_level(dbus_daemon, mock_config):
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, '/com/valvesoftware/SteamOSLogSubmitter/Manager')
-    iface = await manager.interface('com.valvesoftware.SteamOSLogSubmitter.Manager')
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
     try:
         await iface.log(0.0, 'steamos_log_submitter.test', 123, 'foo')
