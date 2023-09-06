@@ -94,7 +94,8 @@ async def do_pending(client: sls.client.Client, args: argparse.Namespace) -> Non
             print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
     else:
         logs = await client.list_pending()
-    print(*logs, sep='\n')
+    if logs:
+        print(*logs, sep='\n')
 
 
 @command

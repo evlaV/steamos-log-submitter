@@ -249,6 +249,17 @@ async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
 
     await cli.amain(['pending', 'test', 'test2'])
     assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['pending', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip() == ''
+    assert 'test4' in outerr.err.strip()
+
+    await cli.amain(['pending', 'test', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip().split('\n') == ['test/a', 'test/b']
+    assert 'test4' in outerr.err.strip()
+
     await daemon.shutdown()
 
 
