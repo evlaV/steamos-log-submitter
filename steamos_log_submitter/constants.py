@@ -3,5 +3,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-DBUS_NAME = 'com.steampowered.SteamOSLogSubmitter'
-DBUS_ROOT = '/com/steampowered/SteamOSLogSubmitter'
+from typing import Final
+
+DBUS_NAME: Final[str] = 'com.steampowered.SteamOSLogSubmitter'
+DBUS_ROOT: Final[str] = '/com/steampowered/SteamOSLogSubmitter'

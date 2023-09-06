@@ -5,12 +5,12 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.types import JSONEncodable
-from typing import Optional, Self, Type
+from typing import ClassVar, Optional, Self, Type
 
 
 class Error(RuntimeError):
-    map: dict[str, Type[Self]] = {}
-    name: str
+    map: ClassVar[dict[str, Type[Self]]] = {}
+    name: ClassVar[str]
 
     @classmethod
     def __init_subclass__(cls) -> None:

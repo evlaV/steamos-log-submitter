@@ -6,7 +6,7 @@
 import httpx
 import logging
 import os
-from typing import Optional
+from typing import Final, Optional
 
 import steamos_log_submitter as sls
 from steamos_log_submitter.types import JSONEncodable
@@ -15,8 +15,8 @@ __all__ = [
     'upload',
 ]
 
-start_url = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
-finish_url = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
+START_URL: Final[str] = "https://api.steampowered.com/ICrashReportService/StartCrashUpload/v1"
+FINISH_URL: Final[str] = "https://api.steampowered.com/ICrashReportService/FinishCrashUpload/v1"
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ async def upload(product: str, *,
     logger.debug(f'Crash log info dict:\n{info}')
 
     async with httpx.AsyncClient() as client:
-        start = await client.post(start_url, data=info)
+        start = await client.post(START_URL, data=info)
         if start.status_code // 100 != 2:
             logger.warning(f'Crash log StartCrashUpload returned {start.status_code}')
             return False
@@ -67,7 +67,7 @@ async def upload(product: str, *,
                 return False
             logger.debug(f'Crash log bucket PUT returned {put.status_code}')
 
-        finish = await client.post(finish_url, data={'gid': response['gid']})
+        finish = await client.post(FINISH_URL, data={'gid': response['gid']})
         if finish.status_code // 100 != 2:
             logger.warning(f'Crash log FinishCrashUpload returned {finish.status_code}')
             return False

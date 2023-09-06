@@ -9,7 +9,7 @@ import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from types import TracebackType
-from typing import Concatenate, Optional, ParamSpec, Type
+from typing import ClassVar, Concatenate, Optional, ParamSpec, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
@@ -20,7 +20,7 @@ P = ParamSpec('P')
 
 
 class ClientWrapper:
-    bus = DBUS_NAME
+    bus: ClassVar[str] = DBUS_NAME
 
     async def __aenter__(self) -> Optional[sls.client.Client]:
         try:

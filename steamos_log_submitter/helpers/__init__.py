@@ -13,7 +13,7 @@ import tempfile
 import typing
 from collections.abc import Container, Iterable
 from types import TracebackType
-from typing import Any, Optional, Type
+from typing import Any, ClassVar, Final, Optional, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -26,10 +26,10 @@ logger = logging.getLogger(__name__)
 
 
 class HelperResult:
-    OK = 0
-    TRANSIENT_ERROR = -1
-    PERMANENT_ERROR = -2
-    CLASS_ERROR = -3
+    OK: Final[int] = 0
+    TRANSIENT_ERROR: Final[int] = -1
+    PERMANENT_ERROR: Final[int] = -2
+    CLASS_ERROR: Final[int] = -3
 
     def __init__(self, code: int = OK):
         super(HelperResult, self).__init__()
@@ -81,8 +81,8 @@ class HelperInterface(dbus.service.ServiceInterface):
 
 
 class Helper:
-    defaults: Optional[dict[str, JSONEncodable]] = None
-    valid_extensions: Container[str] = frozenset()
+    defaults: ClassVar[Optional[dict[str, JSONEncodable]]] = None
+    valid_extensions: ClassVar[Container[str]] = frozenset()
 
     __name__: str
     name: str

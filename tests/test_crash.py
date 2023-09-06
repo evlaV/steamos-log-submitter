@@ -28,10 +28,10 @@ async def test_no_file(monkeypatch):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
-                assert url == crash.start_url
+                assert url == crash.START_URL
                 return httpx.Response(200, content=body.encode())
             if attempt == 2:
-                assert url == crash.finish_url
+                assert url == crash.FINISH_URL
                 assert data and data.get('gid') == 111
                 return httpx.Response(204)
             assert False
@@ -66,10 +66,10 @@ async def test_bad_end(monkeypatch):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
-                assert url == crash.start_url
+                assert url == crash.START_URL
                 return httpx.Response(200, content=body.encode())
             if attempt == 2:
-                assert url == crash.finish_url
+                assert url == crash.FINISH_URL
                 assert data and data.get('gid') == 111
                 return httpx.Response(400)
             assert False
@@ -97,7 +97,7 @@ async def test_file(monkeypatch):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
-                assert url == crash.start_url
+                assert url == crash.START_URL
                 return httpx.Response(200, content=body.encode())
             if attempt == 2:
                 assert url == json.loads(body)['response']['url']
@@ -106,7 +106,7 @@ async def test_file(monkeypatch):
                 assert isinstance(content, bytes)
                 return httpx.Response(204)
             if attempt == 3:
-                assert url == crash.finish_url
+                assert url == crash.FINISH_URL
                 assert content is None
                 assert data and data.get('gid') == 111
                 return httpx.Response(204)
@@ -138,7 +138,7 @@ async def test_rate_limit(monkeypatch):
             nonlocal attempt
             attempt += 1
             if attempt == 1:
-                assert url == crash.start_url
+                assert url == crash.START_URL
                 return httpx.Response(200, content=body.encode())
             assert False
         return ret

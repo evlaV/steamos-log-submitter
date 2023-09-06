@@ -45,7 +45,7 @@ class Client:
     @staticmethod
     def _rethrow(exc: BaseException) -> NoReturn:
         if isinstance(exc, dbus.errors.DBusError):
-            new_exc = sls.exceptions.Error.map.get(exc.type)  # type: ignore[misc] # I have no idea why this is needed
+            new_exc = sls.exceptions.Error.map.get(exc.type)
             if new_exc:
                 raise new_exc(json.loads(exc.text)) from exc
             raise sls.exceptions.UnknownError({'text': exc.text}) from exc

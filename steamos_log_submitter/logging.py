@@ -8,7 +8,7 @@ import logging
 import logging.handlers
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 
 __all__ = [
     'reconfigure_logging',
@@ -21,7 +21,7 @@ formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
 
 
 class RemoteHandler(logging.Handler):
-    _tasks: list[logging.LogRecord] = []
+    _tasks: ClassVar[list[logging.LogRecord]] = []
 
     def emit(self, record: logging.LogRecord) -> None:
         self._tasks.append(record)
