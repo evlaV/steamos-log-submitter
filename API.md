@@ -63,6 +63,8 @@ which has the following methods and properties:
   this is disabled, logs that are pending submission will not be submitted and
   will be retained locally instead. Note that pending logs will expire (by
   default after 2 weeks) so this should be used with caution.
+- `Version` (`s`): A read-only property containing the version of the currently
+  running daemon.
 
 ## Helpers
 

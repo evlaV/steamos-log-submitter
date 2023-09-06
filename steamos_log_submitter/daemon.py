@@ -297,6 +297,10 @@ class DaemonInterface(dbus.service.ServiceInterface):
         super().__init__(f'{DBUS_NAME}.Manager')
         self.daemon = daemon
 
+    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
+    def Version(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
+        return sls.__version__
+
     @dbus.service.dbus_property()
     @exc_wrap
     def Enabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
