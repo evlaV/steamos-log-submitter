@@ -191,10 +191,18 @@ def mock_dbus(monkeypatch):
 
 @pytest.fixture
 async def real_dbus(monkeypatch):
+    real_connect = sls.dbus.DBusObject._connect
+
+    async def fake_connect(self) -> None:
+        if not self.bus_name.startswith('com.steampowered.') and not self.bus_name.startswith(':'):
+            raise dbus.errors.DBusError(dbus.constants.ErrorType.SERVICE_UNKNOWN, f'Service {self.bus_name} unknown')
+        await real_connect(self)
+
     BusType = collections.namedtuple('BusType', ['SYSTEM', 'SESSION'])
     BusType.SYSTEM = dbus.BusType.SESSION
     BusType.SESSION = dbus.BusType.SESSION
     monkeypatch.setattr(dbus, 'BusType', BusType)
+    monkeypatch.setattr(sls.dbus.DBusObject, '_connect', fake_connect)
     sls.dbus.connected = False
     await sls.dbus.connect()
     return sls.dbus.system_bus.unique_name
