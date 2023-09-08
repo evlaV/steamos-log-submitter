@@ -9,12 +9,12 @@ import pytest
 import tempfile
 import steamos_log_submitter.util as util
 import steamos_log_submitter.steam as steam
-from steamos_log_submitter.helpers import create_helper, HelperResult
+from steamos_log_submitter.helpers import HelperResult
+from steamos_log_submitter.helpers.minidump import MinidumpHelper as helper
 from .. import custom_dsn
 from .. import mock_config, open_shim  # NOQA: F401
 
 dsn = custom_dsn('helpers.minidump')
-helper = create_helper('minidump')
 
 
 @pytest.mark.asyncio

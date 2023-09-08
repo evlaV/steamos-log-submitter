@@ -145,6 +145,7 @@ def test_content(lockfile):
     assert lock
 
     with lock:
+        assert lock.lockfile
         with open(lockfile, 'r') as f:
             content = f.read()
         assert content

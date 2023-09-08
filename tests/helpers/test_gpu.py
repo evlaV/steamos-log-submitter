@@ -5,12 +5,12 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import pytest
 import steamos_log_submitter.sentry as sentry
-from steamos_log_submitter.helpers import create_helper, HelperResult
+from steamos_log_submitter.helpers import HelperResult
+from steamos_log_submitter.helpers.gpu import GPUHelper as helper
 from .. import custom_dsn, unreachable
 from .. import mock_config, open_shim  # NOQA: F401
 
 dsn = custom_dsn('helpers.gpu')
-helper = create_helper('gpu')
 
 
 @pytest.mark.asyncio

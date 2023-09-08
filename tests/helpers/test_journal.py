@@ -11,7 +11,8 @@ import os
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.sentry as sentry
-from steamos_log_submitter.helpers import create_helper, HelperResult
+from steamos_log_submitter.helpers import HelperResult
+from steamos_log_submitter.helpers.journal import JournalHelper as helper
 from .. import always_raise, awaitable, unreachable, Popen
 from .. import data_directory, count_hits, drop_root, fake_async_subprocess, helper_directory, mock_config, patch_module  # NOQA: F401
 from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
@@ -19,8 +20,6 @@ from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 bus = 'org.freedesktop.systemd1'
 iface = 'org.freedesktop.systemd1.Unit'
 base = '/org/freedesktop/systemd1/unit'
-
-helper = create_helper('journal')
 
 
 @pytest.fixture

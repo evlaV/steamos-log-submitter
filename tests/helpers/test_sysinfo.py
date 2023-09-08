@@ -11,14 +11,12 @@ import pytest
 import time
 import typing
 import steamos_log_submitter as sls
-from steamos_log_submitter.helpers import create_helper
+from steamos_log_submitter.helpers.sysinfo import SysinfoHelper as helper
 
 from .. import always_raise, awaitable, setup_categories, unreachable
 from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
 from ..daemon import dbus_daemon  # NOQA: F401
 from ..dbus import mock_dbus, real_dbus, MockDBusObject  # NOQA: F401
-
-helper = create_helper('sysinfo')
 
 
 def make_usb_devs(monkeypatch, devs):

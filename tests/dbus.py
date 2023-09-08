@@ -205,4 +205,5 @@ async def real_dbus(monkeypatch):
     monkeypatch.setattr(sls.dbus.DBusObject, '_connect', fake_connect)
     sls.dbus.connected = False
     await sls.dbus.connect()
+    assert sls.dbus.system_bus
     return sls.dbus.system_bus.unique_name
