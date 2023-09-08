@@ -16,7 +16,7 @@ import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 from collections.abc import Callable, Coroutine
-from typing import Optional, ParamSpec, TypeVar, Union
+from typing import Optional, ParamSpec, Type, TypeVar, Union
 
 P = ParamSpec('P')
 T = TypeVar('T')
@@ -91,6 +91,7 @@ def always_raise(exc):
 def patch_module(mock_config, monkeypatch):
     class TestHelper(sls.helpers.Helper):
         defaults = None
+        helper: Type[sls.helpers.Helper]
 
         @classmethod
         def _setup(cls):

@@ -65,7 +65,8 @@ def test_log_level_invalid(mock_config):
 
 def test_log_level_invalid2(mock_config, monkeypatch):
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
-    logging.FAKE = 5
+    logging.addLevelName(5, 'FAKE')
+    logging.FAKE = 5  # type: ignore[attr-defined]
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'FAKE')
     sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
@@ -73,7 +74,7 @@ def test_log_level_invalid2(mock_config, monkeypatch):
     logger.warning('foo')
     logger.info('foo')
 
-    del logging.FAKE
+    del logging.FAKE  # type: ignore[attr-defined]
     assert os.access(f'{tmpdir.name}/log', os.F_OK)
     with open(f'{tmpdir.name}/log') as f:
         log = f.read()
