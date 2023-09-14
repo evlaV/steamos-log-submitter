@@ -80,3 +80,16 @@ def test_invalid_schema2(monkeypatch, open_shim):
     monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     open_shim(vdf)
     assert get_deck_serial() is None
+
+
+def test_skip_config(monkeypatch, mock_config, open_shim):
+    vdf = """"InstallConfigStore"
+{
+	"SteamDeckRegisteredSerialNumber"		"Test2"
+}"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
+    mock_config.add_section('steam')
+    mock_config.set('steam', 'deck_serial', 'Test')
+    open_shim(vdf)
+    assert get_deck_serial() == 'Test'
+    assert get_deck_serial(force_vdf=True) == 'Test2'

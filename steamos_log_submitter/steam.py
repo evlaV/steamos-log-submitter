@@ -29,16 +29,18 @@ def _setup() -> None:
         default_uid = 1000
 
 
-def get_deck_serial(uid: int = default_uid) -> Optional[str]:
-    serial = config.get('deck_serial')
-    if serial:
-        return serial
+def get_deck_serial(uid: int = default_uid, force_vdf: bool = False) -> Optional[str]:
+    if not force_vdf:
+        serial = config.get('deck_serial')
+        if serial:
+            return serial
 
     try:
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/config.vdf') as v:
             steamconf = vdf.load(v)
-    except (OSError, SyntaxError, KeyError):
+    except (OSError, SyntaxError, KeyError) as e:
+        logger.warning('Could not access config VDF file', exc_info=e)
         return None
 
     if 'InstallConfigStore' not in steamconf:
@@ -53,19 +55,21 @@ def get_deck_serial(uid: int = default_uid) -> Optional[str]:
     return serial
 
 
-def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
-    userid = config.get('account_id')
-    if userid:
-        try:
-            return int(userid)
-        except ValueError:
-            pass
+def get_steam_account_id(uid: int = default_uid, force_vdf: bool = False) -> Optional[int]:
+    if not force_vdf:
+        userid = config.get('account_id')
+        if userid:
+            try:
+                return int(userid)
+            except ValueError:
+                pass
 
     try:
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError, KeyError):
+    except (OSError, SyntaxError, KeyError) as e:
+        logger.warning('Failed to read config VDF file', exc_info=e)
         return None
 
     if 'users' not in loginusers:
@@ -80,16 +84,18 @@ def get_steam_account_id(uid: int = default_uid) -> Optional[int]:
     return None
 
 
-def get_steam_account_name(uid: int = default_uid) -> Optional[str]:
-    account_name = config.get('account_name')
-    if account_name:
-        return account_name
+def get_steam_account_name(uid: int = default_uid, force_vdf: bool = False) -> Optional[str]:
+    if not force_vdf:
+        account_name = config.get('account_name')
+        if account_name:
+            return account_name
 
     try:
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError, KeyError):
+    except (OSError, SyntaxError, KeyError) as e:
+        logger.warning('Failed to read config VDF file', exc_info=e)
         return None
 
     if 'users' not in loginusers:

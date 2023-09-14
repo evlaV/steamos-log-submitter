@@ -174,3 +174,19 @@ def test_invalid_schema2(monkeypatch, open_shim):
     monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
     open_shim(vdf)
     assert get_steam_account_id() is None
+
+
+def test_skip_config(monkeypatch, mock_config, open_shim):
+    vdf = """"users"
+{
+	"2"
+	{
+		"MostRecent"		"1"
+	}
+}"""
+    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
+    mock_config.add_section('steam')
+    mock_config.set('steam', 'account_id', '1')
+    open_shim(vdf)
+    assert get_steam_account_id() == 1
+    assert get_steam_account_id(force_vdf=True) == 2
