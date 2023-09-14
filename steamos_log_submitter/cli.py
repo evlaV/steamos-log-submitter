@@ -128,6 +128,18 @@ async def do_trigger(client: sls.client.Client, args: argparse.Namespace) -> Non
     await client.trigger(args.wait)
 
 
+@command
+async def do_autoconfig_steam(client: sls.client.Client, args: argparse.Namespace) -> None:
+    info = {
+        'account_name': sls.steam.get_steam_account_name(force_vdf=True) or '',
+        'account_id': sls.steam.get_steam_account_id(force_vdf=True) or '',
+        'deck_serial': sls.steam.get_deck_serial(force_vdf=True) or '',
+    }
+
+    for key, value in info.items():
+        await client.set_steam_info(key, value)
+
+
 def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
@@ -203,6 +215,12 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     set_steam.add_argument('key', choices=('account-name', 'account-id', 'deck-serial'))
     set_steam.add_argument('value', type=str)
     set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))
+
+    autoconfig_steam = subparsers.add_parser('autoconfig-steam-info',
+                                             description='''Automatically set values relating to the current Steam
+                                                            configuration. This command should only be used for testing,
+                                                            as any values set may be changed by Steam directly.''')
+    autoconfig_steam.set_defaults(func=do_autoconfig_steam)
 
     parsed_args = parser.parse_args(args)
 
