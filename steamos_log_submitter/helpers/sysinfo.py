@@ -8,6 +8,9 @@ import collections
 import dbus_next as dbus
 import json
 import os
+import pyalsa.alsacard as alsacard  # type: ignore[import]
+import pyalsa.alsacontrol as alsacontrol  # type: ignore[import]
+import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import]
 import re
 import struct
 import time
@@ -376,6 +379,30 @@ class SysinfoHelper(Helper):
             devices.append(dev_dict)
         return devices
 
+    @classmethod
+    async def list_audio(cls) -> list[dict[str, JSONEncodable]]:
+        devices: list[dict[str, JSONEncodable]] = []
+
+        for card in alsacard.card_list():
+            controls = alsacontrol.Control(f'hw:{card}').card_info()
+            hctl = alsahcontrol.HControl(f'hw:{card}')
+
+            device: dict[str, JSONEncodable] = {
+                'id': controls['id'],
+                'card': controls['card'],
+                'name': controls['name'],
+                'mixer': controls['mixername'],
+            }
+
+            devices.append(device)
+            for info in hctl.list():
+                if info[4] != 'Headphone Jack':
+                    continue
+                elem = alsahcontrol.Element(hctl, info[0])
+                value = alsahcontrol.Value(elem)
+                device['headphones'], = value.get_tuple(alsahcontrol.element_type['BOOLEAN'], 1)
+        return devices
+
     device_types = [
         'usb',
         'bluetooth',
@@ -384,6 +411,7 @@ class SysinfoHelper(Helper):
         'system',
         'batteries',
         'network',
+        'audio',
     ]
 
     @classmethod

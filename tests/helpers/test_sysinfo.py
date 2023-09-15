@@ -7,9 +7,14 @@ import asyncio
 import collections
 import json
 import os
+import pyalsa.alsacard as alsacard  # type: ignore[import]
+import pyalsa.alsacontrol as alsacontrol  # type: ignore[import]
+import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import]
 import pytest
 import time
 import typing
+from typing import Union
+
 import steamos_log_submitter as sls
 from steamos_log_submitter.helpers.sysinfo import SysinfoHelper as helper
 
@@ -928,6 +933,60 @@ async def test_collect_network_other(mock_dbus):
         'interface': 'wg0',
         'device_type': 'wireguard',
         'mtu': 1500,
+    }]
+
+
+@pytest.mark.asyncio
+async def test_collect_audio_no_cards(monkeypatch):
+    monkeypatch.setattr(alsacard, 'card_list', lambda: [])
+    assert await helper.list_audio() == []
+
+
+@pytest.fixture
+def mock_alsa(monkeypatch):
+    Control = collections.namedtuple('Control', ['card_info'])
+    HControl = collections.namedtuple('HControl', ['list'])
+    Value = collections.namedtuple('Value', ['get_tuple'])
+    monkeypatch.setattr(alsacard, 'card_list', lambda: [0])
+    monkeypatch.setattr(alsahcontrol, 'Element', lambda hctl, _: ())
+
+    def setup(card_info: dict[str, Union[int, str]], controls: list[tuple[int, int, int, int, str]], values: list) -> None:
+        monkeypatch.setattr(alsacontrol, 'Control', lambda _: Control(lambda: card_info))
+        monkeypatch.setattr(alsahcontrol, 'HControl', lambda _: HControl(lambda: controls))
+        monkeypatch.setattr(alsahcontrol, 'Value', lambda _: Value(lambda _, count: tuple(values[:count])))
+
+    return setup
+
+
+@pytest.mark.asyncio
+async def test_collect_audio_no_headphones(fake_async_subprocess, mock_alsa, open_shim):
+    mock_alsa({'card': 0, 'id': 'Generic', 'name': 'Mock', 'mixername': 'Moxer'}, [], [])
+    assert await helper.list_audio() == [{
+        'card': 0,
+        'id': 'Generic',
+        'name': 'Mock',
+        'mixer': 'Moxer',
+    }]
+
+
+@pytest.mark.asyncio
+async def test_collect_audio_headphones(fake_async_subprocess, mock_alsa, open_shim):
+    mock_alsa({'card': 0, 'id': 'Generic', 'name': 'Mock', 'mixername': 'Moxer'}, [(1, 0, 0, 0, 'Headphone Jack')], [False])
+    assert await helper.list_audio() == [{
+        'card': 0,
+        'id': 'Generic',
+        'name': 'Mock',
+        'mixer': 'Moxer',
+        'headphones': False
+    }]
+
+    mock_alsa({'card': 0, 'id': 'Generic', 'name': 'Mock', 'mixername': 'Moxer'}, [(1, 0, 0, 0, 'Headphone Jack')], [True])
+    assert await helper.list_audio() == [{
+        'card': 0,
+        'id': 'Generic',
+        'name': 'Mock',
+        'mixer': 'Moxer',
+        'headphones': True
     }]
 
 
