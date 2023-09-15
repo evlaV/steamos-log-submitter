@@ -188,8 +188,7 @@ class SysinfoHelper(Helper):
     async def list_filesystems(cls) -> Optional[list[dict[str, JSON]]]:
         bus = 'org.freedesktop.UDisks2'
         findmnt = await asyncio.create_subprocess_exec('findmnt', '-J', '-o', 'uuid,source,target,fstype,size,options', '-b', '--real', '--list', stdout=asyncio.subprocess.PIPE)
-        assert findmnt.stdout
-        stdout = await findmnt.stdout.read()
+        stdout, _ = await findmnt.communicate()
         mntinfo = json.loads(stdout.decode(errors='replace'))
         if 'filesystems' not in mntinfo:
             return None

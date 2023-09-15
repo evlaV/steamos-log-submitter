@@ -15,7 +15,7 @@ import pytest
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from typing import Optional, ParamSpec, Type, TypeVar, Union
 
 P = ParamSpec('P')
@@ -242,31 +242,59 @@ class Popen:
 
     def __init__(self, *,
                  stdin: Optional[Union[io.BytesIO, io.StringIO]] = None,
-                 stdout: Optional[Union[io.BytesIO, io.StringIO]] = None,
-                 stderr: Optional[Union[io.BytesIO, io.StringIO]] = None,
+                 stdout: Optional[Union[io.BytesIO, io.StringIO, bytes, str]] = None,
+                 stderr: Optional[Union[io.BytesIO, io.StringIO, bytes, str]] = None,
                  returncode: Optional[int] = None,
                  wait: Callable[[Optional[int]], None] = wait):
         self.stdin = stdin
+        if isinstance(stdout, bytes):
+            stdout = io.BytesIO(stdout)
+        if isinstance(stdout, str):
+            stdout = io.StringIO(stdout)
         self.stdout = stdout
+        if isinstance(stderr, bytes):
+            stderr = io.BytesIO(stderr)
+        if isinstance(stderr, str):
+            stderr = io.StringIO(stderr)
         self.stderr = stderr
         self.returncode = returncode
         self.wait = wait
 
+    def communicate(self) -> tuple[Optional[Union[str, bytes]], Optional[Union[str, bytes]]]:
+        return self.stdout.read() if self.stdout else None, self.stderr.read() if self.stderr else None
+
+
+class Process(Popen):
+    stdout: Optional[io.BytesIO]
+    stderr: Optional[io.BytesIO]
+    wait: Callable[[], Awaitable[None]]  # type: ignore[assignment]
+
+    async def wait(self) -> None:  # type: ignore[no-redef,override]
+        pass
+
+    def __init__(self, *,
+                 stdin: Optional[Union[io.BytesIO, io.StringIO]] = None,
+                 stdout: Optional[Union[io.BytesIO, bytes]] = None,
+                 stderr: Optional[Union[io.BytesIO, bytes]] = None,
+                 returncode: Optional[int] = None,
+                 wait: Callable[[], Awaitable[None]] = wait):
+        super().__init__(stdin=stdin, stdout=stdout, stderr=stderr, returncode=returncode)
+        if self.stdout:
+            self.stdout.read = awaitable(self.stdout.read)  # type: ignore[assignment]
+            self.stdout.readline = awaitable(self.stdout.readline)  # type: ignore[assignment]
+        if self.stderr:
+            self.stderr.read = awaitable(self.stderr.read)  # type: ignore[assignment]
+            self.stderr.readline = awaitable(self.stderr.readline)  # type: ignore[assignment]
+
+    async def communicate(self) -> tuple[Optional[bytes], Optional[bytes]]:  # type: ignore[override]
+        return await self.stdout.read() if self.stdout else None, await self.stderr.read() if self.stderr else None  # type: ignore[misc]
+
 
 @pytest.fixture
 def fake_async_subprocess(monkeypatch):
-    def setup(*, stdout=None, stderr=None, returncode=0):
+    def setup(*, stdout: Optional[bytes] = None, stderr: Optional[bytes] = None, returncode=0):
         async def fake_subprocess(*args, **kwargs):
-            ret = Popen(returncode=returncode)
-            if stdout:
-                ret.stdout = io.BytesIO(stdout)
-                ret.stdout.read = awaitable(ret.stdout.read)  # type: ignore[assignment]
-                ret.stdout.readline = awaitable(ret.stdout.readline)  # type: ignore[assignment]
-            if stderr:
-                ret.stderr = io.BytesIO(stderr)
-                ret.stderr.read = awaitable(ret.stderr.read)  # type: ignore[assignment]
-                ret.stderr.readline = awaitable(ret.stderr.readline)  # type: ignore[assignment]
-            return ret
+            return Process(stdout=stdout, stderr=stderr, returncode=returncode)
         monkeypatch.setattr(asyncio, 'create_subprocess_exec', fake_subprocess)
 
     return setup
