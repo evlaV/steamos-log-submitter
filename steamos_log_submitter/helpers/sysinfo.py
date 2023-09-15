@@ -177,8 +177,8 @@ class SysinfoHelper(Helper):
                 for name, convert in conversions:
                     try:
                         dev_dict[name.lower()] = convert(await dev_bluez[name])
-                    except KeyError:
-                        pass
+                    except (KeyError, dbus.errors.DBusError):
+                        cls.logger.debug(f'Property {name} missing on dev {dev}')
                 dev_dict['adapter'] = adapter.split('/')[-1]
                 devices.append(dev_dict)
 
