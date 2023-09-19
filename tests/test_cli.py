@@ -278,7 +278,7 @@ async def test_set_steam_key_account_name(mock_config, monkeypatch, cli_wrapper)
     await cli.amain(['set-steam-info', 'account-name', 'gaben'])
     assert mock_config.has_section('steam')
     assert mock_config.get('steam', 'account_name') == 'gaben'
-    assert steam.get_steam_account_name() == 'gaben'
+    assert steam.get_account_name() == 'gaben'
     await daemon.shutdown()
 
 
@@ -289,7 +289,7 @@ async def test_set_steam_key_account_id(mock_config, monkeypatch, cli_wrapper):
     await cli.amain(['set-steam-info', 'account-id', '42'])
     assert mock_config.has_section('steam')
     assert mock_config.get('steam', 'account_id') == '42'
-    assert steam.get_steam_account_id() == 42
+    assert steam.get_account_id() == 42
     await daemon.shutdown()
 
 
@@ -300,7 +300,7 @@ async def test_set_steam_key_account_id_invalid(mock_config, monkeypatch, cli_wr
     assert not mock_config.has_section('steam')
     await cli.amain(['set-steam-info', 'account-id', 'gaben'])
     assert not mock_config.has_section('steam')
-    assert steam.get_steam_account_id() is None
+    assert steam.get_account_id() is None
     await daemon.shutdown()
 
 

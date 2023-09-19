@@ -131,8 +131,8 @@ async def do_trigger(client: sls.client.Client, args: argparse.Namespace) -> Non
 @command
 async def do_autoconfig_steam(client: sls.client.Client, args: argparse.Namespace) -> None:
     info = {
-        'account_name': sls.steam.get_steam_account_name(force_vdf=True) or '',
-        'account_id': sls.steam.get_steam_account_id(force_vdf=True) or '',
+        'account_name': sls.steam.get_account_name(force_vdf=True) or '',
+        'account_id': sls.steam.get_account_id(force_vdf=True) or '',
         'deck_serial': sls.steam.get_deck_serial(force_vdf=True) or '',
     }
 

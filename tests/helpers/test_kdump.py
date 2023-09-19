@@ -29,7 +29,7 @@ def test_dmesg_parse():
 
 @pytest.mark.asyncio
 async def test_submit_succeed(monkeypatch):
-    monkeypatch.setattr(steam, 'get_steam_account_id', lambda: 0)
+    monkeypatch.setattr(steam, 'get_account_id', lambda: 0)
     response = FakeResponse()
     response.success(monkeypatch)
     assert (await helper.submit(f'{file_base}/dmesg.zip')).code == HelperResult.OK

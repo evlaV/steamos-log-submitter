@@ -428,10 +428,10 @@ async def test_set_steam_info(dbus_daemon, mock_config):
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
     await iface.set_steam_info('account_name', 'gaben')
-    assert sls.steam.get_steam_account_name() == 'gaben'
+    assert sls.steam.get_account_name() == 'gaben'
 
     await iface.set_steam_info('account_id', '12345')
-    assert sls.steam.get_steam_account_id() == 12345
+    assert sls.steam.get_account_id() == 12345
 
     await iface.set_steam_info('deck_serial', 'HEV Mark IV')
     assert sls.steam.get_deck_serial() == 'HEV Mark IV'

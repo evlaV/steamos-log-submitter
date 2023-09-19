@@ -12,8 +12,8 @@ from typing import Optional
 
 __all__ = [
     'get_deck_serial',
-    'get_steam_account_id',
-    'get_steam_account_name',
+    'get_account_id',
+    'get_account_name',
 ]
 
 config = sls.config.get_config(__name__)
@@ -55,7 +55,7 @@ def get_deck_serial(uid: int = default_uid, force_vdf: bool = False) -> Optional
     return serial
 
 
-def get_steam_account_id(uid: int = default_uid, force_vdf: bool = False) -> Optional[int]:
+def get_account_id(uid: int = default_uid, force_vdf: bool = False) -> Optional[int]:
     if not force_vdf:
         userid = config.get('account_id')
         if userid:
@@ -84,7 +84,7 @@ def get_steam_account_id(uid: int = default_uid, force_vdf: bool = False) -> Opt
     return None
 
 
-def get_steam_account_name(uid: int = default_uid, force_vdf: bool = False) -> Optional[str]:
+def get_account_name(uid: int = default_uid, force_vdf: bool = False) -> Optional[str]:
     if not force_vdf:
         account_name = config.get('account_name')
         if account_name:

@@ -27,7 +27,7 @@ async def upload(product: str, *,
                  version: Optional[str] = None,
                  dump: Optional[str] = None) -> bool:
     logger.info(f'Uploading crash log for {product} (build: {build}, version: {version})')
-    account = sls.steam.get_steam_account_id()
+    account = sls.steam.get_account_id()
     if account is None:
         logger.warning('No Steam account configured, rejecting crash upload')
         return False
