@@ -67,6 +67,14 @@ async def send_event(dsn: str, *,
             fingerprint.append(f'appid:{appid}')
         tags['appid'] = str(appid)
 
+    user_id = sls.util.telemetry_user_id()
+    if user_id:
+        tags['user_id'] = user_id
+
+    unit_id = sls.util.telemetry_unit_id()
+    if unit_id:
+        tags['unit_id'] = unit_id
+
     if tags:
         event['tags'] = tags
     if fingerprint:

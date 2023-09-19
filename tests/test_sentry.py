@@ -7,7 +7,9 @@ import gzip
 import httpx
 import pytest
 import json
+import steamos_log_submitter as sls
 import steamos_log_submitter.sentry as sentry
+from . import mock_config, open_shim  # NOQA: F401
 
 
 @pytest.mark.asyncio
@@ -36,13 +38,29 @@ async def test_dsn_parsing(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_tags(monkeypatch):
+async def test_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('tags') == {'alma-mater': 'MIT'}
         return httpx.Response(200)
 
+    open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     assert await sentry.send_event('https://fake@dsn/0', tags={'alma-mater': 'MIT'})
+
+
+@pytest.mark.asyncio
+async def test_id_tags(mock_config, monkeypatch, open_shim):
+    async def fake_response(self, url, json, **kwargs):
+        assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id(), 'user_id': sls.util.telemetry_user_id()}
+        return httpx.Response(200)
+
+    open_shim.enoent()
+    mock_config.add_section('steam')
+    mock_config.set('steam', 'account_name', 'gaben')
+    mock_config.set('steam', 'account_id', '1')
+    mock_config.set('steam', 'deck_serial', 'FVAA00000001')
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    assert await sentry.send_event('https://fake@dsn/0')
 
 
 @pytest.mark.asyncio
@@ -66,34 +84,37 @@ async def test_message(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_appid(monkeypatch):
+async def test_appid(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
+    open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     assert await sentry.send_event('https://fake@dsn/0', appid=1234)
 
 
 @pytest.mark.asyncio
-async def test_appid_fingerprint_dupe(monkeypatch):
+async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
+    open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     assert await sentry.send_event('https://fake@dsn/0', appid=1234, fingerprint=['appid:1234'])
 
 
 @pytest.mark.asyncio
-async def test_appid_tag_dupe(monkeypatch):
+async def test_appid_tag_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
         assert json.get('tags') == {'appid': '1234'}
         return httpx.Response(200)
 
+    open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     assert await sentry.send_event('https://fake@dsn/0', appid=1234, tags={'appid': '4321'})
 
