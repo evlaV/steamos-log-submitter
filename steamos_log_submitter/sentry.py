@@ -31,6 +31,7 @@ class SentryEvent:
         self.ua_string = f'SteamOS Log Submitter/{sls.__version__}'
         self.appid: Optional[int] = None
         self.attachments: list[dict[str, str | bytes]] = []
+        self.exceptions: list[dict[str, JSONEncodable]] = []
         self.tags: dict[str, JSONEncodable] = {}
         self.fingerprint: Iterable[str] = ()
         self.timestamp: Optional[float] = None
@@ -95,6 +96,9 @@ class SentryEvent:
             self._event['tags'] = tags
         if fingerprint:
             self._event['fingerprint'] = fingerprint
+
+        if self.exceptions:
+            self._event['exception'] = {'values': list(self.exceptions)}
 
         if self.attachments:
             self._append_json({

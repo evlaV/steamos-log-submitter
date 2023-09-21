@@ -3,49 +3,60 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import json
 import os
 import pytest
-import steamos_log_submitter.crash as crash
-import steamos_log_submitter.steam as steam
+import steamos_log_submitter.sentry as sentry
 from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.kdump import KdumpHelper as helper
-from .crash import FakeResponse
-from .. import awaitable
-from .. import fake_pwuid  # NOQA: F401
+from .. import custom_dsn, unreachable
+from .. import fake_pwuid, mock_config  # NOQA: F401
 
 file_base = f'{os.path.dirname(__file__)}/kdump'
+dsn = custom_dsn('helpers.kdump')
+
+
+def test_call_trace_parse():
+    with open(f'{file_base}/stack.json') as f:
+        stack_expected = json.load(f)
+    with open(f'{file_base}/stack') as f:
+        stack = f.read().rstrip().split('\n')
+    assert stack_expected == helper.parse_traces(stack)
 
 
 def test_dmesg_parse():
     with open(f'{file_base}/crash') as f:
         crash_expected = f.read()
     with open(f'{file_base}/stack') as f:
-        stack_expected = f.read()
+        stack_expected = f.read().rstrip().split('\n')
     with open(f'{file_base}/dmesg') as f:
         crash, stack = helper.get_summaries(f)
     assert crash == crash_expected
-    assert stack == stack_expected
-
-
-@pytest.mark.asyncio
-async def test_submit_succeed(monkeypatch):
-    monkeypatch.setattr(steam, 'get_account_id', lambda: 0)
-    response = FakeResponse()
-    response.success(monkeypatch)
-    assert (await helper.submit(f'{file_base}/dmesg.zip')).code == HelperResult.OK
-    assert response.attempt == 3
+    assert stack == helper.parse_traces(stack_expected)
 
 
 @pytest.mark.asyncio
 async def test_submit_empty(monkeypatch):
-    monkeypatch.setattr(crash, 'upload', awaitable(lambda **kwargs: False))
+    monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
     assert (await helper.submit(f'{file_base}/empty.zip')).code == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
 async def test_submit_bad_zip(monkeypatch):
-    monkeypatch.setattr(crash, 'upload', awaitable(lambda **kwargs: False))
+    monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
     assert (await helper.submit(f'{file_base}/bad.zip')).code == HelperResult.PERMANENT_ERROR
+
+
+@pytest.mark.asyncio
+async def test_submit_multiple_zip(monkeypatch):
+    async def check_now(self) -> bool:
+        assert len(self.attachments) == 2
+        with open(f'{file_base}/stack.json') as f:
+            assert self.exceptions == [{'stacktrace': frames, 'type': 'PANIC'} for frames in json.load(f)]
+        return True
+
+    monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
+    assert (await helper.submit(f'{file_base}/dmesg.zip')).code == HelperResult.OK
 
 
 @pytest.mark.asyncio
