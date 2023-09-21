@@ -174,13 +174,6 @@ class Helper:
             return ()
 
 
-class SentryHelper(Helper):
-    @classmethod
-    async def send_event(cls, **kwargs: Any) -> HelperResult:  # type: ignore[misc]
-        ok = await sls.sentry.send_event(cls.config['dsn'], **kwargs)
-        return HelperResult.check(ok)
-
-
 def create_helper(category: str) -> Optional[Helper]:
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')

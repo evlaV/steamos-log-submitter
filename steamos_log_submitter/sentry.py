@@ -19,90 +19,91 @@ from steamos_log_submitter.types import JSONEncodable
 logger = logging.getLogger(__name__)
 
 
-async def send_event(dsn: str, *,
-                     appid: Optional[int] = None,
-                     attachments: Iterable[dict[str, str | bytes]] = (),
-                     tags: dict[str, JSONEncodable] = {},
-                     fingerprint: Iterable[str] = (),
-                     timestamp: Optional[float] = None,
-                     environment: Optional[str] = None,
-                     message: Optional[str] = None) -> bool:
-    raw_envelope = io.BytesIO()
-    envelope = gzip.GzipFile(fileobj=raw_envelope, mode='wb')
+class SentryEvent:
+    def __init__(self, dsn: str):
+        self._raw_envelope: Optional[io.BytesIO] = None
+        self._envelope: Optional[gzip.GzipFile] = None
+        self._event: dict[str, JSONEncodable]
+        self._event_id: str
+        self._sent_at: str
 
-    def append_json(j: JSONEncodable) -> None:
-        envelope.write(json.dumps(j).encode())
-        envelope.write(b'\n')
+        self.dsn = dsn
+        self.ua_string = f'SteamOS Log Submitter/{sls.__version__}'
+        self.appid: Optional[int] = None
+        self.attachments: list[dict[str, str | bytes]] = []
+        self.tags: dict[str, JSONEncodable] = {}
+        self.fingerprint: Iterable[str] = ()
+        self.timestamp: Optional[float] = None
+        self.environment: Optional[str] = None
+        self.message: Optional[str] = None
 
-    def append_item(j: JSONEncodable, item: bytes = b'') -> None:
-        append_json(j)
-        envelope.write(item)
-        envelope.write(b'\n')
+    def add_attachment(self, *attachments: dict[str, str | bytes]) -> None:
+        self.attachments.extend(attachments)
 
-    event_id = uuid.uuid4().hex
-    sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    def _append_json(self, j: JSONEncodable) -> None:
+        assert self._envelope
+        self._envelope.write(json.dumps(j).encode())
+        self._envelope.write(b'\n')
 
-    event: dict[str, JSONEncodable] = {
-        'event_id': event_id,
-        'timestamp': timestamp or sent_at,
-        'platform': 'native',
-    }
+    def _append_item(self, j: JSONEncodable, item: bytes = b'') -> None:
+        assert self._envelope
+        self._append_json(j)
+        self._envelope.write(item)
+        self._envelope.write(b'\n')
 
-    build_id = sls.util.get_build_id()
-    if build_id:
-        event['release'] = build_id
+    def seal(self) -> None:
+        self._raw_envelope = io.BytesIO()
+        self._envelope = gzip.GzipFile(fileobj=self._raw_envelope, mode='wb')
 
-    if message:
-        event['message'] = message
+        self._event_id = uuid.uuid4().hex
+        self._sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    if not environment:
-        environment = sls.steam.get_steamos_branch()
-    if environment:
-        event['environment'] = environment
+        self._event = {
+            'event_id': self._event_id,
+            'timestamp': self.timestamp or self._sent_at,
+            'platform': 'native',
+        }
 
-    tags = dict(tags)
-    fingerprint = list(fingerprint)
-    if appid is not None:
-        if f'appid:{appid}' not in fingerprint:
-            fingerprint.append(f'appid:{appid}')
-        tags['appid'] = str(appid)
+        build_id = sls.util.get_build_id()
+        if build_id:
+            self._event['release'] = build_id
 
-    user_id = sls.util.telemetry_user_id()
-    if user_id:
-        tags['user_id'] = user_id
+        if self.message:
+            self._event['message'] = self.message
 
-    unit_id = sls.util.telemetry_unit_id()
-    if unit_id:
-        tags['unit_id'] = unit_id
+        if not self.environment:
+            self.environment = sls.steam.get_steamos_branch()
+        if self.environment:
+            self._event['environment'] = self.environment
 
-    if tags:
-        event['tags'] = tags
-    if fingerprint:
-        event['fingerprint'] = fingerprint
+        tags = dict(self.tags)
+        fingerprint = list(self.fingerprint)
+        if self.appid is not None:
+            if f'appid:{self.appid}' not in fingerprint:
+                fingerprint.append(f'appid:{self.appid}')
+            tags['appid'] = str(self.appid)
 
-    dsn_parsed = urllib.parse.urlparse(dsn)
-    store_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/store/').geturl()
-    envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
-    auth = f'Sentry sentry_version=7, sentry_key={dsn_parsed.username}'
+        user_id = sls.util.telemetry_user_id()
+        if user_id:
+            tags['user_id'] = user_id
 
-    async with httpx.AsyncClient() as client:
-        store_post = await client.post(store_endpoint, json=event, headers={
-            'X-Sentry-Auth': auth,
-            'User-Agent': 'SteamOS Log Submitter',
-        })
+        unit_id = sls.util.telemetry_unit_id()
+        if unit_id:
+            tags['unit_id'] = unit_id
 
-        if store_post.status_code != 200:
-            logger.error(f'Failed to submit event: {store_post.content.decode()}')
-            return False
+        if tags:
+            self._event['tags'] = tags
+        if fingerprint:
+            self._event['fingerprint'] = fingerprint
 
-        if attachments:
-            append_json({
-                'dsn': dsn,
-                'event_id': event_id,
-                'sent_at': sent_at,
+        if self.attachments:
+            self._append_json({
+                'dsn': self.dsn,
+                'event_id': self._event_id,
+                'sent_at': self._sent_at,
             })
 
-            for attachment in attachments:
+            for attachment in self.attachments:
                 attachment_info: dict[str, JSONEncodable] = {
                     'type': 'attachment',
                     'length': len(attachment['data'])
@@ -112,19 +113,44 @@ async def send_event(dsn: str, *,
                 if 'filename' in attachment:
                     attachment_info['filename'] = attachment['filename']
                 assert isinstance(attachment['data'], bytes)
-                append_item(attachment_info, attachment['data'])
+                self._append_item(attachment_info, attachment['data'])
 
-            envelope.close()
+        if self._envelope.tell():
+            self._envelope.close()
+        else:
+            self._envelope.close()
+            self._envelope = None
+            self._raw_envelope = None
 
-            envelope_post = await client.post(envelope_endpoint, content=raw_envelope.getvalue(), headers={
-                'Content-Type': 'application/x-sentry-envelope',
-                'Content-Encoding': 'gzip',
+    async def send(self) -> bool:
+        self.seal()
+
+        dsn_parsed = urllib.parse.urlparse(self.dsn)
+        store_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/store/').geturl()
+        envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
+        auth = f'Sentry sentry_version=7, sentry_key={dsn_parsed.username}'
+
+        async with httpx.AsyncClient() as client:
+            store_post = await client.post(store_endpoint, json=self._event, headers={
                 'X-Sentry-Auth': auth,
-                'User-Agent': 'SteamOS Log Submitter',
+                'User-Agent': self.ua_string
             })
 
-            if envelope_post.status_code != 200:
-                logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
+            if store_post.status_code != 200:
+                logger.error(f'Failed to submit event: {store_post.content.decode()}')
                 return False
 
-    return True
+            if self._envelope:
+                assert self._raw_envelope
+                envelope_post = await client.post(envelope_endpoint, content=self._raw_envelope.getvalue(), headers={
+                    'Content-Type': 'application/x-sentry-envelope',
+                    'Content-Encoding': 'gzip',
+                    'X-Sentry-Auth': auth,
+                    'User-Agent': self.ua_string
+                })
+
+                if envelope_post.status_code != 200:
+                    logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
+                    return False
+
+        return True

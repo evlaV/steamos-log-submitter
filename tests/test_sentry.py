@@ -23,7 +23,8 @@ async def test_bad_start(monkeypatch):
         return httpx.Response(400)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert not await sentry.send_event('', attachments=[{'data': b''}])
+    event = sentry.SentryEvent('')
+    assert not await event.send()
 
 
 @pytest.mark.asyncio
@@ -34,7 +35,8 @@ async def test_dsn_parsing(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0')
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -45,7 +47,9 @@ async def test_tags(mock_config, monkeypatch, open_shim):
 
     open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', tags={'alma-mater': 'MIT'})
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.tags = {'alma-mater': 'MIT'}
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -60,7 +64,8 @@ async def test_id_tags(mock_config, monkeypatch, open_shim):
     mock_config.set('steam', 'account_id', '1')
     mock_config.set('steam', 'deck_serial', 'FVAA00000001')
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0')
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -70,7 +75,9 @@ async def test_fingerprint(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', fingerprint=['gordon', 'freeman'])
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.fingerprint = ['gordon', 'freeman']
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -80,7 +87,9 @@ async def test_message(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', message='Rise and shine, Mr. Freeman')
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.message = 'Rise and shine, Mr. Freeman'
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -92,7 +101,9 @@ async def test_appid(mock_config, monkeypatch, open_shim):
 
     open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', appid=1234)
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.appid = 1234
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -104,7 +115,10 @@ async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
 
     open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', appid=1234, fingerprint=['appid:1234'])
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.appid = 1234
+    event.fingerprint = ['appid:1234']
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -116,7 +130,10 @@ async def test_appid_tag_dupe(mock_config, monkeypatch, open_shim):
 
     open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', appid=1234, tags={'appid': '4321'})
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.appid = 1234
+    event.tags = {'appid': 1234}
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -146,11 +163,13 @@ async def test_envelope(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', attachments=[{
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.add_attachment({
         'data': b'headcrab zombie',
         'filename': 'enemy.txt',
         'mime-type': 'text/plain',
-    }])
+    })
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -183,14 +202,9 @@ async def test_envelope_multiple_attachments(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', attachments=[
-        {
-            'data': b'crowbar',
-        },
-        {
-            'data': b'gravity gun',
-        }
-    ])
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.add_attachment({'data': b'crowbar'}, {'data': b'gravity gun'})
+    assert await event.send()
 
 
 @pytest.mark.asyncio
@@ -208,4 +222,7 @@ async def test_envelope_timestamp(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
-    assert await sentry.send_event('https://fake@dsn/0', timestamp=0.1, attachments=[{'data': b''}])
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.timestamp = 0.1
+    event.add_attachment({'data': b''})
+    assert await event.send()

@@ -5,10 +5,11 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import os
-from . import HelperResult, SentryHelper
+from steamos_log_submitter.sentry import SentryEvent
+from . import Helper, HelperResult
 
 
-class GPUHelper(SentryHelper):
+class GPUHelper(Helper):
     valid_extensions = frozenset({'.json'})
 
     @classmethod
@@ -63,14 +64,15 @@ class GPUHelper(SentryHelper):
             tags['mesa'] = mesa
             fingerprint.append(f'mesa:{mesa}')
 
-        attachments = [{
+        event = SentryEvent(cls.config['dsn'])
+        event.add_attachment({
             'mime-type': 'application/json',
             'filename': os.path.basename(fname),
             'data': attachment
-        }]
-        return await cls.send_event(attachments=attachments,
-                                    appid=appid,
-                                    timestamp=timestamp,
-                                    tags=tags,
-                                    fingerprint=fingerprint,
-                                    message=message)
+        })
+        event.appid = appid
+        event.timestamp = timestamp
+        event.tags = tags
+        event.fingerprint = fingerprint
+        event.message = message
+        return HelperResult.check(await event.send())

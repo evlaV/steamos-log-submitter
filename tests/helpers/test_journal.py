@@ -254,17 +254,17 @@ def test_unescape():
 
 @pytest.mark.asyncio
 async def test_submit_params(helper_directory, mock_config, monkeypatch):
-    async def fake_submit(dsn, *, attachments, tags, fingerprint, message):
-        assert len(attachments) == 1
-        assert attachments[0]['mime-type'] == 'application/json'
-        assert attachments[0]['filename'] == 'abc_5fdef.json'
-        assert attachments[0]['data'] == b'{}'
-        assert tags['unit'] == 'abc_def'
-        assert message == 'abc_def'
-        assert 'unit:abc_def' in fingerprint
-        return HelperResult()
+    async def fake_submit(self):
+        assert len(self.attachments) == 1
+        assert self.attachments[0]['mime-type'] == 'application/json'
+        assert self.attachments[0]['filename'] == 'abc_5fdef.json'
+        assert self.attachments[0]['data'] == b'{}'
+        assert self.tags['unit'] == 'abc_def'
+        assert self.message == 'abc_def'
+        assert 'unit:abc_def' in self.fingerprint
+        return True
 
-    monkeypatch.setattr(sentry, 'send_event', fake_submit)
+    monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
     mock_config.add_section('helpers.journal')
     mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
 

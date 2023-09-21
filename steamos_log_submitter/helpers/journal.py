@@ -7,15 +7,17 @@ import asyncio
 import dbus_next as dbus
 import json
 import os
-from collections.abc import Iterable
 from typing import Optional
 
 import steamos_log_submitter as sls
 from steamos_log_submitter.dbus import DBusObject
-from . import HelperResult, SentryHelper
+from steamos_log_submitter.sentry import SentryEvent
+from steamos_log_submitter.types import JSONEncodable
+
+from . import Helper, HelperResult
 
 
-class JournalHelper(SentryHelper):
+class JournalHelper(Helper):
     valid_extensions = frozenset({'.json'})
     units = [
         'gpu-trace.service',
@@ -167,7 +169,7 @@ class JournalHelper(SentryHelper):
         except OSError:
             return HelperResult(HelperResult.TRANSIENT_ERROR)
 
-        tags = {}
+        tags: dict[str, JSONEncodable] = {}
         fingerprint = []
 
         unit = cls.unescape(name)
@@ -176,12 +178,13 @@ class JournalHelper(SentryHelper):
 
         tags['kernel'] = os.uname().release
 
-        attachments: Iterable[dict[str, str | bytes]] = [{
+        event = SentryEvent(cls.config['dsn'])
+        event.add_attachment({
             'mime-type': 'application/json',
             'filename': os.path.basename(fname),
             'data': attachment
-        }]
-        return await cls.send_event(attachments=attachments,
-                                    tags=tags,
-                                    fingerprint=fingerprint,
-                                    message=unit)
+        })
+        event.tags = tags
+        event.fingerprint = fingerprint
+        event.message = unit
+        return HelperResult.check(await event.send())
