@@ -262,6 +262,12 @@ class Daemon:
         sls.steam.config[key] = value
         sls.config.write_config()
 
+        if self.iface:
+            if key == 'deck_serial':
+                self.iface.emit_properties_changed({'UnitId': sls.util.telemetry_unit_id() or ''})
+            else:
+                self.iface.emit_properties_changed({'UserId': sls.util.telemetry_user_id() or ''})
+
 
 def _reraise(exc: sls.exceptions.Error) -> None:
     blob = json.dumps(exc.data)
@@ -372,6 +378,14 @@ class DaemonInterface(dbus.service.ServiceInterface):
     @exc_awrap
     async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
         await self.daemon.set_steam_info(key, value)
+
+    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
+    def UserId(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
+        return sls.util.telemetry_user_id() or ''
+
+    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
+    def UnitId(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
+        return sls.util.telemetry_unit_id() or ''
 
     @dbus.service.method()
     @exc_awrap

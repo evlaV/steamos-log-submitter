@@ -19,7 +19,7 @@ import steamos_log_submitter.runner
 import steamos_log_submitter.steam
 
 from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig
-from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
+from . import count_hits, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
 from .daemon import dbus_daemon  # NOQA: F401
 from .dbus import MockDBusObject, MockDBusProperties
 from .dbus import mock_dbus, real_dbus  # NOQA: F401
@@ -812,5 +812,70 @@ async def test_log_invalid_level(dbus_daemon, mock_config):
     except dbus.errors.DBusError as e:
         assert e.type == sls.exceptions.InvalidArgumentsError.name
         assert json.loads(e.text) == {'level': 123}
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_telemetry_ids(dbus_daemon, mock_config, open_shim):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
+
+    open_shim.enoent()
+
+    mock_config.add_section('steam')
+    assert sls.util.telemetry_user_id() is None
+    assert sls.util.telemetry_unit_id() is None
+    assert await props['UserId'] == ''
+    assert await props['UnitId'] == ''
+
+    mock_config.set('steam', 'deck_serial', 'FVAA')
+    mock_config.set('steam', 'account_name', 'gaben')
+    mock_config.set('steam', 'account_id', '1')
+
+    assert sls.util.telemetry_user_id() is not None
+    assert sls.util.telemetry_unit_id() is not None
+    assert await props['UserId'] == sls.util.telemetry_user_id()
+    assert await props['UnitId'] == sls.util.telemetry_unit_id()
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_subscribe_telemetry_ids(count_hits, dbus_daemon, mock_config, open_shim):
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
+    iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
+
+    open_shim.enoent()
+
+    async def user_id(iface, prop, value):
+        assert iface == f'{sls.constants.DBUS_NAME}.Manager'
+        assert prop == 'UserId'
+        assert value == (sls.util.telemetry_user_id() or '')
+        count_hits()
+
+    async def unit_id(iface, prop, value):
+        assert iface == f'{sls.constants.DBUS_NAME}.Manager'
+        assert prop == 'UnitId'
+        assert value == sls.util.telemetry_unit_id()
+        count_hits()
+
+    await props.subscribe('UserId', user_id)
+    await props.subscribe('UnitId', unit_id)
+
+    mock_config.add_section('steam')
+    assert sls.util.telemetry_user_id() is None
+    assert sls.util.telemetry_unit_id() is None
+    assert await props['UserId'] == ''
+    assert await props['UnitId'] == ''
+
+    await iface.set_steam_info('account_name', 'gaben')
+    await iface.set_steam_info('account_id', '12345')
+    await iface.set_steam_info('deck_serial', 'HEV Mark IV')
+
+    assert count_hits.hits == 3
 
     await daemon.shutdown()
