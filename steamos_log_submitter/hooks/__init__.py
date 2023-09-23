@@ -20,5 +20,5 @@ async def atrigger() -> None:
         logger.warning("Couldn't trigger submission, exiting", exc_info=e)
 
 
-def trigger() -> None:
+def trigger() -> None:  # pragma: no cover
     asyncio.run(atrigger())

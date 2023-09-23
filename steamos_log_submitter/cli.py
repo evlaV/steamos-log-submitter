@@ -231,7 +231,7 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     return coro
 
 
-def main(args: Sequence[str] = sys.argv[1:]) -> None:
+def main(args: Sequence[str] = sys.argv[1:]) -> None:  # pragma: no cover
     asyncio.run(amain(args))
 
 
