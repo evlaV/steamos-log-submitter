@@ -424,8 +424,12 @@ class SysinfoHelper(Helper):
         return None
 
     @classmethod
+    def type_enabled(cls, device_type: str) -> bool:
+        return cls.config.get(f'{device_type}.enabled', 'on') == 'on'
+
+    @classmethod
     async def collect(cls) -> bool:
-        results = await asyncio.gather(*[cls.list(type) for type in cls.device_types])
+        results = await asyncio.gather(*[cls.list(type) for type in cls.device_types if cls.type_enabled(type)])
         devices = {type: result for type, result in zip(cls.device_types, results) if result is not None}
         os.makedirs(sls.data.data_root, exist_ok=True)
         known = {}

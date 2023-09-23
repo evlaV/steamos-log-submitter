@@ -1077,3 +1077,29 @@ async def test_dbus_get_json(monkeypatch, dbus_daemon):
     blob = json.loads(typing.cast(str, await iface.get_json()))
     assert blob == [{'vid': '1234', 'pid': '5678'}]
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_collect_disable_type(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', ['usb'])
+    monkeypatch.setattr(helper, 'list_usb', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['usb']) == 1
+    os.unlink(f'{data_directory}/sysinfo-pending.json')
+
+    mock_config.add_section('helpers.sysinfo')
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert 'usb' not in cache
