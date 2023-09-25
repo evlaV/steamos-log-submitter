@@ -428,6 +428,11 @@ class SysinfoHelper(Helper):
         return cls.config.get(f'{device_type}.enabled', 'on') == 'on'
 
     @classmethod
+    def enable_type(cls, device_type: str, enabled: bool) -> None:
+        cls.config[f'{device_type}.enabled'] = 'on' if enabled else 'off'
+        sls.config.write_config()
+
+    @classmethod
     async def collect(cls) -> bool:
         results = await asyncio.gather(*[cls.list(type) for type in cls.device_types if cls.type_enabled(type)])
         devices = {type: result for type, result in zip(cls.device_types, results) if result is not None}
@@ -468,7 +473,13 @@ class SysinfoHelper(Helper):
         if isinstance(timestamp, int | float):
             if now - timestamp >= float(cls.config.get('interval') or 60 * 60 * 24 * 7):
                 # If last submitted over a week ago, submit now
-                os.rename(f'{sls.data.data_root}/sysinfo-pending.json', f'{sls.pending}/sysinfo/{now:.0f}.json')
+                os.unlink(f'{sls.data.data_root}/sysinfo-pending.json')
+                for device_type in cls.device_types:
+                    # Filter out disabled devices
+                    if not cls.type_enabled(device_type):
+                        del known[device_type]
+                with open(f'{sls.pending}/sysinfo/{now:.0f}.json', 'w') as f:
+                    json.dump(known, f)
                 new_file = True
         else:
             timestamp = None
