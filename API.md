@@ -118,9 +118,14 @@ for other programs and can be exported by using objects located under the path:
 `/com/steampowered/SteamOSLogSubmitter/helpers/Sysinfo`
 
 They implement one interface, `com.steampowered.SteamOSLogSubmitter.Sysinfo`,
-which has the following method:
+which has the following methods and properties:
 
 #### Methods
 
 - `GetJson`: Takes no arguments, returns `s` value. Get the information
   associated with this information type and return it in JSON format.
+
+### Properties
+
+- `Enabled` (`b`): Whether or not this type of system information should be
+  collected and submitted.

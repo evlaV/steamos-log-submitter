@@ -508,7 +508,16 @@ class SysinfoInterface(dbus.service.ServiceInterface):
     async def GetJson(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
         return json.dumps(await self.fn())
 
+    @dbus.service.dbus_property()
+    def Enabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
+        return SysinfoHelper.type_enabled(self.device_type)
+
+    @Enabled.setter
+    async def set_enabled(self, enable: 'b'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
+        SysinfoHelper.enable_type(self.device_type, enable)
+
     def __init__(self, device_type: str):
         super().__init__(f'{DBUS_NAME}.Sysinfo')
 
+        self.device_type = device_type
         self.fn = getattr(SysinfoHelper, f'list_{device_type}')

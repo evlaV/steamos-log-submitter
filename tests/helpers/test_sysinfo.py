@@ -1080,6 +1080,29 @@ async def test_dbus_get_json(monkeypatch, dbus_daemon):
 
 
 @pytest.mark.asyncio
+async def test_dbus_disable_type(mock_config, dbus_daemon):
+    daemon, bus = await dbus_daemon
+    usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysinfo/Usb')
+    props = usb.properties(f'{sls.constants.DBUS_NAME}.Sysinfo')
+    assert await props['Enabled'] is True
+
+    await props.set('Enabled', False)
+    assert await props['Enabled'] is False
+    assert mock_config.has_section('helpers.sysinfo')
+    assert mock_config.get('helpers.sysinfo', 'usb.enabled') == 'off'
+
+    await props.set('Enabled', True)
+    assert await props['Enabled'] is True
+    assert mock_config.has_section('helpers.sysinfo')
+    assert mock_config.get('helpers.sysinfo', 'usb.enabled') == 'on'
+
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+    assert await props['Enabled'] is False
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_collect_disable_type(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
