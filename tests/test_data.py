@@ -6,6 +6,7 @@
 import json
 import os
 import pytest
+import time
 import steamos_log_submitter.data as data
 from . import data_directory  # NOQA: F401
 
@@ -135,6 +136,28 @@ def test_write_all(data_directory):
     assert os.access(f'{data_directory}/test.json', os.F_OK)
     with open(f'{data_directory}/test.json') as f:
         assert json.load(f) == {"foo": 1}
+
+
+def test_write_clean(data_directory):
+    assert os.access(data_directory, os.F_OK)
+    assert not os.access(f'{data_directory}/test.json', os.F_OK)
+    d = data.get_data('test')
+    assert d
+    assert not d._data
+
+    d['foo'] = 1
+    d.write()
+    assert os.access(f'{data_directory}/test.json', os.F_OK)
+    mtime = os.stat(f'{data_directory}/test.json').st_mtime
+
+    time.sleep(0.002)
+    d.write()
+    assert mtime == os.stat(f'{data_directory}/test.json').st_mtime
+
+    time.sleep(0.002)
+    d['foo'] = 2
+    d.write()
+    assert mtime != os.stat(f'{data_directory}/test.json').st_mtime
 
 
 def test_names(data_directory):
