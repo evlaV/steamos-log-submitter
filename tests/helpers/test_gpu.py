@@ -151,6 +151,25 @@ async def test_exe(monkeypatch, open_shim):
 
 
 @pytest.mark.asyncio
+async def test_comm(monkeypatch, open_shim):
+    hit = False
+
+    async def check_now(self):
+        nonlocal hit
+        hit = True
+        assert self.tags['comm'] == 'hl2'
+        assert 'comm:hl2' in self.fingerprint
+        assert self.message == 'GPU reset (hl2)'
+        return True
+
+    monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
+    open_shim(b'{"comm":"hl2"}')
+
+    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert hit
+
+
+@pytest.mark.asyncio
 async def test_kernel(monkeypatch, open_shim):
     hit = False
 

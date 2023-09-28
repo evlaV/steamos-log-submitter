@@ -51,6 +51,8 @@ def run() -> None:
         log['executable'] = executable
     except OSError:
         pass
+    if env.get('NAME'):
+        log['comm'] = env['NAME']
     try:
         mesa = subprocess.run(['pacman', '-Q', 'mesa'], capture_output=True, errors='replace', check=True)
         log['mesa'] = mesa.stdout.strip().split(' ')[1]

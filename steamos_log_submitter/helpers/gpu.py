@@ -51,6 +51,13 @@ class GPUHelper(Helper):
             if not message:
                 message = f'GPU reset ({executable})'
 
+        comm = log.get('comm')
+        if comm:
+            tags['comm'] = comm
+            fingerprint.append(f'comm:{comm}')
+            if not message:
+                message = f'GPU reset ({comm})'
+
         if not message:
             message = 'GPU reset'
 

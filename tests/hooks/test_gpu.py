@@ -34,7 +34,7 @@ def test_basic(monkeypatch) -> None:
         return ret
 
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
-    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456', 'NAME': 'hl2'})
     monkeypatch.setattr(os, 'uname', lambda: posix.uname_result(('1', '2', '3', '4', '5')))
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
@@ -51,7 +51,9 @@ def test_basic(monkeypatch) -> None:
     assert value['appid'] == 789
     assert value['branch'] == 'main'
     assert value['env']['ABC'] == '123'
+    assert value['env']['NAME'] == 'hl2'
     assert value['executable'] == 'hl2.exe'
+    assert value['comm'] == 'hl2'
     assert value['kernel'] == '3'
     assert value['mesa'] == '23.2.34-1'
     assert value['pid'] == 456
