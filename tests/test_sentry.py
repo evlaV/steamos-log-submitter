@@ -31,7 +31,6 @@ async def test_bad_start(monkeypatch):
 async def test_dsn_parsing(monkeypatch):
     async def fake_response(self, url, headers, *args, **kwargs):
         assert url == 'https://fake@dsn/api/0/store/'
-        assert headers.get('X-Sentry-Auth') == 'Sentry sentry_version=7, sentry_key=fake'
         return httpx.Response(200)
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)

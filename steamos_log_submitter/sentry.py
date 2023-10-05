@@ -132,11 +132,9 @@ class SentryEvent:
         dsn_parsed = urllib.parse.urlparse(self.dsn)
         store_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/store/').geturl()
         envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
-        auth = f'Sentry sentry_version=7, sentry_key={dsn_parsed.username}'
 
         async with httpx.AsyncClient() as client:
             store_post = await client.post(store_endpoint, json=self._event, headers={
-                'X-Sentry-Auth': auth,
                 'User-Agent': self.ua_string
             })
 
@@ -149,7 +147,6 @@ class SentryEvent:
                 envelope_post = await client.post(envelope_endpoint, content=self._raw_envelope.getvalue(), headers={
                     'Content-Type': 'application/x-sentry-envelope',
                     'Content-Encoding': 'gzip',
-                    'X-Sentry-Auth': auth,
                     'User-Agent': self.ua_string
                 })
 
