@@ -7,6 +7,7 @@ import grp
 import hashlib
 import httpx
 import logging
+import io
 import os
 import pwd
 import re
@@ -67,15 +68,16 @@ def get_appid(pid: int) -> Optional[int]:
     return appid
 
 
-def get_build_id() -> Optional[str]:
+def get_build_id(f: Optional[io.TextIOBase] = None) -> Optional[str]:
     try:
-        with open('/etc/os-release') as f:
-            for line in f:
-                if '=' not in line:
-                    continue
-                name, val = line.split('=', 1)
-                if name == 'BUILD_ID':
-                    return val.strip()
+        if not f:
+            f = open('/etc/os-release')
+        for line in f:
+            if '=' not in line:
+                continue
+            name, val = line.split('=', 1)
+            if name == 'BUILD_ID':
+                return val.strip()
     except OSError:
         pass
     return None

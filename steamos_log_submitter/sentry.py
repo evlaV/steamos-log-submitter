@@ -37,6 +37,7 @@ class SentryEvent:
         self.timestamp: Optional[float] = None
         self.environment: Optional[str] = None
         self.message: Optional[str] = None
+        self.build_id: Optional[str] = sls.util.get_build_id()
 
     def add_attachment(self, *attachments: dict[str, str | bytes]) -> None:
         self.attachments.extend(attachments)
@@ -65,9 +66,8 @@ class SentryEvent:
             'platform': 'native',
         }
 
-        build_id = sls.util.get_build_id()
-        if build_id:
-            self._event['release'] = build_id
+        if self.build_id:
+            self._event['release'] = self.build_id
 
         if self.message:
             self._event['message'] = self.message

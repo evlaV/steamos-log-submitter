@@ -3,13 +3,16 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import calendar
 import io
 import os
 import re
+import time
 import zipfile
 from typing import Optional, TextIO
 from . import Helper, HelperResult
 
+import steamos_log_submitter as sls
 from steamos_log_submitter.sentry import SentryEvent
 from steamos_log_submitter.types import JSONEncodable
 
@@ -117,17 +120,29 @@ class KdumpHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        note, stack = None, None
+        name, _ = os.path.splitext(os.path.basename(fname))
+        stack = None
+        event = SentryEvent(cls.config['dsn'])
         try:
             with zipfile.ZipFile(fname) as f:
                 for zname in f.namelist():
-                    if not zname.startswith('dmesg'):
-                        continue
-                    with io.TextIOWrapper(f.open(zname)) as dmesg:
-                        note, stack = cls.get_summaries(dmesg)
-                        if note:
-                            break
-            mtime = os.stat(fname).st_mtime
+                    with f.open(zname) as zf:
+                        data = zf.read()
+                        event.add_attachment({
+                            'mime-type': 'text/plain',
+                            'filename': zname,
+                            'data': data
+                        })
+                        if zname.startswith('version'):
+                            event.tags['kernel'] = data.decode().strip()
+                        zf.seek(0)
+                        print(zname)
+                        if zname.startswith('build'):
+                            with io.TextIOWrapper(zf) as build:
+                                event.build_id = sls.util.get_build_id(build)
+                        if zname.startswith('dmesg'):
+                            with io.TextIOWrapper(zf) as dmesg:
+                                event.message, stack = cls.get_summaries(dmesg)
             with open(fname, 'rb') as f:
                 attachment = f.read()
         except zipfile.BadZipFile:
@@ -135,21 +150,15 @@ class KdumpHelper(Helper):
         except OSError:
             return HelperResult(HelperResult.TRANSIENT_ERROR)
 
-        if note is None or stack is None:
+        if event.message is None or stack is None:
             return HelperResult(HelperResult.PERMANENT_ERROR)
 
-        event = SentryEvent(cls.config['dsn'])
-        event.message = note
-        event.timestamp = mtime
+        t = time.strptime(name.split('-')[-1], '%Y%m%d%H%M')
+        event.timestamp = calendar.timegm(t)
         event.add_attachment({
                 'mime-type': 'application/zip',
                 'filename': 'kdump.zip',
                 'data': attachment
-            },
-            {
-                'mime-type': 'text/plain',
-                'filename': 'dmesg.log',
-                'data': note.encode()
             })
         event.exceptions = [{'stacktrace': frames, 'type': 'PANIC'} for frames in stack]
         return HelperResult.check(await event.send())
