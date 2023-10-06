@@ -9,10 +9,12 @@ import httpx
 import io
 import json
 import logging
+import typing
 import urllib.parse
 import uuid
 from collections.abc import Iterable
-from typing import Optional
+from typing import IO, Optional
+
 import steamos_log_submitter as sls
 from steamos_log_submitter.types import JSONEncodable
 
@@ -23,8 +25,9 @@ class SentryEvent:
     def __init__(self, dsn: str):
         self._raw_envelope: Optional[io.BytesIO] = None
         self._envelope: Optional[gzip.GzipFile] = None
+        self._event_id = uuid.uuid4().hex
+
         self._event: dict[str, JSONEncodable]
-        self._event_id: str
         self._sent_at: str
 
         self.dsn = dsn
@@ -35,7 +38,7 @@ class SentryEvent:
         self.tags: dict[str, JSONEncodable] = {}
         self.fingerprint: Iterable[str] = ()
         self.timestamp: Optional[float] = None
-        self.environment: Optional[str] = None
+        self.environment: Optional[str] = sls.steam.get_steamos_branch()
         self.message: Optional[str] = None
         self.build_id: Optional[str] = sls.util.get_build_id()
 
@@ -53,11 +56,10 @@ class SentryEvent:
         self._envelope.write(item)
         self._envelope.write(b'\n')
 
-    def seal(self) -> None:
+    def _initialize(self) -> None:
         self._raw_envelope = io.BytesIO()
         self._envelope = gzip.GzipFile(fileobj=self._raw_envelope, mode='wb')
 
-        self._event_id = uuid.uuid4().hex
         self._sent_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         self._event = {
@@ -66,14 +68,16 @@ class SentryEvent:
             'platform': 'native',
         }
 
+    def seal(self, *, minidump: bool = False) -> None:
+        self._initialize()
+        assert self._envelope
+
         if self.build_id:
             self._event['release'] = self.build_id
 
         if self.message:
             self._event['message'] = self.message
 
-        if not self.environment:
-            self.environment = sls.steam.get_steamos_branch()
         if self.environment:
             self._event['environment'] = self.environment
 
@@ -155,3 +159,42 @@ class SentryEvent:
                     return False
 
         return True
+
+
+class MinidumpEvent(SentryEvent):
+    def _initialize(self) -> None:
+        super()._initialize()
+        self._event = {}
+
+    @classmethod
+    def _flatten(cls, d: dict[str, JSONEncodable], prefix: str) -> dict[str, JSONEncodable]:
+        flat: dict[str, JSONEncodable] = {}
+        for key, value in d.items():
+            key = f'{prefix}[{key}]'
+            if isinstance(value, dict):
+                flat.update(cls._flatten(typing.cast(dict[str, JSONEncodable], value), key))
+            else:
+                flat[key] = value
+        return flat
+
+    async def send_minidump(self, minidump: IO[bytes]) -> bool:
+        self.seal()
+
+        metadata: dict[str, JSONEncodable] = self._flatten(self._event, 'sentry')
+
+        async with httpx.AsyncClient() as client:
+            post = await client.post(self.dsn, files={'upload_file_minidump': minidump}, data=metadata)
+
+        if post.status_code == 200:
+            return True
+
+        logger.error(f'Attempting to upload minidump failed with status {post.status_code}')
+        if post.status_code == 400:
+            try:
+                data = post.json()
+                if data.get('detail') == 'invalid minidump':
+                    logger.warning('Minidump appears corrupted. Removing to avoid indefinite retrying.')
+                    raise ValueError
+            except json.decoder.JSONDecodeError:
+                pass
+        return False
