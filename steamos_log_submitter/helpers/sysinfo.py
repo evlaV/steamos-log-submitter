@@ -42,6 +42,7 @@ def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
 class SysinfoType:
     logger: logging.Logger
     name: str
+    version: int
 
     @classmethod
     def __init_subclass__(cls) -> None:
@@ -65,6 +66,7 @@ class SysinfoType:
 
 
 class SysinfoHelper(Helper):
+    version = 1
     valid_extensions = frozenset({'.json'})
     defaults = {'timestamp': None}
 
@@ -114,10 +116,12 @@ class SysinfoHelper(Helper):
             if isinstance(value, list):
                 for dev in value:
                     if isinstance(dev, dict):
+                        dev['_version'] = cls.device_types[section].version
                         devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
                     else:
                         devs[json.dumps(dev)] = True
             elif isinstance(value, dict):
+                value['_version'] = cls.device_types[section].version
                 devs[json.dumps(value)] = True
             known[section] = [json.loads(dev) for dev in devs.keys()]
 
@@ -161,6 +165,8 @@ class SysinfoHelper(Helper):
 
 
 class UsbType(SysinfoType):
+    version = 1
+
     @classmethod
     async def list(cls) -> list[dict[str, str]]:
         usb = '/sys/bus/usb/devices'
@@ -194,6 +200,8 @@ class UsbType(SysinfoType):
 
 
 class MonitorsType(SysinfoType):
+    version = 1
+
     @classmethod
     def parse_display_descriptor(cls, desc: bytes) -> dict[str, str]:
         type = desc[1]
@@ -269,6 +277,7 @@ class MonitorsType(SysinfoType):
 
 
 class BluetoothType(SysinfoType):
+    version = 1
     bus = 'org.bluez'
 
     @classmethod
@@ -308,6 +317,7 @@ class BluetoothType(SysinfoType):
 
 
 class FilesystemsType(SysinfoType):
+    version = 1
     bus = 'org.freedesktop.UDisks2'
 
     @classmethod
@@ -344,6 +354,8 @@ class FilesystemsType(SysinfoType):
 
 
 class SystemType(SysinfoType):
+    version = 1
+
     @classmethod
     async def get_vram(cls) -> Optional[str]:
         vram: Optional[str] = None
@@ -407,6 +419,7 @@ class SystemType(SysinfoType):
 
 
 class BatteriesType(SysinfoType):
+    version = 1
     bus = 'org.freedesktop.UPower'
 
     @classmethod
@@ -437,6 +450,7 @@ class BatteriesType(SysinfoType):
 
 
 class NetworkType(SysinfoType):
+    version = 1
     bus = 'org.freedesktop.NetworkManager'
 
     @classmethod
@@ -511,6 +525,8 @@ class NetworkType(SysinfoType):
 
 
 class AudioType(SysinfoType):
+    version = 1
+
     @classmethod
     async def list(cls) -> list[dict[str, JSONEncodable]]:
         devices: list[dict[str, JSONEncodable]] = []
