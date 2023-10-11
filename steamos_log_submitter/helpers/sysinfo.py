@@ -20,7 +20,6 @@ from collections.abc import Callable
 from typing import Optional, Type, Union
 
 import steamos_log_submitter as sls
-import steamos_log_submitter.crash as crash
 import steamos_log_submitter.dbus
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.dbus import DBusObject
@@ -156,12 +155,7 @@ class SysinfoHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        info: dict[str, JSONEncodable] = {
-            'crash_time': int(time.time()),
-            'stack': '',
-            'note': '',
-        }
-        return HelperResult.check(await crash.upload(product='sysinfo', info=info, dump=fname))
+        raise NotImplementedError
 
 
 class UsbType(SysinfoType):
