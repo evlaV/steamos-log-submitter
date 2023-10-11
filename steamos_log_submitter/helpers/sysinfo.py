@@ -109,12 +109,13 @@ class SysinfoHelper(Helper):
             if section in known:
                 for dev in known[section]:
                     devs[json.dumps(dev)] = True
+
             value = devices[section]
             if isinstance(value, list):
                 for dev in value:
                     if isinstance(dev, dict):
                         devs[json.dumps(collections.OrderedDict(sorted(dev.items())))] = True
-                    elif isinstance(dev, tuple):
+                    else:
                         devs[json.dumps(dev)] = True
             elif isinstance(value, dict):
                 devs[json.dumps(value)] = True
@@ -132,7 +133,7 @@ class SysinfoHelper(Helper):
                 os.unlink(f'{sls.data.data_root}/sysinfo-pending.json')
                 for name, device_type in cls.device_types.items():
                     # Filter out disabled devices
-                    if not device_type.enabled():
+                    if not device_type.enabled() and name in known:
                         del known[name]
                 with open(f'{sls.pending}/sysinfo/{now:.0f}.json', 'w') as f:
                     json.dump(known, f)

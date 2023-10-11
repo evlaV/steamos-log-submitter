@@ -679,6 +679,140 @@ async def test_collect_large_interval(monkeypatch, data_directory, helper_direct
 
 
 @pytest.mark.asyncio
+async def test_collect_enabled(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {'usb': UsbType})
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    mock_config.add_section('helpers.sysinfo')
+
+    helper.data['timestamp'] = 0
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'on')
+    assert await helper.collect()
+    with open(f'{helper_directory}/pending/sysinfo/1000000.json') as f:
+        data = json.load(f)
+
+    assert data == {'usb': [{'vid': '1234', 'pid': '5678'}]}
+
+
+@pytest.mark.asyncio
+async def test_collect_disabled(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {'usb': UsbType})
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    mock_config.add_section('helpers.sysinfo')
+
+    helper.data['timestamp'] = 0
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+    assert await helper.collect()
+    with open(f'{helper_directory}/pending/sysinfo/1000000.json') as f:
+        data = json.load(f)
+
+    assert data == {}
+
+
+@pytest.mark.asyncio
+async def test_collect_enable_then_disable(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {'usb': UsbType})
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    mock_config.add_section('helpers.sysinfo')
+
+    helper.data['timestamp'] = 0
+
+    monkeypatch.setattr(time, 'time', lambda: 100000)
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'on')
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert cache == {'usb': [{'vid': '1234', 'pid': '5678'}]}
+
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+    assert await helper.collect()
+
+    with open(f'{helper_directory}/pending/sysinfo/1000000.json') as f:
+        data = json.load(f)
+
+    assert data == {}
+
+
+@pytest.mark.asyncio
+async def test_collect_disable_then_enable(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {'usb': UsbType})
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    mock_config.add_section('helpers.sysinfo')
+
+    helper.data['timestamp'] = 0
+
+    monkeypatch.setattr(time, 'time', lambda: 100000)
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert cache == {}
+
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'on')
+    assert await helper.collect()
+
+    with open(f'{helper_directory}/pending/sysinfo/1000000.json') as f:
+        data = json.load(f)
+
+    assert data == {'usb': [{'vid': '1234', 'pid': '5678'}]}
+
+
+@pytest.mark.asyncio
+async def test_collect_transient_disable(monkeypatch, data_directory, helper_directory, mock_config):
+    setup_categories(['sysinfo'])
+    monkeypatch.setattr(sls, 'base', helper_directory)
+    monkeypatch.setattr(helper, 'device_types', {'usb': UsbType})
+    mock_config.add_section('helpers.sysinfo')
+
+    helper.data['timestamp'] = 0
+
+    monkeypatch.setattr(time, 'time', lambda: 100000)
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'on')
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert cache == {'usb': [{'vid': '1234', 'pid': '5678'}]}
+
+    monkeypatch.setattr(time, 'time', lambda: 200000)
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5679')])]))
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'off')
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert cache == {'usb': [{'vid': '1234', 'pid': '5678'}]}
+
+    monkeypatch.setattr(time, 'time', lambda: 1000000)
+    monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '567a')])]))
+    mock_config.set('helpers.sysinfo', 'usb.enabled', 'on')
+    assert await helper.collect()
+
+    with open(f'{helper_directory}/pending/sysinfo/1000000.json') as f:
+        data = json.load(f)
+
+    assert data == {'usb': [{'vid': '1234', 'pid': '5678'}, {'vid': '1234', 'pid': '567a'}]}
+
+
+@pytest.mark.asyncio
 async def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
@@ -698,11 +832,21 @@ async def test_collect_dedup(monkeypatch, data_directory, helper_directory, mock
 
 
 @pytest.mark.asyncio
-async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_directory, mock_config):
+async def test_collect_dedup_dicts(monkeypatch, data_directory, helper_directory, mock_config):
     setup_categories(['sysinfo'])
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'device_types', {'system': SystemType})
-    monkeypatch.setattr(SystemType, 'list', awaitable(lambda: [('branch', 'rel'), ('release', '20230703')]))
+    monkeypatch.setattr(SystemType, 'list', awaitable(lambda: {'branch': 'rel', 'release': '20230703'}))
+
+    assert not await helper.collect()
+
+    with open(f'{data_directory}/sysinfo-pending.json') as f:
+        cache = json.load(f)
+
+    assert len(cache['system']) == 1
+    assert cache['system'] == [{'branch': 'rel', 'release': '20230703'}]
+
+    monkeypatch.setattr(SystemType, 'list', awaitable(lambda: {'branch': 'rel', 'release': '20230704'}))
 
     assert not await helper.collect()
 
@@ -710,17 +854,12 @@ async def test_collect_dedup_tuples(monkeypatch, data_directory, helper_director
         cache = json.load(f)
 
     assert len(cache['system']) == 2
-    assert cache['system'] == [['branch', 'rel'], ['release', '20230703']]
-
-    monkeypatch.setattr(SystemType, 'list', awaitable(lambda: [('branch', 'main'), ('release', '20230704')]))
+    assert cache['system'] == [{'branch': 'rel', 'release': '20230703'}, {'branch': 'rel', 'release': '20230704'}]
 
     assert not await helper.collect()
 
     with open(f'{data_directory}/sysinfo-pending.json') as f:
         cache = json.load(f)
-
-    assert len(cache['system']) == 4
-    assert cache['system'] == [['branch', 'rel'], ['release', '20230703'], ['branch', 'main'], ['release', '20230704']]
 
 
 @pytest.mark.asyncio
