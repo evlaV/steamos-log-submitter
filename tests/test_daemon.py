@@ -147,11 +147,11 @@ async def test_helper_collect_enabled(count_hits, dbus_daemon, helper_directory,
 
 
 @pytest.mark.asyncio
-async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, monkeypatch, patch_module, mock_config):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-    patch_module.collect = awaitable(lambda: False)
-    patch_module.submit = awaitable(count_hits)
+    monkeypatch.setattr(patch_module, 'collect', awaitable(lambda: False))
+    monkeypatch.setattr(patch_module, 'submit', awaitable(count_hits))
 
     daemon, bus = await dbus_daemon
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
@@ -726,7 +726,7 @@ async def test_suspend_sleep(count_hits, mock_dbus, mock_config, monkeypatch):
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
-    daemon.trigger = awaitable(count_hits)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
 
@@ -746,7 +746,7 @@ async def test_suspend_wake(count_hits, mock_dbus, mock_config, monkeypatch):
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
-    daemon.trigger = awaitable(count_hits)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
 
@@ -768,7 +768,7 @@ async def test_suspend_double_wake(count_hits, mock_dbus, mock_config, monkeypat
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
-    daemon.trigger = awaitable(count_hits)
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
 

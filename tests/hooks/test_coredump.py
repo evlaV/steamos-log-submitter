@@ -51,7 +51,7 @@ def test_tee_broken_in() -> None:
     in_b = Popen(stdin=BytesIO())
 
     assert in_a.stdin
-    in_a.stdin.write = always_raise(OSError)
+    in_a.stdin.write = always_raise(OSError)  # type: ignore[method-assign]
 
     assert in_b.stdin
 
@@ -66,7 +66,7 @@ def test_tee_broken_close(count_hits) -> None:
     in_a = Popen(stdin=io.BytesIO(), wait=count_hits)
 
     assert in_a.stdin
-    in_a.stdin.close = always_raise(OSError)
+    in_a.stdin.close = always_raise(OSError)  # type: ignore[method-assign]
     hook.tee(out, (in_a,))  # type: ignore[arg-type]
 
     assert in_a.stdin.getvalue() == out.getvalue()
