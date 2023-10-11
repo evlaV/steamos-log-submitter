@@ -16,16 +16,15 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
 
-from .. import always_raise
+from .. import always_raise, StringIO
 
 
 @pytest.fixture
 def staging_file(monkeypatch):
-    blob = io.StringIO()
+    blob = StringIO()
 
     def fn(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
-        monkeypatch.setattr(blob, 'close', lambda: None)
         return blob
 
     monkeypatch.setattr(sls.helpers, 'StagingFile', fn)
@@ -43,11 +42,10 @@ def fake_mesa(monkeypatch):
 
 
 def test_basic(monkeypatch, fake_mesa) -> None:
-    blob = io.StringIO()
+    blob = StringIO()
 
     def staging_file(category: str, name: str, mode: str) -> io.StringIO:
         blob.name = None
-        monkeypatch.setattr(blob, 'close', lambda: None)
         assert category == 'gpu'
         assert name == '123456789.json'
         return blob

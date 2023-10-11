@@ -324,3 +324,13 @@ class CustomConfig:
 
         self.local.write(self.local_file)
         self.local_file.flush()
+
+
+class StringIO(io.StringIO):
+    def close(self):
+        pass
+
+
+class BytesIO(io.BytesIO):
+    def close(self):
+        pass

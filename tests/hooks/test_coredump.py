@@ -13,19 +13,17 @@ import sys
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.coredump as hook
 
-from .. import always_raise, unreachable, Popen
+from .. import always_raise, unreachable, Popen, BytesIO
 from .. import count_hits  # NOQA: F401
 
 
 def test_tee_basic() -> None:
     out = io.BytesIO(b'a' * 4095 + b'b' * 4097)
-    in_a = Popen(stdin=io.BytesIO())
-    in_b = Popen(stdin=io.BytesIO())
+    in_a = Popen(stdin=BytesIO())
+    in_b = Popen(stdin=BytesIO())
 
     assert in_a.stdin
-    in_a.stdin.close = lambda: None
     assert in_b.stdin
-    in_b.stdin.close = lambda: None
 
     hook.tee(out, (in_a, in_b))  # type: ignore[arg-type]
 
@@ -36,11 +34,10 @@ def test_tee_basic() -> None:
 def test_tee_missing_stdin() -> None:
     out = io.BytesIO(b'a' * 4095 + b'b' * 4097)
     in_a = Popen()
-    in_b = Popen(stdin=io.BytesIO())
+    in_b = Popen(stdin=BytesIO())
 
     assert not in_a.stdin
     assert in_b.stdin
-    in_b.stdin.close = lambda: None
 
     hook.tee(out, (in_a, in_b))  # type: ignore[arg-type]
 
@@ -50,15 +47,13 @@ def test_tee_missing_stdin() -> None:
 
 def test_tee_broken_in() -> None:
     out = io.BytesIO(b'a' * 4095 + b'b' * 4097)
-    in_a = Popen(stdin=io.BytesIO())
-    in_b = Popen(stdin=io.BytesIO())
+    in_a = Popen(stdin=BytesIO())
+    in_b = Popen(stdin=BytesIO())
 
     assert in_a.stdin
-    in_a.stdin.close = lambda: None
     in_a.stdin.write = always_raise(OSError)
 
     assert in_b.stdin
-    in_b.stdin.close = lambda: None
 
     hook.tee(out, (in_a, in_b))  # type: ignore[arg-type]
 
