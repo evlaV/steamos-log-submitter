@@ -32,7 +32,6 @@ class JournalHelper(Helper):
         'steamos-devkit-service.service',
         'steamos-dump-info.service',
         'steamos-finish-oobe-migration.service',
-        'steamos-glx-backend.service',
         'steamos-install-grub.service',
         'steamos-install-steamcl.service',
         'steamos-kdumpst-layer.service',
@@ -43,6 +42,7 @@ class JournalHelper(Helper):
         'steamos-update-os-plymouth.service',
         'steamos-update-os.service',
         'steamos-update-os.target',
+        'vpower.service',
     ]
 
     @classmethod
