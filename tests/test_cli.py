@@ -408,6 +408,7 @@ async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
     await daemon.shutdown()
 
 
+@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_autoconfig_steam(cli_wrapper, mock_config, monkeypatch, open_shim):
     users_vdf = """"users"

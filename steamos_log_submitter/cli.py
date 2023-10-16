@@ -216,12 +216,6 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     set_steam.add_argument('value', type=str)
     set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))
 
-    autoconfig_steam = subparsers.add_parser('autoconfig-steam-info',
-                                             description='''Automatically set values relating to the current Steam
-                                                            configuration. This command should only be used for testing,
-                                                            as any values set may be changed by Steam directly.''')
-    autoconfig_steam.set_defaults(func=do_autoconfig_steam)
-
     parsed_args = parser.parse_args(args)
 
     sls.logging.reconfigure_logging(level='DEBUG' if parsed_args.debug else 'WARNING')
