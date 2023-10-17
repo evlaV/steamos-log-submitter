@@ -14,6 +14,8 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.client
 import steamos_log_submitter.daemon
 import steamos_log_submitter.exceptions
+from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
+from steamos_log_submitter.types import DBusEncodable
 
 from . import awaitable, setup_categories, setup_logs
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
@@ -49,6 +51,33 @@ async def test_client_status(dbus_client, mock_config):
     assert await client.status()
     await client.disable()
     assert not await client.status()
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_subscribe_enable(count_hits, dbus_client, mock_config):
+    expected = True
+
+    async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
+        nonlocal expected
+        assert iface == f'{DBUS_NAME}.Manager'
+        assert prop == 'Enabled'
+        assert value is expected
+        count_hits()
+
+    daemon, client = await dbus_client
+    manager = sls.dbus.DBusObject(client._bus, f'{DBUS_ROOT}/Manager')
+    props = manager.properties(f'{DBUS_NAME}.Manager')
+    await props.subscribe('Enabled', test_enabled)
+
+    expected = True
+    await client.enable()
+    assert count_hits.hits == 1
+
+    expected = False
+    await client.disable()
+    assert count_hits.hits == 2
+
     await daemon.shutdown()
 
 
@@ -173,6 +202,37 @@ async def test_enable_helpers(mock_config, dbus_client, helper_directory):
         assert False
     except sls.exceptions.InvalidArgumentsError:
         pass
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_subscribe_enable_helper(count_hits, dbus_client, helper_directory, mock_config):
+    expected = True
+
+    async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
+        nonlocal expected
+        assert iface == f'{DBUS_NAME}.Helper'
+        assert prop == 'Enabled'
+        assert value is expected
+        count_hits()
+
+    mock_config.add_section('helpers.test')
+    mock_config.set('helpers.test', 'enable', 'off')
+    setup_categories(['test'])
+
+    daemon, client = await dbus_client
+    manager = sls.dbus.DBusObject(client._bus, f'{DBUS_ROOT}/helpers/Test')
+    props = manager.properties(f'{DBUS_NAME}.Helper')
+    await props.subscribe('Enabled', test_enabled)
+
+    expected = True
+    await client.enable_helpers(['test'])
+    assert count_hits.hits == 1
+
+    expected = False
+    await client.disable_helpers(['test'])
+    assert count_hits.hits == 2
+
     await daemon.shutdown()
 
 
