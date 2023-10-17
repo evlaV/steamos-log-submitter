@@ -28,6 +28,10 @@ class DataStore:
                 self._data = json.load(f)
         except FileNotFoundError:
             pass
+        except OSError as e:
+            logger.warning(f'Could not load data file {name}: {e}')
+        except (SyntaxError, KeyError) as e:
+            logger.warning('Could not load data file', exc_info=e)
 
     def __getitem__(self, name: str) -> JSONEncodable:
         if name in self._data:
