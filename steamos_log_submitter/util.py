@@ -109,18 +109,28 @@ def telemetry_user_id() -> Optional[str]:
 
 def telemetry_unit_id() -> Optional[str]:
     fingerprints = []
+    est_bits = 0
 
     deck = sls.steam.get_deck_serial()
     if deck:
+        est_bits += 20
         fingerprints.append(b'deck:' + deck.encode())
 
     try:
         with open('/sys/class/net/wlan0/address', 'rb') as f:
             fingerprints.append(b'mac:' + f.read().strip())
+            est_bits += 28
     except OSError:
         pass
 
-    if not fingerprints:
+    try:
+        with open('/etc/machine-id', 'rb') as f:
+            fingerprints.append(b'machine:' + f.read().strip())
+            est_bits += 128
+    except OSError:
+        pass
+
+    if not fingerprints or est_bits < 48:
         return None
 
     hash = hashlib.blake2b(b'\0'.join(fingerprints), digest_size=16)

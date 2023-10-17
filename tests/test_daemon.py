@@ -830,7 +830,12 @@ async def test_telemetry_ids(dbus_daemon, mock_config, open_shim):
     assert await props['UserId'] == ''
     assert await props['UnitId'] == ''
 
-    mock_config.set('steam', 'deck_serial', 'FVAA')
+    def check_file(fname):
+        if fname.endswith('.vdf'):
+            return None
+        return b'12345678'
+
+    open_shim.cb(check_file)
     mock_config.set('steam', 'account_name', 'gaben')
     mock_config.set('steam', 'account_id', '1')
 
@@ -871,6 +876,13 @@ async def test_subscribe_telemetry_ids(count_hits, dbus_daemon, mock_config, ope
     assert sls.util.telemetry_unit_id() is None
     assert await props['UserId'] == ''
     assert await props['UnitId'] == ''
+
+    def check_file(fname):
+        if fname.endswith('.vdf'):
+            return None
+        return b'12345678'
+
+    open_shim.cb(check_file)
 
     await iface.set_steam_info('account_name', 'gaben')
     await iface.set_steam_info('account_id', '12345')

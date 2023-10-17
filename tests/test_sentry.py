@@ -61,7 +61,7 @@ async def test_id_tags(mock_config, monkeypatch, open_shim):
     mock_config.add_section('steam')
     mock_config.set('steam', 'account_name', 'gaben')
     mock_config.set('steam', 'account_id', '1')
-    mock_config.set('steam', 'deck_serial', 'FVAA00000001')
+    monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: '1234')
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')
     assert await event.send()
