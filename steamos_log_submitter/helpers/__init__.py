@@ -129,6 +129,7 @@ class Helper:
     @classmethod
     def enable(cls, enabled: bool, /) -> None:
         cls.config['enable'] = 'on' if enabled else 'off'
+        sls.config.write_config()
         if cls.iface:
             cls.iface.emit_properties_changed({'Enabled': enabled})
 
@@ -139,6 +140,7 @@ class Helper:
     @classmethod
     def enable_collect(cls, enabled: bool, /) -> None:
         cls.config['collect'] = 'on' if enabled else 'off'
+        sls.config.write_config()
         if cls.iface:
             cls.iface.emit_properties_changed({'CollectEnabled': enabled})
 
@@ -149,6 +151,7 @@ class Helper:
     @classmethod
     def enable_submit(cls, enabled: bool, /) -> None:
         cls.config['submit'] = 'on' if enabled else 'off'
+        sls.config.write_config()
         if cls.iface:
             cls.iface.emit_properties_changed({'SubmitEnabled': enabled})
 
