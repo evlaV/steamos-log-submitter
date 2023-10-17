@@ -39,8 +39,11 @@ def get_deck_serial(uid: int = default_uid, force_vdf: bool = False) -> Optional
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/config.vdf') as v:
             steamconf = vdf.load(v)
-    except (OSError, SyntaxError, KeyError) as e:
-        logger.warning('Could not access config VDF file', exc_info=e)
+    except OSError as e:
+        logger.warning(f'Could not access config VDF file: {e}')
+        return None
+    except (SyntaxError, KeyError) as e:
+        logger.warning('Could not load config VDF file', exc_info=e)
         return None
 
     if 'InstallConfigStore' not in steamconf:
@@ -68,8 +71,11 @@ def get_account_id(uid: int = default_uid, force_vdf: bool = False) -> Optional[
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError, KeyError) as e:
-        logger.warning('Failed to read config VDF file', exc_info=e)
+    except OSError as e:
+        logger.warning(f'Could not access config VDF file: {e}')
+        return None
+    except (SyntaxError, KeyError) as e:
+        logger.warning('Could not load config VDF file', exc_info=e)
         return None
 
     if 'users' not in loginusers:
@@ -94,8 +100,11 @@ def get_account_name(uid: int = default_uid, force_vdf: bool = False) -> Optiona
         home = pwd.getpwuid(uid).pw_dir
         with open(f'{home}/.steam/root/config/loginusers.vdf') as v:
             loginusers = vdf.load(v)
-    except (OSError, SyntaxError, KeyError) as e:
-        logger.warning('Failed to read config VDF file', exc_info=e)
+    except OSError as e:
+        logger.warning(f'Could not access config VDF file: {e}')
+        return None
+    except (SyntaxError, KeyError) as e:
+        logger.warning('Could not load config VDF file', exc_info=e)
         return None
 
     if 'users' not in loginusers:
