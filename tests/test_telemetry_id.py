@@ -56,7 +56,13 @@ def test_no_account_info(mock_config, open_shim):
     assert sls.util.telemetry_unit_id() is None
 
 
-def test_hex(mock_config):
+def test_hex(mock_config, open_shim):
+    def check_file(fname):
+        if fname.endswith('.vdf'):
+            return None
+        return b'12345678'
+
+    open_shim.cb(check_file)
     mock_config.add_section('steam')
     mock_config.set('steam', 'deck_serial', 'FVAA')
     mock_config.set('steam', 'account_name', 'gaben')
