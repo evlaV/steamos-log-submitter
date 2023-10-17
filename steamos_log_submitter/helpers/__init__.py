@@ -181,10 +181,10 @@ def create_helper(category: str) -> Optional[Helper]:
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
     except ModuleNotFoundError:
-        logger.error('Helper module not found')
+        logger.error(f'Helper module {category} not found')
         return None
     if not hasattr(helper, 'helper'):
-        logger.error('Helper module does not contain helper class')
+        logger.error(f'Helper module {category} does not contain helper class')
         return None
     helper.helper._setup()
     assert issubclass(helper.helper, Helper)
