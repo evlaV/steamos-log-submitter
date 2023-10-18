@@ -3,6 +3,7 @@
 #  Copyright (c) 2022-2023 Valve Software
 #  Author: Vicki Pfau <vi@endrift.com>
 
+d	/var/log/steamos-log-submitter	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter	0750	steamos-log-submitter	steamos-log-submitter	-	-
 # User config file should be group writable
 f	@LOCALSTATEDIR@/lib/steamos-log-submitter/user.cfg	0664	steamos-log-submitter	steamos-log-submitter	-	-

@@ -64,7 +64,7 @@ def run() -> None:
 
 
 if __name__ == '__main__':  # pragma: no cover
-    reconfigure_logging(f'{sls.base}/gpu-crash.log', remote=True)
+    reconfigure_logging('/var/log/steamos-log-submitter/gpu-crash.log', remote=True)
     try:
         run()
         trigger()

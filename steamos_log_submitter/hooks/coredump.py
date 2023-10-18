@@ -100,7 +100,7 @@ def run() -> bool:
 
 
 if __name__ == '__main__':  # pragma: no cover
-    reconfigure_logging(f'{sls.base}/crash-hook.log', remote=True)
+    reconfigure_logging('/var/log/steamos-log-submitter/coredump.log', remote=True)
     try:
         if run():
             trigger()
