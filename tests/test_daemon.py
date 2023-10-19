@@ -744,19 +744,25 @@ async def test_suspend_wake(count_hits, mock_dbus, mock_config, monkeypatch):
         'ActiveState': 'inactive'
     }
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+    count_hits.ret = awaitable(lambda: None)()
 
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(daemon, '_trigger_periodic', count_hits)
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
+    await daemon.enable(True)
 
     props['ActiveState'] = 'active'
     await asyncio.sleep(0.02)
     assert daemon._suspend == 'active'
+    assert count_hits.hits == 1
+
     props['ActiveState'] = 'inactive'
+    await asyncio.sleep(0)
+    assert count_hits.hits == 1
     await asyncio.sleep(0.02)
     assert daemon._suspend == 'inactive'
-    assert count_hits.hits == 1
+    assert count_hits.hits == 2
 
 
 @pytest.mark.asyncio

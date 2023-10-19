@@ -90,9 +90,10 @@ class Daemon:
         if value == 'inactive':
             if self._trigger_active:
                 return
-            logger.info('Woke up from suspend, attempting to submit logs')
+            logger.info('Woke up from suspend, rescheduling task')
             await asyncio.sleep(self.WAKEUP_DELAY)
-            await self.trigger(wait=True)
+            await self._cancel_periodic()
+            await self._update_schedule()
 
     async def start(self) -> None:
         if self._serving:
