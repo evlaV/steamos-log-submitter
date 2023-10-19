@@ -772,17 +772,86 @@ async def test_suspend_double_wake(count_hits, mock_dbus, mock_config, monkeypat
         'ActiveState': 'inactive'
     }
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+    count_hits.ret = awaitable(lambda: None)()
 
     daemon = sls.daemon.Daemon()
-    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(daemon, '_trigger_periodic', count_hits)
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
+    await daemon.enable(True)
 
     assert daemon._suspend == 'inactive'
+    assert count_hits.hits == 1
     props['ActiveState'] = 'inactive'
     await asyncio.sleep(0.02)
     assert daemon._suspend == 'inactive'
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_suspend_reschedule_early(count_hits, mock_dbus, mock_config, monkeypatch):
+    target = MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
+    target.properties['org.freedesktop.systemd1.Unit'] = {
+        'ActiveState': 'inactive'
+    }
+    props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+
+    daemon = sls.daemon.Daemon()
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(time, 'time', lambda: 100000)
+    daemon.WAKEUP_DELAY = 0.01
+    daemon.INTERVAL = 5
+    await daemon.start()
+    await daemon.enable(True)
+
+    props['ActiveState'] = 'active'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'active'
     assert count_hits.hits == 0
+
+    monkeypatch.setattr(time, 'time', lambda: 200000)
+    props['ActiveState'] = 'inactive'
+    await asyncio.sleep(0)
+    assert count_hits.hits == 0
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'inactive'
+    assert count_hits.hits == 1
+
+
+@pytest.mark.asyncio
+async def test_suspend_reschedule_late(count_hits, mock_dbus, mock_config, monkeypatch):
+    target = MockDBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget', mock_dbus)
+    target.properties['org.freedesktop.systemd1.Unit'] = {
+        'ActiveState': 'inactive'
+    }
+    props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
+
+    daemon = sls.daemon.Daemon()
+    monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(time, 'time', lambda: 100000)
+    daemon.WAKEUP_DELAY = 0.01
+    daemon.STARTUP = 0.06
+    await daemon.start()
+    await daemon.enable(True)
+
+    props['ActiveState'] = 'active'
+    await asyncio.sleep(0.02)
+    assert daemon._suspend == 'active'
+    assert count_hits.hits == 0
+
+    monkeypatch.setattr(time, 'time', lambda: 100000.03)
+    props['ActiveState'] = 'inactive'
+    await asyncio.sleep(0)
+    assert count_hits.hits == 0
+    assert daemon._suspend == 'inactive'
+
+    monkeypatch.setattr(time, 'time', lambda: 100000.05)
+    await asyncio.sleep(0.02)
+    assert count_hits.hits == 0
+
+    monkeypatch.setattr(time, 'time', lambda: 100000.08)
+    await asyncio.sleep(0.02)
+    assert count_hits.hits == 1
 
 
 @pytest.mark.asyncio
