@@ -9,7 +9,7 @@ import logging
 import time
 import typing
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
-from typing import Concatenate, NoReturn, Optional, ParamSpec, Union
+from typing import Concatenate, NoReturn, Optional, ParamSpec
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -133,11 +133,6 @@ class Client:
     @command
     async def set_log_level(self, level: int) -> None:
         return await self._properties.set('LogLevel', level)
-
-    @command
-    async def set_steam_info(self, key: str, value: Union[int, str]) -> None:
-        assert self._iface
-        await self._iface.set_steam_info(key, str(value))
 
     @command
     async def shutdown(self) -> None:

@@ -20,7 +20,6 @@ from typing import Optional
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
-import steamos_log_submitter.steam
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
 from steamos_log_submitter.types import DBusEncodable
 
@@ -249,25 +248,6 @@ class Daemon:
         sls.logging.reconfigure_logging(sls.logging.config.get('path'))
         self.iface.emit_properties_changed({'LogLevel': level})
 
-    async def set_steam_info(self, key: str, value: str) -> None:
-        if key not in (
-            'deck_serial',
-            'account_id',
-            'account_name'
-        ):
-            logger.warning(f'Got Steam info change for invalid key {key}')
-            raise sls.exceptions.InvalidArgumentsError({'key': key})
-
-        logger.debug(f'Changing Steam info key {key} to {value}')
-        sls.steam.config[key] = value
-        sls.config.write_config()
-
-        if self.iface:
-            if key == 'deck_serial':
-                self.iface.emit_properties_changed({'UnitId': sls.util.telemetry_unit_id() or ''})
-            else:
-                self.iface.emit_properties_changed({'UserId': sls.util.telemetry_user_id() or ''})
-
 
 def _reraise(exc: sls.exceptions.Error) -> None:
     blob = json.dumps(exc.data)
@@ -373,15 +353,6 @@ class DaemonInterface(dbus.service.ServiceInterface):
     @exc_awrap
     async def Shutdown(self):  # type: ignore[no-untyped-def]
         await self.daemon.shutdown()
-
-    @dbus.service.method()
-    @exc_awrap
-    async def SetSteamInfo(self, key: 's', value: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
-        await self.daemon.set_steam_info(key, value)
-
-    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
-    def UserId(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
-        return sls.util.telemetry_user_id() or ''
 
     @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
     def UnitId(self) -> 's':  # type: ignore[name-defined] # NOQA: F821

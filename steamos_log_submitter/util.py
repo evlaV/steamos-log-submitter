@@ -11,12 +11,10 @@ import io
 import os
 import pwd
 import re
-import struct
+import subprocess
 import time
 from types import TracebackType
 from typing import Optional, Type, Union
-
-import steamos_log_submitter as sls
 
 logger = logging.getLogger(__name__)
 
@@ -97,44 +95,35 @@ def check_network() -> bool:
     return False
 
 
-def telemetry_user_id() -> Optional[str]:
-    id = sls.steam.get_account_id()
-    name = sls.steam.get_account_name()
-    if id is None or not name:
-        return None
-
-    hash = hashlib.blake2b(struct.pack('<Q', id) + name.encode(), digest_size=16)
-    return hash.hexdigest()
-
-
 def telemetry_unit_id() -> Optional[str]:
     fingerprints = []
-    est_bits = 0
-
-    deck = sls.steam.get_deck_serial()
-    if deck:
-        est_bits += 20
-        fingerprints.append(b'deck:' + deck.encode())
 
     try:
         with open('/sys/class/net/wlan0/address', 'rb') as f:
             fingerprints.append(b'mac:' + f.read().strip())
-            est_bits += 28
     except OSError:
         pass
 
     try:
         with open('/etc/machine-id', 'rb') as f:
             fingerprints.append(b'machine:' + f.read().strip())
-            est_bits += 128
     except OSError:
-        pass
+        return None
 
-    if not fingerprints or est_bits < 48:
+    if not fingerprints:
         return None
 
     hash = hashlib.blake2b(b'\0'.join(fingerprints), digest_size=16)
     return hash.hexdigest()
+
+
+def get_steamos_branch() -> Optional[str]:
+    try:
+        result = subprocess.run(['/usr/bin/steamos-select-branch', '-c'], capture_output=True, errors='replace', check=True)
+        return result.stdout.strip()
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.warning('Failed to read SteamOS branch', exc_info=e)
+    return None
 
 
 class drop_root:

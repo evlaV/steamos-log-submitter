@@ -251,19 +251,6 @@ async def test_list_pending(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_set_steam_info(dbus_client, mock_config):
-    daemon, client = await dbus_client
-    await client.set_steam_info('deck_serial', 'FVAA12345')
-    await client.set_steam_info('account_id', 12345)
-    try:
-        await client.set_steam_info('account_serial', 12345)
-        assert False
-    except sls.exceptions.InvalidArgumentsError:
-        pass
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
 async def test_log_passthru(dbus_client, mock_config):
     daemon, client = await dbus_client
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')

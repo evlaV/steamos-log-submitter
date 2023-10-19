@@ -38,7 +38,7 @@ class SentryEvent:
         self.tags: dict[str, JSONEncodable] = {}
         self.fingerprint: Iterable[str] = ()
         self.timestamp: Optional[float] = None
-        self.environment: Optional[str] = sls.steam.get_steamos_branch()
+        self.environment: Optional[str] = sls.util.get_steamos_branch()
         self.message: Optional[str] = None
         self.build_id: Optional[str] = sls.util.get_build_id()
 
@@ -87,10 +87,6 @@ class SentryEvent:
             if f'appid:{self.appid}' not in fingerprint:
                 fingerprint.append(f'appid:{self.appid}')
             tags['appid'] = str(self.appid)
-
-        user_id = sls.util.telemetry_user_id()
-        if user_id:
-            tags['user_id'] = user_id
 
         unit_id = sls.util.telemetry_unit_id()
         if unit_id:

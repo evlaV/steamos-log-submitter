@@ -55,7 +55,7 @@ def test_basic(monkeypatch, fake_mesa) -> None:
     monkeypatch.setattr(os, 'uname', lambda: posix.uname_result(('1', '2', '3', '4', '5')))
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
     monkeypatch.setattr(sls.helpers, 'StagingFile', staging_file)
 
@@ -81,7 +81,7 @@ def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': 'foo'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
 
     hook.run()
@@ -98,7 +98,7 @@ def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: None)
 
     hook.run()
@@ -114,7 +114,7 @@ def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', always_raise(FileNotFoundError))
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
 
     hook.run()
@@ -131,7 +131,7 @@ def test_invalid_mesa(monkeypatch, staging_file) -> None:
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
 
     hook.run()

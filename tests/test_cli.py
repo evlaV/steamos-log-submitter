@@ -4,14 +4,12 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import pwd
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.cli as cli
 import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.runner as runner
-import steamos_log_submitter.steam as steam
-from . import always_raise, awaitable, setup_categories, setup_logs
+from . import awaitable, setup_categories, setup_logs
 from . import count_hits, drop_root, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
 from .daemon import dbus_client, dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
@@ -272,63 +270,6 @@ async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_set_steam_key_account_name(mock_config, monkeypatch, cli_wrapper):
-    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
-    daemon, client = await cli_wrapper
-    await cli.amain(['set-steam-info', 'account-name', 'gaben'])
-    assert mock_config.has_section('steam')
-    assert mock_config.get('steam', 'account_name') == 'gaben'
-    assert steam.get_account_name() == 'gaben'
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_set_steam_key_account_id(mock_config, monkeypatch, cli_wrapper):
-    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
-    daemon, client = await cli_wrapper
-    await cli.amain(['set-steam-info', 'account-id', '42'])
-    assert mock_config.has_section('steam')
-    assert mock_config.get('steam', 'account_id') == '42'
-    assert steam.get_account_id() == 42
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_set_steam_key_account_id_invalid(mock_config, monkeypatch, cli_wrapper):
-    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
-    daemon, client = await cli_wrapper
-    assert not mock_config.has_section('steam')
-    await cli.amain(['set-steam-info', 'account-id', 'gaben'])
-    assert not mock_config.has_section('steam')
-    assert steam.get_account_id() is None
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_set_steam_key_deck_serial(mock_config, monkeypatch, cli_wrapper):
-    monkeypatch.setattr(pwd, 'getpwuid', always_raise(OSError))
-    daemon, client = await cli_wrapper
-    await cli.amain(['set-steam-info', 'deck-serial', 'AAAA0000'])
-    assert mock_config.has_section('steam')
-    assert mock_config.get('steam', 'deck_serial') == 'AAAA0000'
-    assert steam.get_deck_serial() == 'AAAA0000'
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
-async def test_set_steam_key_invalid(mock_config, cli_wrapper):
-    daemon, client = await cli_wrapper
-    assert not mock_config.has_section('steam')
-    try:
-        await cli.amain(['set-steam-info', 'malicious_key', 'Breen'])
-        assert False
-    except SystemExit:
-        pass
-    assert not mock_config.has_section('steam')
-    await daemon.shutdown()
-
-
-@pytest.mark.asyncio
 async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
     daemon, client = await cli_wrapper
@@ -404,47 +345,5 @@ async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
     assert not mock_config.has_section('steam')
 
     assert count_hits.hits == 2
-
-    await daemon.shutdown()
-
-
-@pytest.mark.skip
-@pytest.mark.asyncio
-async def test_autoconfig_steam(cli_wrapper, mock_config, monkeypatch, open_shim):
-    users_vdf = """"users"
-{
-	"1"
-	{
-		"MostRecent"		"1"
-        "AccountName"       "gaben"
-	}
-}"""
-
-    steam_vdf = """"InstallConfigStore"
-{
-	"SteamDeckRegisteredSerialNumber" "FVAA00000001"
-}"""
-
-    def open_fake(fname: str):
-        if fname.endswith('/config.vdf'):
-            return steam_vdf
-        if fname.endswith('/loginusers.vdf'):
-            return users_vdf
-        return None
-
-    open_shim.cb(open_fake)
-    monkeypatch.setattr(pwd, "getpwuid", lambda uid: pwd.struct_passwd(('', '', uid, uid, '', '/home/deck', '')))
-
-    mock_config.add_section('steam')
-    mock_config.set('steam', 'account_name', 'dummy')
-    mock_config.set('steam', 'account_id', '3')
-    mock_config.set('steam', 'deck_serial', 'FVAA12345678')
-    daemon, client = await cli_wrapper
-
-    await cli.amain(['autoconfig-steam-info'])
-
-    assert mock_config.get('steam', 'account_name') == 'gaben'
-    assert mock_config.get('steam', 'account_id') == '1'
-    assert mock_config.get('steam', 'deck_serial') == 'FVAA00000001'
 
     await daemon.shutdown()

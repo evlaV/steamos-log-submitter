@@ -480,7 +480,7 @@ async def test_collect_filesystems_clean(fake_async_subprocess):
 
 @pytest.mark.asyncio
 async def test_collect_system(monkeypatch):
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
@@ -498,7 +498,7 @@ async def test_collect_system(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_system_no_vram(monkeypatch):
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: None))
@@ -515,7 +515,7 @@ async def test_collect_system_no_vram(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_system_no_mem(monkeypatch):
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
@@ -532,7 +532,7 @@ async def test_collect_system_no_mem(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_system_no_swap(monkeypatch):
-    monkeypatch.setattr(sls.steam, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))

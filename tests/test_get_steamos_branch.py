@@ -15,9 +15,9 @@ def test_success(monkeypatch):
         return ret
 
     monkeypatch.setattr(subprocess, 'run', fake_subprocess)
-    assert sls.steam.get_steamos_branch() == 'main'
+    assert sls.util.get_steamos_branch() == 'main'
 
 
 def test_failure(monkeypatch):
     monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
-    assert sls.steam.get_steamos_branch() is None
+    assert sls.util.get_steamos_branch() is None

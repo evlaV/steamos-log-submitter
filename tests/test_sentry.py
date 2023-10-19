@@ -54,13 +54,10 @@ async def test_tags(mock_config, monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_id_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
-        assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id(), 'user_id': sls.util.telemetry_user_id()}
+        assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id()}
         return httpx.Response(200)
 
     open_shim.enoent()
-    mock_config.add_section('steam')
-    mock_config.set('steam', 'account_name', 'gaben')
-    mock_config.set('steam', 'account_id', '1')
     monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: '1234')
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')

@@ -9,7 +9,6 @@ import steamos_log_submitter.exceptions as exceptions
 import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.logging as logging
 import steamos_log_submitter.runner as runner
-import steamos_log_submitter.steam as steam
 import steamos_log_submitter.util as util
 
 import asyncio
@@ -28,7 +27,6 @@ __all__ = [
     'exceptions',
     'helpers',
     'logging',
-    'steam',
     'util',
 ]
 __version__ = '0.3.1'
@@ -64,7 +62,6 @@ def setup() -> None:
     failed = f'{base}/failed'
 
     data._setup()
-    steam._setup()
 
     logging.reconfigure_logging()
 

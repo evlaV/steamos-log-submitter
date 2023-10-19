@@ -390,7 +390,7 @@ class SystemType(SysinfoType):
     @classmethod
     async def list(cls) -> dict[str, JSON]:
         sysinfo: dict[str, JSON] = {
-            'branch': sls.steam.get_steamos_branch(),
+            'branch': sls.util.get_steamos_branch(),
             'release': sls.util.get_build_id(),
         }
 

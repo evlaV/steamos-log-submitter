@@ -109,35 +109,9 @@ async def do_log_level(client: sls.client.Client, args: argparse.Namespace) -> N
         print('Please specify a valid log level', file=sys.stderr)
 
 
-async def set_steam_info(key: str, value: str) -> None:
-    if key == 'account-id':
-        try:
-            int(value)
-        except ValueError:
-            print('Account ID must be numeric', file=sys.stderr)
-            return
-
-    async with ClientWrapper() as client:
-        if not client:
-            return
-        await client.set_steam_info(key.replace('-', '_'), value)
-
-
 @command
 async def do_trigger(client: sls.client.Client, args: argparse.Namespace) -> None:
     await client.trigger(args.wait)
-
-
-@command
-async def do_autoconfig_steam(client: sls.client.Client, args: argparse.Namespace) -> None:
-    info = {
-        'account_name': sls.steam.get_account_name(force_vdf=True) or '',
-        'account_id': sls.steam.get_account_id(force_vdf=True) or '',
-        'deck_serial': sls.steam.get_deck_serial(force_vdf=True) or '',
-    }
-
-    for key, value in info.items():
-        await client.set_steam_info(key, value)
 
 
 def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
@@ -207,14 +181,6 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                            help='''Which new log level to set. The possible levels are DEBUG, INFO,
                                    WARNING, ERROR, and CRITICAL, in order from least to most severe.''')
     log_level.set_defaults(func=do_log_level)
-
-    set_steam = subparsers.add_parser('set-steam-info',
-                                      description='''Set a value relating to the current Steam configuration.
-                                                     This command should not be used directly, as any values
-                                                     manually set may be changed by Steam directly.''')
-    set_steam.add_argument('key', choices=('account-name', 'account-id', 'deck-serial'))
-    set_steam.add_argument('value', type=str)
-    set_steam.set_defaults(func=lambda args: set_steam_info(args.key, args.value))
 
     parsed_args = parser.parse_args(args)
 
