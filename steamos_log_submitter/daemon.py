@@ -55,6 +55,16 @@ class Daemon:
             return
         await self.trigger(wait=True)
 
+    async def _cancel_periodic(self) -> None:
+        if not self._periodic_task:
+            return
+        self._periodic_task.cancel()
+        try:
+            await self._periodic_task
+        except asyncio.CancelledError:
+            pass
+        self._periodic_task = None
+
     def _setup_dbus(self) -> None:
         assert sls.dbus.system_bus
         self.iface = DaemonInterface(self)
@@ -122,13 +132,7 @@ class Daemon:
         if self._async_trigger:
             await self._async_trigger
             self._async_trigger = None
-        if self._periodic_task:
-            self._periodic_task.cancel()
-            try:
-                await self._periodic_task
-            except asyncio.CancelledError:
-                pass
-            self._periodic_task = None
+        await self._cancel_periodic()
 
         bus = sls.dbus.system_bus
         if bus:
@@ -227,13 +231,8 @@ class Daemon:
 
     async def _update_schedule(self) -> None:
         inhibited = self.inhibited() or not self.enabled()
-        if inhibited and self._periodic_task:
-            self._periodic_task.cancel()
-            try:
-                await self._periodic_task
-            except asyncio.CancelledError:
-                pass
-            self._periodic_task = None
+        if inhibited:
+            await self._cancel_periodic()
         elif not inhibited and not self._periodic_task:
             self._periodic_task = asyncio.create_task(self._trigger_periodic())
 
