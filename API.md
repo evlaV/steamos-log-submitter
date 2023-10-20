@@ -73,16 +73,16 @@ For example, the "minidump" module would be located at this path:
 `/com/steampowered/SteamOSLogSubmitter/helpers/Minidump`
 
 They implement one interface, `com.steampowered.SteamOSLogSubmitter.Helper`,
-which has the following methods and properties:
+which has the following methods, properties, and signals:
 
 ### Methods
 
-- `ListPending`: Takes no argument, returns `as` value. Get a list of currently
-  pending log files that have yet to be submitted. The format is just the
-  filename, as the helper name is implicit.
 - `Collect`: Takes no arguments, returns `b` value. Run the submission phase
   for this helper. Returns `true` if one or more new logs are ready for
   submission.
+- `ListPending`: Takes no argument, returns `as` value. Get a list of currently
+  pending log files that have yet to be submitted. The format is just the
+  filename, as the helper name is implicit.
 
 ### Properties
 
@@ -97,6 +97,13 @@ which has the following methods and properties:
   this is disabled, logs that are pending submission will not be submitted and
   will be retained locally instead. Note that pending logs will expire (by
   default after 2 weeks) so this should be used with caution.
+
+### Signals
+
+- `NewLogs` (`as`): When new logs are collected, this signal is fired with a
+  list of the newly collected logs. Note that since logs are usually collected
+  immediately prior to submission, they might not show up as pending if you try
+  to query pending even a short time afterwards.
 
 ### Sysinfo helper
 

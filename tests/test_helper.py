@@ -3,11 +3,18 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import importlib
 import os
+import pytest
+import time
+
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
-from . import helper_directory, mock_config, patch_module, setup_categories  # NOQA: F401
+
+from . import count_hits, helper_directory, mock_config, patch_module, setup_categories  # NOQA: F401
+from .daemon import dbus_daemon  # NOQA: F401
+from .dbus import real_dbus  # NOQA: F401
 
 
 def test_staging_file_rename(helper_directory):
@@ -57,3 +64,86 @@ def test_invalid_broken_module(monkeypatch):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test'])
 
     assert helpers.create_helper('test') is None
+
+
+@pytest.mark.asyncio
+async def test_collect_new_logs(helper_directory, mock_config, patch_module):
+    patch_module.valid_extensions = {'.bin'}
+    os.mkdir(f'{sls.pending}/test')
+    assert not await patch_module.collect()
+
+    with open(f'{sls.pending}/test/a.bin', 'w'):
+        pass
+    assert await patch_module.collect() == ['a.bin']
+    assert not await patch_module.collect()
+
+    time.sleep(0.005)
+    with open(f'{sls.pending}/test/b.bin', 'w'):
+        pass
+    assert await patch_module.collect() == ['b.bin']
+
+    time.sleep(0.005)
+    with open(f'{sls.pending}/test/c.bin', 'w'):
+        pass
+    with open(f'{sls.pending}/test/d.bin', 'w'):
+        pass
+    assert list(sorted(await patch_module.collect())) == ['c.bin', 'd.bin']
+    assert not await patch_module.collect()
+
+
+@pytest.mark.asyncio
+async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, mock_config, patch_module):
+    patch_module.valid_extensions = {'.bin'}
+    os.mkdir(f'{sls.pending}/test')
+    collected: list[str] = []
+
+    def cb(new_logs: list[str]) -> None:
+        nonlocal collected
+        collected = new_logs
+        count_hits()
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    await manager.subscribe(f'{sls.constants.DBUS_NAME}.Helper', 'NewLogs', cb)
+
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+
+    assert not collected
+    assert count_hits.hits == 0
+
+    with open(f'{sls.pending}/test/a.bin', 'w'):
+        pass
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+    assert collected == ['a.bin']
+    assert count_hits.hits == 1
+
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+    assert count_hits.hits == 1
+
+    await asyncio.sleep(0.005)
+    with open(f'{sls.pending}/test/b.bin', 'w'):
+        pass
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+    assert collected == ['b.bin']
+    assert count_hits.hits == 2
+
+    await asyncio.sleep(0.005)
+    with open(f'{sls.pending}/test/c.bin', 'w'):
+        pass
+    with open(f'{sls.pending}/test/d.bin', 'w'):
+        pass
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+    assert list(sorted(collected)) == ['c.bin', 'd.bin']
+    assert count_hits.hits == 3
+
+    await asyncio.sleep(0.005)
+    await patch_module.collect()
+    await asyncio.sleep(0.001)
+    assert count_hits.hits == 3
+
+    await daemon.shutdown()

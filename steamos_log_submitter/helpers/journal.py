@@ -108,7 +108,7 @@ class JournalHelper(Helper):
         return ''.join(unescaped)
 
     @classmethod
-    async def collect(cls) -> bool:
+    async def collect(cls) -> list[str]:
         bus = 'org.freedesktop.systemd1'
         updated = False
         for unit in cls.units:
@@ -159,7 +159,7 @@ class JournalHelper(Helper):
             except OSError as e:
                 cls.logger.error('Failed writing updated cursor information', exc_info=e)
 
-        return updated
+        return await super().collect()
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:

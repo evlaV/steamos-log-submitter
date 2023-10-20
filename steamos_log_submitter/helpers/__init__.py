@@ -72,12 +72,17 @@ class HelperInterface(dbus.service.ServiceInterface):
         return self.helper.enable_submit(enable)
 
     @dbus.service.method()
-    async def Collect(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
+    async def Collect(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return await self.helper.collect()
 
     @dbus.service.method()
     def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return list(self.helper.list_pending())
+
+    @dbus.service.signal()
+    def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        pending = set(self.helper.list_pending())
+        return [log for log in logs if log in pending]
 
 
 class Helper:
@@ -115,8 +120,33 @@ class Helper:
         cls.iface = HelperInterface(cls)
 
     @classmethod
-    async def collect(cls) -> bool:
-        return False
+    async def collect(cls) -> list[str]:
+        last_collected: Optional[float] = None
+        newest: Optional[float] = None
+        newer: list[str] = []
+        try:
+            if 'newest' in cls.config:
+                last_collected = round(float(cls.config['newest']), 3)
+        except ValueError:
+            pass
+
+        for log in cls.list_pending():
+            try:
+                stat = os.stat(f'{sls.pending}/{cls.name}/{log}')
+            except OSError:
+                cls.logger.warning(f'Failed to stat {log}, ignoring')
+                continue
+            mtime = round(stat.st_mtime, 3)
+            if last_collected is None or mtime > last_collected:
+                newer.append(log)
+            if newest is None or mtime > newest:
+                newest = mtime
+        if newest is not None and (last_collected is None or newest > last_collected):
+            cls.config['newest'] = newest
+            sls.config.write_config()
+        if newer and cls.iface:
+            cls.iface.NewLogs(newer)
+        return newer
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
@@ -171,7 +201,7 @@ class Helper:
     @classmethod
     def list_pending(cls) -> Iterable[str]:
         try:
-            return (log for log in os.listdir(f'{sls.pending}/{cls.name}') if cls.filter_log(log))
+            return (log for log in os.listdir(f'{sls.pending}/{cls.name}') if cls.filter_log(log) and os.access(f'{sls.pending}/{cls.name}/{log}', os.R_OK))
         except OSError as e:
             cls.logger.error(f'Encountered error listing logs for {cls.name}', exc_info=e)
             return ()

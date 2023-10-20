@@ -11,7 +11,7 @@ from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from types import CoroutineType, UnionType
 from typing import Optional, Type, Union
 
-from steamos_log_submitter.types import DBusCallable, DBusCallableAsync, DBusCallableSync, DBusEncodable
+from steamos_log_submitter.types import DBusCallable, DBusCallableAsync, DBusCallableSync, DBusCallback, DBusEncodable
 
 connected = False
 system_bus = None
@@ -178,6 +178,12 @@ class DBusObject:
     async def interface(self, iface: str) -> DBusInterface:
         await self._connect()
         return DBusInterface(self, iface)
+
+    async def subscribe(self, iface: str, signal: str, cb: DBusCallback) -> None:
+        await self._connect()
+        iface_handle = self.object.get_interface(iface)
+        name = dbus.proxy_object.BaseProxyInterface._to_snake_case(signal)
+        getattr(iface_handle, f'on_{name}')(cb)
 
     async def list_children(self) -> Iterable[str]:
         await self._connect()

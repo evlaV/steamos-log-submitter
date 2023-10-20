@@ -161,7 +161,7 @@ class Daemon:
             self._async_trigger = None
             return
         self._trigger_active = True
-        await sls.runner.trigger()
+        collected, submitted = await sls.runner.trigger()
         last_trigger = time.time()
         config['last_trigger'] = last_trigger
         sls.config.write_config()

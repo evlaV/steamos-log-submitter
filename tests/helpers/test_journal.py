@@ -123,7 +123,7 @@ async def test_collect_read_error(monkeypatch, mock_dbus, data_directory, drop_r
 
 
 @pytest.mark.asyncio
-async def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
+async def test_collect_write_error(monkeypatch, mock_config,  mock_dbus, data_directory, drop_root, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', awaitable(count_hits))
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
@@ -134,15 +134,17 @@ async def test_collect_write_error(monkeypatch, mock_dbus, data_directory, drop_
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     if os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK):
         pytest.skip('File is readable, are we running as root?')
+    mtime = os.stat(f'{sls.pending}/journal/unit_2eservice.json').st_mtime
+    mock_config.add_section('helpers.journal')
+    mock_config.set('helpers.journal', 'newest', f'{mtime:.6f}')
     assert not await helper.collect()
     assert os.access(f'{sls.pending}/journal/unit_2eservice.json', os.F_OK)
     assert not os.access(f'{sls.pending}/journal/unit_2eservice.json', os.W_OK)
 
 
 @pytest.mark.asyncio
-async def test_collect_no_local(monkeypatch, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
+async def test_collect_no_local(monkeypatch, mock_config, mock_dbus, data_directory, count_hits, helper_directory, mock_unit):
     monkeypatch.setattr(helper, 'read_journal', awaitable(count_hits))
-    monkeypatch.setattr(sls.config, 'write_config', always_raise(FileNotFoundError))
     count_hits.ret = ['log'], 'cursor'
     os.mkdir(f'{sls.pending}/journal')
 

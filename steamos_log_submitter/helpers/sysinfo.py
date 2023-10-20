@@ -81,15 +81,7 @@ class SysinfoHelper(Helper):
         cls.device_types[sls.util.snake_case(type.name)] = type
 
     @classmethod
-    async def list(cls, type: str) -> Optional[JSONEncodable]:
-        try:
-            return await cls.device_types[type].list()
-        except Exception as e:
-            cls.logger.error(f'Failed to list {type}', exc_info=e)
-        return None
-
-    @classmethod
-    async def collect(cls) -> bool:
+    async def collect(cls) -> list[str]:
         types = sorted(cls.device_types.items())
         results = await asyncio.gather(*[cls.list(name) for name, type in types if type.enabled()])
         devices = {type: result for type, result in zip((name for name, _ in types), results) if result is not None}
@@ -151,11 +143,19 @@ class SysinfoHelper(Helper):
             except OSError as e:
                 cls.logger.error('Failed writing updated timestamp information', exc_info=e)
 
-        return new_file
+        return await super().collect()
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
         raise NotImplementedError
+
+    @classmethod
+    async def list(cls, type: str) -> Optional[JSONEncodable]:
+        try:
+            return await cls.device_types[type].list()
+        except Exception as e:
+            cls.logger.error(f'Failed to list {type}', exc_info=e)
+        return None
 
 
 class UsbType(SysinfoType):
