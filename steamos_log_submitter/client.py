@@ -15,7 +15,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.exceptions
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
-from steamos_log_submitter.types import DBusEncodable, DBusT
+from steamos_log_submitter.types import DBusEncodable, OptionalDBusT
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +52,8 @@ class Client:
         raise exc
 
     @staticmethod
-    def command(fn: Callable[Concatenate['Client', P], Coroutine[None, None, DBusT]]) -> Callable[Concatenate['Client', P], Coroutine[None, None, DBusT]]:
-        async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> DBusT:
+    def command(fn: Callable[Concatenate['Client', P], Coroutine[None, None, OptionalDBusT]]) -> Callable[Concatenate['Client', P], Coroutine[None, None, OptionalDBusT]]:
+        async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> OptionalDBusT:
             await self._connect()
             try:
                 return await fn(self, *args)
