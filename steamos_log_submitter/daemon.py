@@ -359,8 +359,8 @@ class DaemonInterface(dbus.service.ServiceInterface):
         return sls.util.telemetry_unit_id() or ''
 
     @dbus.service.method()
-    @exc_awrap
-    async def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+    @exc_wrap
+    def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         pending: list[str] = []
         for helper in sls.helpers.list_helpers():
             helper_module = sls.helpers.create_helper(helper)

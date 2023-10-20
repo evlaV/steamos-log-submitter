@@ -76,7 +76,7 @@ class HelperInterface(dbus.service.ServiceInterface):
         return await self.helper.collect()
 
     @dbus.service.method()
-    async def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+    def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return list(self.helper.list_pending())
 
 
