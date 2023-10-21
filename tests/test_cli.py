@@ -271,6 +271,7 @@ async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
 
 @pytest.mark.asyncio
 async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
     daemon, client = await cli_wrapper
     await cli.amain(['enable'])
@@ -288,6 +289,7 @@ async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
     async def trigger():
         await asyncio.sleep(0.04)
         count_hits()
+        return [], []
 
     monkeypatch.setattr(runner, 'trigger', trigger)
 
@@ -309,6 +311,7 @@ async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
     async def trigger():
         await asyncio.sleep(0.04)
         count_hits()
+        return [], []
 
     monkeypatch.setattr(runner, 'trigger', trigger)
 

@@ -249,3 +249,15 @@ async def test_error_continue(helper_directory, monkeypatch, patch_module, count
     await submit()
 
     assert count_hits.hits == 3
+
+
+@pytest.mark.asyncio
+async def test_list(helper_directory, online, patch_module, count_hits):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': ''})
+
+    count_hits.ret = helpers.HelperResult()
+
+    patch_module.submit = awaitable(count_hits)
+    assert await submit() == ['test/log']
+    assert count_hits.hits == 1

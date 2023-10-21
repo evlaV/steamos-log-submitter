@@ -297,6 +297,7 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
@@ -321,6 +322,7 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
 
 @pytest.mark.asyncio
 async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
@@ -345,6 +347,7 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
 
 @pytest.mark.asyncio
 async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
@@ -371,6 +374,7 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
 
 @pytest.mark.asyncio
 async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
@@ -393,6 +397,7 @@ async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mo
 
 @pytest.mark.asyncio
 async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.07)
@@ -422,6 +427,7 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
 
 @pytest.mark.asyncio
 async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.04)
@@ -527,6 +533,7 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
     async def trigger():
         await asyncio.sleep(0.1)
         count_hits()
+        return [], []
 
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
@@ -552,6 +559,7 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
     async def trigger():
         await asyncio.sleep(0.1)
         count_hits()
+        return [], []
 
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
@@ -645,6 +653,7 @@ async def test_trigger_then_disable(count_hits, dbus_daemon, mock_config, monkey
     async def trigger():
         await asyncio.sleep(0.05)
         count_hits()
+        return [], []
 
     daemon, bus = await dbus_daemon
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
@@ -671,6 +680,7 @@ async def test_trigger_then_inhibit(count_hits, dbus_daemon, mock_config, monkey
     async def trigger():
         await asyncio.sleep(0.05)
         count_hits()
+        return [], []
 
     daemon, bus = await dbus_daemon
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
@@ -702,6 +712,7 @@ async def test_suspend_sleep(count_hits, mock_dbus, mock_config, monkeypatch):
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
+    count_hits.ret = [], []
     monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     daemon.WAKEUP_DELAY = 0.01
     await daemon.start()
@@ -773,6 +784,7 @@ async def test_suspend_reschedule_early(count_hits, mock_dbus, mock_config, monk
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
+    count_hits.ret = [], []
     monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(time, 'time', lambda: 100000)
     daemon.WAKEUP_DELAY = 0.01
@@ -803,6 +815,7 @@ async def test_suspend_reschedule_late(count_hits, mock_dbus, mock_config, monke
     props = MockDBusProperties(target, 'org.freedesktop.systemd1.Unit')
 
     daemon = sls.daemon.Daemon()
+    count_hits.ret = [], []
     monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(time, 'time', lambda: 100000)
     daemon.WAKEUP_DELAY = 0.01

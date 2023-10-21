@@ -124,6 +124,7 @@ async def test_client_set_log_level_invalid(dbus_client, mock_config):
 
 @pytest.mark.asyncio
 async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits):
+    count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     daemon, client = await dbus_client
     await client.enable()
@@ -136,6 +137,7 @@ async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits)
 async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
+        return [], []
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
     daemon, client = await dbus_client
@@ -157,6 +159,7 @@ async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
 async def test_client_trigger_wait2(dbus_client, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
+        return [], []
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
     daemon, client = await dbus_client

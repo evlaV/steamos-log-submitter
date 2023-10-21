@@ -48,6 +48,7 @@ async def test_disable_collect_global(helper_directory, mock_config, monkeypatch
 @pytest.mark.asyncio
 async def test_module(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
+    count_hits.ret = []
 
     patch_module.submit = submit
     patch_module.collect = awaitable(count_hits)
@@ -59,6 +60,7 @@ async def test_module(helper_directory, monkeypatch, patch_module, count_hits):
 @pytest.mark.asyncio
 async def test_lock(helper_directory, monkeypatch, patch_module, count_hits):
     setup_categories(['test'])
+    count_hits.ret = []
 
     patch_module.submit = submit
     patch_module.collect = awaitable(count_hits)
@@ -80,7 +82,7 @@ async def test_error_continue(helper_directory, monkeypatch, patch_module, count
     async def fail_count(*args, **kwargs):
         count_hits()
         assert count_hits.hits != 1
-        return False
+        return []
 
     setup_categories(['test', 'test2'])
 
@@ -88,4 +90,16 @@ async def test_error_continue(helper_directory, monkeypatch, patch_module, count
     patch_module.collect = fail_count
     await collect()
 
+    assert count_hits.hits == 2
+
+
+@pytest.mark.asyncio
+async def test_list(helper_directory, patch_module, count_hits):
+    setup_categories(['test', 'test2'])
+
+    count_hits.ret = ['a']
+
+    patch_module.submit = submit
+    patch_module.collect = awaitable(count_hits)
+    assert list(sorted(await collect())) == ['test/a', 'test2/a']
     assert count_hits.hits == 2
