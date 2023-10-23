@@ -140,6 +140,14 @@ class Client:
         await self._iface.shutdown()
 
     @command
+    async def collect(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
+        logs: list[str] = []
+        async for helper, dbus_object in self._helper_objects(helpers):
+            iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
+            logs.extend(f'{helper}/{log}' for log in typing.cast(Iterable[str], await iface.collect()))
+        return sorted(logs)
+
+    @command
     async def trigger(self, wait: bool = True) -> None:
         assert self._iface
         if wait:

@@ -254,6 +254,21 @@ async def test_list_pending(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
+async def test_collect(dbus_client, helper_directory, patch_module):
+    setup_categories(['test', 'test2', 'test3'])
+    setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
+    daemon, client = await dbus_client
+
+    assert set(await client.collect(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.collect(['test2'])) == {'test2/c'}
+    assert set(await client.collect(['test3'])) == set()
+    assert not await client.collect(['test'])
+    assert not await client.collect(['test2'])
+    assert not await client.collect(['test3'])
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_log_passthru(dbus_client, mock_config):
     daemon, client = await dbus_client
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
