@@ -67,6 +67,6 @@ if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging('/var/log/steamos-log-submitter/gpu-crash.log', remote=True)
     try:
         run()
-        trigger()
+        trigger('gpu')
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)

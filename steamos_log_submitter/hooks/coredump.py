@@ -103,6 +103,6 @@ if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging('/var/log/steamos-log-submitter/coredump.log', remote=True)
     try:
         if run():
-            trigger()
+            trigger('minidump')
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)
