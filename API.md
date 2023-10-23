@@ -16,7 +16,7 @@ There is only one manager object, located at the path:
 `/com/steampowered/SteamOSLogSubmitter/Manager`
 
 It implements one interface, `com.steampowered.SteamOSLogSubmitter.Manager`,
-which has the following methods and properties:
+which has the following methods, properties, and signals:
 
 ### Methods
 
@@ -60,6 +60,13 @@ which has the following methods and properties:
   any information about the device (e.g. serial number) to the remote server.
 - `Version` (`s`): A read-only property containing the version of the currently
   running daemon.
+
+### Signals
+
+- `NewLogs` (`as`): When new logs are collected, this signal is fired with a
+  list of the newly collected logs. Note that since logs are usually collected
+  immediately prior to submission, they might not show up as pending if you try
+  to query pending even a short time afterwards.
 
 ## Helpers
 

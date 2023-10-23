@@ -20,6 +20,7 @@ import steamos_log_submitter.dbus
 import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.constants import DBUS_NAME
+from steamos_log_submitter.daemon import DaemonInterface
 from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ class HelperInterface(dbus.service.ServiceInterface):
     def __init__(self, helper: Type['Helper']):
         super().__init__(f'{DBUS_NAME}.Helper')
         self.helper = helper
+        self.daemon: Optional[DaemonInterface] = None
 
     @dbus.service.dbus_property()
     def Enabled(self) -> 'b':  # type: ignore[name-defined] # NOQA: F821
@@ -82,7 +84,10 @@ class HelperInterface(dbus.service.ServiceInterface):
     @dbus.service.signal()
     def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         pending = set(self.helper.list_pending())
-        return [log for log in logs if log in pending]
+        logs = [log for log in logs if log in pending]
+        if self.daemon:
+            self.daemon.NewLogs([f'{self.helper.name}/{log}' for log in logs])
+        return logs
 
 
 class Helper:

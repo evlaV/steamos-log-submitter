@@ -74,6 +74,7 @@ class Daemon:
                 continue
             camel_case = sls.util.camel_case(helper_module.name)
             sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', helper_module.iface)
+            helper_module.iface.daemon = self.iface
 
             for iface in helper_module.extra_ifaces:
                 sls.dbus.system_bus.export(f'{DBUS_ROOT}/helpers/{camel_case}', iface)
@@ -367,6 +368,10 @@ class DaemonInterface(dbus.service.ServiceInterface):
             if helper_module:
                 pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
         return pending
+
+    @dbus.service.signal()
+    def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return logs
 
     @dbus.service.method()
     @exc_awrap

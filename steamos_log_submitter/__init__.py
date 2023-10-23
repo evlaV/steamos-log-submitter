@@ -6,7 +6,6 @@
 import steamos_log_submitter.config as config
 import steamos_log_submitter.data as data
 import steamos_log_submitter.exceptions as exceptions
-import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.logging as logging
 import steamos_log_submitter.runner as runner
 import steamos_log_submitter.util as util

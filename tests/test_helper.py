@@ -96,15 +96,23 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
     patch_module.valid_extensions = {'.bin'}
     os.mkdir(f'{sls.pending}/test')
     collected: list[str] = []
+    collected_prefixed: list[str] = []
 
     def cb(new_logs: list[str]) -> None:
         nonlocal collected
         collected = new_logs
         count_hits()
 
+    def cb_prefixed(new_logs: list[str]) -> None:
+        nonlocal collected_prefixed
+        collected_prefixed = new_logs
+        count_hits()
+
     daemon, bus = await dbus_daemon
-    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
-    await manager.subscribe(f'{sls.constants.DBUS_NAME}.Helper', 'NewLogs', cb)
+    helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    await helper.subscribe(f'{sls.constants.DBUS_NAME}.Helper', 'NewLogs', cb)
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    await manager.subscribe(f'{sls.constants.DBUS_NAME}.Manager', 'NewLogs', cb_prefixed)
 
     await patch_module.collect()
     await asyncio.sleep(0.001)
@@ -117,11 +125,12 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
     await patch_module.collect()
     await asyncio.sleep(0.001)
     assert collected == ['a.bin']
-    assert count_hits.hits == 1
+    assert collected_prefixed == ['test/a.bin']
+    assert count_hits.hits == 2
 
     await patch_module.collect()
     await asyncio.sleep(0.001)
-    assert count_hits.hits == 1
+    assert count_hits.hits == 2
 
     await asyncio.sleep(0.005)
     with open(f'{sls.pending}/test/b.bin', 'w'):
@@ -129,7 +138,8 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
     await patch_module.collect()
     await asyncio.sleep(0.001)
     assert collected == ['b.bin']
-    assert count_hits.hits == 2
+    assert collected_prefixed == ['test/b.bin']
+    assert count_hits.hits == 4
 
     await asyncio.sleep(0.005)
     with open(f'{sls.pending}/test/c.bin', 'w'):
@@ -138,12 +148,13 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
         pass
     await patch_module.collect()
     await asyncio.sleep(0.001)
-    assert list(sorted(collected)) == ['c.bin', 'd.bin']
-    assert count_hits.hits == 3
+    assert set(collected) == {'c.bin', 'd.bin'}
+    assert set(collected_prefixed) == {'test/c.bin', 'test/d.bin'}
+    assert count_hits.hits == 6
 
     await asyncio.sleep(0.005)
     await patch_module.collect()
     await asyncio.sleep(0.001)
-    assert count_hits.hits == 3
+    assert count_hits.hits == 6
 
     await daemon.shutdown()
