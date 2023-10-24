@@ -11,6 +11,7 @@ import os
 import pytest
 import tempfile
 import time
+import typing
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
@@ -899,5 +900,36 @@ async def test_telemetry_ids(dbus_daemon, mock_config, open_shim):
 
     assert sls.util.telemetry_unit_id() is not None
     assert await props['UnitId'] == sls.util.telemetry_unit_id()
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_config, patch_module):
+    patch_module.valid_extensions = {'.bin'}
+    os.mkdir(f'{sls.pending}/test')
+
+    daemon, bus = await dbus_daemon
+    manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
+    props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
+
+    try:
+        await props['LastCollected']
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    with open(f'{sls.pending}/test/a.bin', 'w'):
+        pass
+
+    await asyncio.sleep(0.001)
+    try:
+        await props['LastCollected']
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    await sls.runner.collect()
+    assert time.time() - typing.cast(int, await props['LastCollected']) <= 1
 
     await daemon.shutdown()

@@ -89,6 +89,13 @@ class HelperInterface(dbus.service.ServiceInterface):
             self.daemon.NewLogs([f'{self.helper.name}/{log}' for log in logs])
         return logs
 
+    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
+    def LastCollected(self) -> 'x':  # type: ignore[name-defined] # NOQA: F821
+        timestamp = self.helper.config.get('newest')
+        if timestamp is None:
+            raise dbus.errors.DBusError(dbus.constants.ErrorType.INVALID_ARGS, 'No collected logs')
+        return int(float(timestamp))
+
 
 class Helper:
     defaults: ClassVar[Optional[dict[str, JSONEncodable]]] = None

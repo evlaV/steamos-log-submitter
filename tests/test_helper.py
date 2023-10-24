@@ -4,10 +4,12 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import dbus_next as dbus
 import importlib
 import os
 import pytest
 import time
+import typing
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
@@ -156,5 +158,36 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
     await patch_module.collect()
     await asyncio.sleep(0.001)
     assert count_hits.hits == 6
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_config, patch_module):
+    patch_module.valid_extensions = {'.bin'}
+    os.mkdir(f'{sls.pending}/test')
+
+    daemon, bus = await dbus_daemon
+    helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    props = helper.properties(f'{sls.constants.DBUS_NAME}.Helper')
+
+    try:
+        await props['LastCollected']
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    with open(f'{sls.pending}/test/a.bin', 'w'):
+        pass
+
+    await asyncio.sleep(0.001)
+    try:
+        await props['LastCollected']
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    await patch_module.collect()
+    assert time.time() - typing.cast(int, await props['LastCollected']) <= 1
 
     await daemon.shutdown()

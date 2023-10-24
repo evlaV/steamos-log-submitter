@@ -373,6 +373,25 @@ class DaemonInterface(dbus.service.ServiceInterface):
     def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return logs
 
+    @dbus.service.dbus_property(access=dbus.constants.PropertyAccess.READ)
+    def LastCollected(self) -> 'x':  # type: ignore[name-defined] # NOQA: F821
+        newest: Optional[float] = None
+        for helper in sls.helpers.list_helpers():
+            helper_module = sls.helpers.create_helper(helper)
+            if not helper_module:
+                continue
+            if 'newest' not in helper_module.config:
+                continue
+            try:
+                timestamp = round(float(helper_module.config['newest']), 3)
+            except ValueError:
+                continue
+            if newest is None or timestamp > newest:
+                newest = timestamp
+        if newest is None:
+            raise dbus.errors.DBusError(dbus.constants.ErrorType.INVALID_ARGS, 'No collected logs')
+        return int(newest)
+
     @dbus.service.method()
     @exc_awrap
     async def Log(self, timestamp: 'd', module: 's', level: 'u', message: 's'):  # type: ignore[name-defined,no-untyped-def] # NOQA: F821
