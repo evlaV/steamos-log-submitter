@@ -47,6 +47,8 @@ which has the following methods, properties, and signals:
   collecting and submitting logs. Useful for when a game is running and
   background activity should be minimized, without having to worry about the
   current value of `Enabled`.
+- `LastCollected` (`x`): A UNIX timestamp marking when the last log was
+  collected. If no logs have been collected yet, this value is 0.
 - `LogLevel` (`u`): How verbose SLS's internal logging should be. Possible
   levels are taken from the Python `logging` module, and correspond to the
   values of the constants, from least verbose to most, `CRITICAL`, `ERROR`,
@@ -100,6 +102,8 @@ which has the following methods, properties, and signals:
 - `Enabled` (`b`): Whether or not collection and submission are enabled at the
   helper level. If disabled, neither the collection nor submission phases will
   run for this helper.
+- `LastCollected` (`x`): A UNIX timestamp marking when the last log was
+  collected. If no logs have been collected yet, this value is 0.
 - `SubmitEnabled` (`b`): Whether or not the submission phase is enabled. If
   this is disabled, logs that are pending submission will not be submitted and
   will be retained locally instead. Note that pending logs will expire (by
