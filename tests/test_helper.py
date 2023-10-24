@@ -4,7 +4,6 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next as dbus
 import importlib
 import os
 import pytest
@@ -171,21 +170,13 @@ async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_conf
     helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     props = helper.properties(f'{sls.constants.DBUS_NAME}.Helper')
 
-    try:
-        await props['LastCollected']
-        assert False
-    except dbus.errors.DBusError:
-        pass
+    assert not await props['LastCollected']
 
     with open(f'{sls.pending}/test/a.bin', 'w'):
         pass
 
     await asyncio.sleep(0.001)
-    try:
-        await props['LastCollected']
-        assert False
-    except dbus.errors.DBusError:
-        pass
+    assert not await props['LastCollected']
 
     await patch_module.collect()
     assert time.time() - typing.cast(int, await props['LastCollected']) <= 1

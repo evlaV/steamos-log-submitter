@@ -93,7 +93,7 @@ class HelperInterface(dbus.service.ServiceInterface):
     def LastCollected(self) -> 'x':  # type: ignore[name-defined] # NOQA: F821
         timestamp = self.helper.config.get('newest')
         if timestamp is None:
-            raise dbus.errors.DBusError(dbus.constants.ErrorType.INVALID_ARGS, 'No collected logs')
+            return 0
         return int(float(timestamp))
 
 

@@ -913,21 +913,13 @@ async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_conf
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
-    try:
-        await props['LastCollected']
-        assert False
-    except dbus.errors.DBusError:
-        pass
+    assert not await props['LastCollected']
 
     with open(f'{sls.pending}/test/a.bin', 'w'):
         pass
 
     await asyncio.sleep(0.001)
-    try:
-        await props['LastCollected']
-        assert False
-    except dbus.errors.DBusError:
-        pass
+    assert not await props['LastCollected']
 
     await sls.runner.collect()
     assert time.time() - typing.cast(int, await props['LastCollected']) <= 1

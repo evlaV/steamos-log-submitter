@@ -389,7 +389,7 @@ class DaemonInterface(dbus.service.ServiceInterface):
             if newest is None or timestamp > newest:
                 newest = timestamp
         if newest is None:
-            raise dbus.errors.DBusError(dbus.constants.ErrorType.INVALID_ARGS, 'No collected logs')
+            return 0
         return int(newest)
 
     @dbus.service.method()
