@@ -162,6 +162,7 @@ class Helper:
         if newest_updated:
             sls.config.write_config()
             if cls.iface:
+                assert newest is not None
                 cls.iface.emit_properties_changed({'LastCollected': int(newest)})
         return newer
 
