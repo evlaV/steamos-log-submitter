@@ -136,6 +136,7 @@ class Helper:
         last_collected: Optional[float] = None
         newest: Optional[float] = None
         newer: list[str] = []
+        newest_updated = False
         try:
             if 'newest' in cls.config:
                 last_collected = round(float(cls.config['newest']), 3)
@@ -155,9 +156,13 @@ class Helper:
                 newest = mtime
         if newest is not None and (last_collected is None or newest > last_collected):
             cls.config['newest'] = newest
-            sls.config.write_config()
+            newest_updated = True
         if newer and cls.iface:
             cls.iface.NewLogs(newer)
+        if newest_updated:
+            sls.config.write_config()
+            if cls.iface:
+                cls.iface.emit_properties_changed({'LastCollected': int(newest)})
         return newer
 
     @classmethod
