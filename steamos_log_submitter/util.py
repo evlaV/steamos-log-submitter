@@ -19,10 +19,14 @@ from typing import Optional, Type, Union
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    'camel_case',
     'check_network',
     'drop_root',
     'get_appid',
     'get_build_id',
+    'get_steamos_branch',
+    'snake_case',
+    'telemetry_unit_id',
 ]
 
 

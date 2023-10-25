@@ -23,6 +23,10 @@ import steamos_log_submitter.runner
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
 from steamos_log_submitter.types import DBusEncodable
 
+__all__ = [
+    'Daemon',
+]
+
 __loader__: importlib.machinery.SourceFileLoader
 config = sls.config.get_config(__loader__.name)
 logger = logging.getLogger(__loader__.name)

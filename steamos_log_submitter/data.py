@@ -10,6 +10,11 @@ import steamos_log_submitter as sls
 from typing import Optional
 from steamos_log_submitter.types import JSONEncodable
 
+__all__ = [
+    'get_data',
+    'write_all',
+]
+
 datastore: dict[str, 'DataStore'] = {}
 data_root: str
 

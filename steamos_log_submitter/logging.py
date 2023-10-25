@@ -12,6 +12,7 @@ from typing import ClassVar, Optional, Union
 
 __all__ = [
     'reconfigure_logging',
+    'valid_level',
 ]
 
 config = sls.config.get_config(__name__)
