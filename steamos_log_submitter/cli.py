@@ -114,11 +114,25 @@ async def do_trigger(client: sls.client.Client, args: argparse.Namespace) -> Non
     await client.trigger(args.wait)
 
 
+async def do_version(args: argparse.Namespace) -> None:
+    print(f'Client {sls.__version__}')
+    async with ClientWrapper() as client:
+        try:
+            if client:
+                version = await client.version()
+                print(f'Daemon {version}')
+                return
+        except Exception:
+            pass
+        print('Could not query daemon')
+
+
 def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     parser = argparse.ArgumentParser(
         prog='steamos-log-submitter',
         description='SteamOS log collection and submission tool')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug logging')
+    parser.add_argument('-V', '--version', action='version', version=f'SteamOS Log Submitter {sls.__version__}')
     subparsers = parser.add_subparsers(required=True, metavar='command')
 
     status = subparsers.add_parser('status',
@@ -181,6 +195,11 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                            help='''Which new log level to set. The possible levels are DEBUG, INFO,
                                    WARNING, ERROR, and CRITICAL, in order from least to most severe.''')
     log_level.set_defaults(func=do_log_level)
+
+    version = subparsers.add_parser('version', description='''Print the version numbers of
+                                                              the client and daemon.''',
+                                    help='Print the version of the client and daemon')
+    version.set_defaults(func=do_version)
 
     parsed_args = parser.parse_args(args)
 

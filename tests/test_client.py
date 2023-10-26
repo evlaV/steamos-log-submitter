@@ -295,3 +295,10 @@ async def test_log_invalid_level(dbus_client, mock_config):
         assert e.data == {'level': 123}
 
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_version(dbus_client, mock_config):
+    daemon, client = await dbus_client
+
+    assert await client.version() == sls.__version__

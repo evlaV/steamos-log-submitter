@@ -164,3 +164,7 @@ class Client:
     async def log(self, module: str, level: int, message: str, timestamp: Optional[float] = None) -> None:
         assert self._iface
         await self._iface.log(timestamp or time.time(), module, level, message)
+
+    @command
+    async def version(self) -> str:
+        return typing.cast(str, await self._properties['Version'])

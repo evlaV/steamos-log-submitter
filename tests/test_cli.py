@@ -350,3 +350,13 @@ async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
     assert count_hits.hits == 2
 
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_version(capsys, cli_wrapper, mock_config):
+    daemon, client = await cli_wrapper
+
+    await cli.amain(['version'])
+
+    assert capsys.readouterr().out.strip() == f'Client {sls.__version__}\nDaemon {sls.__version__}'
+    await daemon.shutdown()
