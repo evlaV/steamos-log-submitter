@@ -2,12 +2,10 @@
 	"frames": [
 		{ "function": "asm_exc_page_fault", "instruction_addr": "0x26", "addr_mode": "rel" },
 		{ "function": "exc_page_fault", "instruction_addr": "0x75", "addr_mode": "rel" },
-		{ "function": "sysfs_add_bin_file_mode_ns", "instruction_addr": "0x3e", "addr_mode": "rel" },
 		{ "function": "page_fault_oops", "instruction_addr": "0x178", "addr_mode": "rel" },
 		{ "function": "oops_end", "instruction_addr": "0xa9", "addr_mode": "rel" },
 		{ "function": "panic", "instruction_addr": "0x338", "addr_mode": "rel" },
 		{ "function": "nmi_trigger_cpumask_backtrace", "instruction_addr": "0x114", "addr_mode": "rel" },
-		{ "function": "__pfx_nmi_raise_cpu_backtrace", "instruction_addr": "0x10", "addr_mode": "rel" },
 		{ "function": "nmi_cpu_backtrace", "instruction_addr": "0xd6", "addr_mode": "rel" },
 		{ "function": "dump_stack_lvl", "instruction_addr": "0x48", "addr_mode": "rel" }
 	]
@@ -15,15 +13,10 @@
 {
 	"frames": [
 		{ "function": "entry_SYSCALL_64_after_hwframe", "instruction_addr": "0x72", "addr_mode": "rel" },
-		{ "function": "do_syscall_64", "instruction_addr": "0x6d", "addr_mode": "rel" },
 		{ "function": "do_syscall_64", "instruction_addr": "0x5d", "addr_mode": "rel" },
 		{ "function": "__do_sys_finit_module", "instruction_addr": "0xb4", "addr_mode": "rel" },
 		{ "function": "do_init_module", "instruction_addr": "0x4c", "addr_mode": "rel" },
-		{ "function": "kmalloc_trace", "instruction_addr": "0x29", "addr_mode": "rel" },
 		{ "function": "do_one_initcall", "instruction_addr": "0x45", "addr_mode": "rel" },
-		{ "function": "__pfx_init_module", "instruction_addr": "0x10", "addr_mode": "rel", "package": "lp" },
-		{ "function": "do_init_module", "instruction_addr": "0x23", "addr_mode": "rel" },
-		{ "function": "__pfx_init_module", "instruction_addr": "0x10", "addr_mode": "rel", "package": "lp" },
 		{ "function": "lp_init_module", "instruction_addr": "0x28", "addr_mode": "rel", "package": "lp" }
 	],
 	"registers": {
