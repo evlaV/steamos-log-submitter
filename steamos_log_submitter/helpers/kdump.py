@@ -64,6 +64,10 @@ class KdumpHelper(Helper):
         registers: Optional[dict[str, str]] = None
 
         def append(frames: Optional[list[dict[str, str]]], regsiters: Optional[dict[str, str]]) -> None:
+            if frames and frames[0]['function'] == 'dump_stack_lvl':
+                frames.pop(0)
+            if frames and frames[0]['function'] == 'panic':
+                frames.pop(0)
             if not frames:
                 return
             frames.reverse()
@@ -138,7 +142,6 @@ class KdumpHelper(Helper):
                         if zname.startswith('version'):
                             event.tags['kernel'] = data.decode().strip()
                         zf.seek(0)
-                        print(zname)
                         if zname.startswith('build'):
                             with io.TextIOWrapper(zf) as build:
                                 event.build_id = sls.util.get_build_id(build)
