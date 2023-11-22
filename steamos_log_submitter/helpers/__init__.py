@@ -78,8 +78,16 @@ class HelperInterface(dbus.service.ServiceInterface):
         return await self.helper.collect()
 
     @dbus.service.method()
+    def ListFailed(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return list(self.helper.list_failed())
+
+    @dbus.service.method()
     def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return list(self.helper.list_pending())
+
+    @dbus.service.method()
+    def ListUploaded(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return list(self.helper.list_uploaded())
 
     @dbus.service.signal()
     def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
@@ -217,9 +225,21 @@ class Helper:
         return True
 
     @classmethod
+    def list_failed(cls) -> Iterable[str]:
+        return cls.list_type(sls.failed)
+
+    @classmethod
     def list_pending(cls) -> Iterable[str]:
+        return cls.list_type(sls.pending)
+
+    @classmethod
+    def list_uploaded(cls) -> Iterable[str]:
+        return cls.list_type(sls.uploaded)
+
+    @classmethod
+    def list_type(cls, base: str) -> Iterable[str]:
         try:
-            return (log for log in os.listdir(f'{sls.pending}/{cls.name}') if cls.filter_log(log) and os.access(f'{sls.pending}/{cls.name}/{log}', os.R_OK))
+            return (log for log in os.listdir(f'{base}/{cls.name}') if cls.filter_log(log) and os.access(f'{base}/{cls.name}/{log}', os.R_OK))
         except OSError as e:
             cls.logger.error(f'Encountered error listing logs for {cls.name}', exc_info=e)
             return ()

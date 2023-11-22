@@ -363,15 +363,28 @@ class DaemonInterface(dbus.service.ServiceInterface):
     def UnitId(self) -> 's':  # type: ignore[name-defined] # NOQA: F821
         return sls.util.telemetry_unit_id() or ''
 
-    @dbus.service.method()
-    @exc_wrap
-    def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
-        pending: list[str] = []
+    def list_type(self, base: str) -> list[str]:
+        logs: list[str] = []
         for helper in sls.helpers.list_helpers():
             helper_module = sls.helpers.create_helper(helper)
             if helper_module:
-                pending.extend(f'{helper}/{log}' for log in helper_module.list_pending())
-        return pending
+                logs.extend(f'{helper}/{log}' for log in helper_module.list_type(base))
+        return logs
+
+    @dbus.service.method()
+    @exc_wrap
+    def ListFailed(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return self.list_type(sls.failed)
+
+    @dbus.service.method()
+    @exc_wrap
+    def ListPending(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return self.list_type(sls.pending)
+
+    @dbus.service.method()
+    @exc_wrap
+    def ListUploaded(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
+        return self.list_type(sls.uploaded)
 
     @dbus.service.signal()
     def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722

@@ -254,6 +254,68 @@ async def test_list_pending(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
+async def test_list_uploaded(dbus_client, helper_directory, patch_module):
+    setup_categories(['test', 'test2', 'test3'])
+    setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
+    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult())
+    daemon, client = await dbus_client
+
+    assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
+    assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.list_pending(['test2'])) == {'test2/c'}
+    assert set(await client.list_pending(['test3'])) == set()
+    assert set(await client.list_pending(['test', 'test2'])) == {'test/a', 'test/b', 'test2/c'}
+
+    await client.enable()
+    await client.trigger(True)
+
+    assert not await client.list_pending()
+    assert not await client.list_pending(['test'])
+    assert not await client.list_pending(['test2'])
+    assert not await client.list_pending(['test3'])
+    assert not await client.list_pending(['test', 'test2'])
+
+    assert set(await client.list_uploaded()) == {'test/a', 'test/b', 'test2/c'}
+    assert set(await client.list_uploaded(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.list_uploaded(['test2'])) == {'test2/c'}
+    assert set(await client.list_uploaded(['test3'])) == set()
+    assert set(await client.list_uploaded(['test', 'test2'])) == {'test/a', 'test/b', 'test2/c'}
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_list_failed(dbus_client, helper_directory, patch_module):
+    setup_categories(['test', 'test2', 'test3'])
+    setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
+    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult(sls.helpers.HelperResult.PERMANENT_ERROR))
+    daemon, client = await dbus_client
+
+    assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
+    assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.list_pending(['test2'])) == {'test2/c'}
+    assert set(await client.list_pending(['test3'])) == set()
+    assert set(await client.list_pending(['test', 'test2'])) == {'test/a', 'test/b', 'test2/c'}
+
+    await client.enable()
+    await client.trigger(True)
+
+    assert not await client.list_pending()
+    assert not await client.list_pending(['test'])
+    assert not await client.list_pending(['test2'])
+    assert not await client.list_pending(['test3'])
+    assert not await client.list_pending(['test', 'test2'])
+
+    assert set(await client.list_failed()) == {'test/a', 'test/b', 'test2/c'}
+    assert set(await client.list_failed(['test'])) == {'test/a', 'test/b'}
+    assert set(await client.list_failed(['test2'])) == {'test2/c'}
+    assert set(await client.list_failed(['test3'])) == set()
+    assert set(await client.list_failed(['test', 'test2'])) == {'test/a', 'test/b', 'test2/c'}
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_collect(dbus_client, helper_directory, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})

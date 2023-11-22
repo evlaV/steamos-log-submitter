@@ -114,17 +114,28 @@ class Client:
             }
         return status
 
-    @command
-    async def list_pending(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
+    async def list_type(self, type: str, helpers: Optional[list[str]] = None) -> Sequence[str]:
         if helpers is not None:
             logs: list[str] = []
             async for helper, dbus_object in self._helper_objects(helpers):
                 iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
-                logs.extend(f'{helper}/{log}' for log in typing.cast(Iterable[str], await iface.list_pending()))
+                logs.extend(f'{helper}/{log}' for log in typing.cast(Iterable[str], await getattr(iface, f'list_{type}')()))
             return sorted(logs)
         else:
             assert self._iface
-            return sorted(typing.cast(Iterable[str], await self._iface.list_pending()))
+            return sorted(typing.cast(Iterable[str], await getattr(self._iface, f'list_{type}')()))
+
+    @command
+    async def list_failed(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
+        return await self.list_type('failed', helpers)
+
+    @command
+    async def list_pending(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
+        return await self.list_type('pending', helpers)
+
+    @command
+    async def list_uploaded(self, helpers: Optional[list[str]] = None) -> Sequence[str]:
+        return await self.list_type('uploaded', helpers)
 
     @command
     async def log_level(self) -> int:

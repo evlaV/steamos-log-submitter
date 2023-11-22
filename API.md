@@ -20,9 +20,15 @@ which has the following methods, properties, and signals:
 
 ### Methods
 
+- `ListFailed`: Takes no argument, returns `as` value. Get a list of log files
+  that encountered permanent errors attempting to submit and haven't been
+  pruned yet. The format is `[helper]/[logfile]`.
 - `ListPending`: Takes no argument, returns `as` value. Get a list of currently
   pending log files that have yet to be submitted. The format is
   `[helper]/[logfile]`.
+- `ListUploaded`: Takes no argument, returns `as` value. Get a list of log
+  files that have already been submitted and haven't been pruned yet. The
+  format is `[helper]/[logfile]`.
 - `Log`: Takes `dsus` arguments (`timestamp`, `module`, `level`, `message`),
   has no return value. Logs a message in the daemon's log. Used for forwarding
   log records from an out-of-process hook, and should not be used otherwise.
@@ -89,9 +95,15 @@ which has the following methods, properties, and signals:
 - `Collect`: Takes no arguments, returns `b` value. Run the submission phase
   for this helper. Returns `true` if one or more new logs are ready for
   submission.
+- `ListFailed`: Takes no argument, returns `as` value. Get a list of log files
+  that encountered permanent errors attempting to submit and haven't been
+  pruned yet. The format is just the filename, as the helper name is implicit.
 - `ListPending`: Takes no argument, returns `as` value. Get a list of currently
   pending log files that have yet to be submitted. The format is just the
   filename, as the helper name is implicit.
+- `ListUploaded`: Takes no argument, returns `as` value. Get a list of log
+  files that have already been submitted and haven't been pruned yet. The
+  format is just the filename, as the helper name is implicit.
 
 ### Properties
 
