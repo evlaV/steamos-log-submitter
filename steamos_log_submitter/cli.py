@@ -85,16 +85,16 @@ async def do_list(client: sls.client.Client, args: argparse.Namespace) -> None:
 
 
 @command
-async def do_pending(client: sls.client.Client, args: argparse.Namespace) -> None:
+async def do_list_logs(client: sls.client.Client, type: str, args: argparse.Namespace) -> None:
     logs: Sequence[str] = []
     if args.helper:
         valid_helpers, invalid_helpers = await client.validate_helpers(args.helper)
         if valid_helpers:
-            logs = await client.list_pending(valid_helpers)
+            logs = await client.list_type(type, valid_helpers)
         if invalid_helpers:
             print('Invalid helpers:', ', '.join(invalid_helpers), file=sys.stderr)
     else:
-        logs = await client.list_pending()
+        logs = await client.list_type(type)
     if logs:
         print(*logs, sep='\n')
 
@@ -165,7 +165,23 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                                     help='List log files pending submission')
     pending.add_argument('helper', nargs='*', help='''Which helpers to show the pending logs for.
                                                       If not specified, all pending logs are shown.''')
-    pending.set_defaults(func=do_pending)
+    pending.set_defaults(func=lambda args: do_list_logs('pending', args))
+
+    uploaded = subparsers.add_parser('uploaded',
+                                     description='''Output a list of log files that have been
+                                                    uploaded and are still present locally.''',
+                                     help='List already-uploaded log files')
+    uploaded.add_argument('helper', nargs='*', help='''Which helpers to show the uploaded logs for.
+                                                       If not specified, all uploaded logs are shown.''')
+    uploaded.set_defaults(func=lambda args: do_list_logs('uploaded', args))
+
+    failed = subparsers.add_parser('failed',
+                                   description='''Output a list of log files that failed
+                                                  to be submitted.''',
+                                   help='List log files that failed to upload')
+    failed.add_argument('helper', nargs='*', help='''Which helpers to show the failed logs for.
+                                                     If not specified, all failed logs are shown.''')
+    failed.set_defaults(func=lambda args: do_list_logs('failed', args))
 
     list_cmd = subparsers.add_parser('list',
                                      description='''List all available helper modules. Each helper

@@ -114,6 +114,7 @@ class Client:
             }
         return status
 
+    @command
     async def list_type(self, type: str, helpers: Optional[list[str]] = None) -> Sequence[str]:
         if helpers is not None:
             logs: list[str] = []

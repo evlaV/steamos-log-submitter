@@ -270,6 +270,78 @@ async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_list_uploaded(capsys, cli_wrapper, helper_directory, mock_config):
+    setup_categories(['test', 'test2', 'test3'])
+    for fname in ('test/a', 'test/b', 'test2/c'):
+        with open(f'{sls.uploaded}/{fname}', 'w'):
+            pass
+    daemon, client = await cli_wrapper
+
+    await cli.amain(['uploaded'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['uploaded', 'test'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b']
+
+    await cli.amain(['uploaded', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test2/c']
+
+    await cli.amain(['uploaded', 'test3'])
+    assert capsys.readouterr().out.strip() == ''
+
+    await cli.amain(['uploaded', 'test', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['uploaded', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip() == ''
+    assert 'test4' in outerr.err.strip()
+
+    await cli.amain(['uploaded', 'test', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip().split('\n') == ['test/a', 'test/b']
+    assert 'test4' in outerr.err.strip()
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_list_failed(capsys, cli_wrapper, helper_directory, mock_config):
+    setup_categories(['test', 'test2', 'test3'])
+    for fname in ('test/a', 'test/b', 'test2/c'):
+        with open(f'{sls.failed}/{fname}', 'w'):
+            pass
+    daemon, client = await cli_wrapper
+
+    await cli.amain(['failed'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['failed', 'test'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b']
+
+    await cli.amain(['failed', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test2/c']
+
+    await cli.amain(['failed', 'test3'])
+    assert capsys.readouterr().out.strip() == ''
+
+    await cli.amain(['failed', 'test', 'test2'])
+    assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
+
+    await cli.amain(['failed', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip() == ''
+    assert 'test4' in outerr.err.strip()
+
+    await cli.amain(['failed', 'test', 'test4'])
+    outerr = capsys.readouterr()
+    assert outerr.out.strip().split('\n') == ['test/a', 'test/b']
+    assert 'test4' in outerr.err.strip()
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
     count_hits.ret = [], []
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
