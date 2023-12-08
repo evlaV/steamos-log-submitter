@@ -75,7 +75,7 @@ class KdumpHelper(Helper):
         frames: Optional[list[dict[str, str]]] = None
         registers: Optional[dict[str, str]] = None
 
-        def append(frames: Optional[list[dict[str, str]]], regsiters: Optional[dict[str, str]]) -> None:
+        def append(frames: list[dict[str, str]], regsiters: Optional[dict[str, str]]) -> None:
             frames.reverse()
             if registers:
                 traces.append({
