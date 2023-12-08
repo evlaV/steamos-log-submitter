@@ -1,0 +1,122 @@
+<1>[  197.546866] BUG: unable to handle page fault for address: 00000000000329a0
+<1>[  197.546872] #PF: supervisor write access in kernel mode
+<1>[  197.546876] #PF: error_code(0x0002) - not-present page
+<6>[  197.546879] PGD 0 P4D 0 
+<4>[  197.546883] Oops: 0002 [#1] PREEMPT SMP NOPTI
+<4>[  197.546888] CPU: 3 PID: 2561 Comm: flibitTest Not tainted 6.1.52-valve9-1-neptune-61-00002-g985d0b7eb257 #36 fac4f22e47ed1eee57fa8b3c91193b17cf403288
+<4>[  197.546895] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0119 10/24/2023
+<4>[  197.546898] RIP: 0010:queued_spin_lock_slowpath+0x24f/0x2b0
+<4>[  197.546910] Code: 90 48 8b 55 00 48 85 d2 74 f5 eb d5 c1 ea 12 83 e0 03 83 ea 01 48 c1 e0 04 48 63 d2 48 05 80 29 03 00 48 03 04 d5 60 88 7b 9a <48> 89 28 8b 45 08 85 c0 75 09 f3 90 8b 45 08 85 c0 74 f7 48 8b 55
+<4>[  197.546914] RSP: 0018:ffffbd6348347ba0 EFLAGS: 00010206
+<4>[  197.546919] RAX: 00000000000329a0 RBX: ffff97922f5a7010 RCX: ffff979233bda080
+<4>[  197.546922] RDX: 0000000000000bd5 RSI: 000000002f5a7008 RDI: ffff97922f5a7010
+<4>[  197.546925] RBP: ffff97946ecf2980 R08: 0000000000000000 R09: ffffbd6348347ae0
+<4>[  197.546927] R10: 0000000000000003 R11: ffff97947ef7ffe8 R12: 0000000000100000
+<4>[  197.546930] R13: 0000000000000001 R14: 0000000000100000 R15: ffff97923979ba00
+<4>[  197.546933] FS:  00007fc0bdab1440(0000) GS:ffff97946ecc0000(0000) knlGS:0000000000000000
+<4>[  197.546937] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[  197.546940] CR2: 00000000000329a0 CR3: 0000000228706000 CR4: 0000000000350ee0
+<4>[  197.546943] Call Trace:
+<4>[  197.546947]  <TASK>
+<4>[  197.546953]  ? __die_body.cold+0x1a/0x1f
+<4>[  197.546963]  ? page_fault_oops+0x15a/0x2d0
+<4>[  197.546973]  ? exc_page_fault+0x6d/0x150
+<4>[  197.546981]  ? asm_exc_page_fault+0x26/0x30
+<4>[  197.546990]  ? queued_spin_lock_slowpath+0x24f/0x2b0
+<4>[  197.546998]  __mutex_lock.constprop.0+0xe3/0x690
+<4>[  197.547013]  uinput_request_submit+0xe3/0x230 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+<4>[  197.547030]  uinput_dev_upload_effect.cold+0x1d/0x22 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+<4>[  197.547041]  input_ff_upload+0x1c1/0x2d0
+<4>[  197.547048]  evdev_do_ioctl+0x8c4/0xbc0
+<4>[  197.547052]  ? evdev_do_ioctl+0x2f4/0xbc0
+<4>[  197.547059]  evdev_ioctl+0x67/0x90
+<4>[  197.547064]  __x64_sys_ioctl+0x94/0xd0
+<4>[  197.547071]  do_syscall_64+0x60/0x90
+<4>[  197.547076]  ? do_syscall_64+0x6c/0x90
+<4>[  197.547080]  ? evdev_ioctl+0x72/0x90
+<4>[  197.547085]  ? __x64_sys_ioctl+0xac/0xd0
+<4>[  197.547090]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.547095]  ? do_syscall_64+0x6c/0x90
+<4>[  197.547099]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.547104]  ? do_syscall_64+0x6c/0x90
+<4>[  197.547108]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.547113]  ? do_syscall_64+0x6c/0x90
+<4>[  197.547116]  ? do_syscall_64+0x6c/0x90
+<4>[  197.547120]  entry_SYSCALL_64_after_hwframe+0x64/0xce
+<4>[  197.547124] RIP: 0033:0x7fc0bdf9c76f
+<4>[  197.547164] Code: 00 48 89 44 24 18 31 c0 48 8d 44 24 60 c7 04 24 10 00 00 00 48 89 44 24 08 48 8d 44 24 20 48 89 44 24 10 b8 10 00 00 00 0f 05 <89> c2 3d 00 f0 ff ff 77 18 48 8b 44 24 18 64 48 2b 04 25 28 00 00
+<4>[  197.547168] RSP: 002b:00007ffe1f0c4410 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+<4>[  197.547173] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007fc0bdf9c76f
+<4>[  197.547175] RDX: 00005575258767e0 RSI: 0000000040304580 RDI: 000000000000001b
+<4>[  197.547178] RBP: 0000557525880900 R08: 0000000000000073 R09: 0000000000000001
+<4>[  197.547181] R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+<4>[  197.547183] R13: 000055752588d250 R14: 00007ffe1f0c44e0 R15: 00005575258767e0
+<4>[  197.547189]  </TASK>
+<4>[  197.547191] Modules linked in: hid_microsoft ff_memless hidp uinput snd_seq_dummy snd_hrtimer snd_seq snd_seq_device nft_fib_inet nft_fib_ipv4 nft_fib_ipv6 nft_fib nft_reject_inet nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_ct nft_chain_nat ccm algif_aead cbc des_generic libdes ecb nf_tables md4 ip6table_nat ip6table_mangle ip6table_raw ip6table_security iptable_nat nf_nat nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 iptable_mangle iptable_raw iptable_security nfnetlink ip6table_filter ip6_tables iptable_filter cmac algif_hash algif_skcipher intel_rapl_msr af_alg intel_rapl_common bnep edac_mce_amd ramoops reed_solomon snd_acp5x_i2s kvm_amd snd_acp5x_pcm_dma snd_soc_acp5x_mach amdgpu snd_sof_amd_vangogh kvm snd_sof_amd_acp irqbypass snd_sof_pci rtw88_8822ce crct10dif_pclmul rtw88_8822c crc32_pclmul snd_sof_xtensa_dsp rtw88_pci polyval_clmulni polyval_generic rtw88_core gf128mul ghash_clmulni_intel sha512_ssse3 snd_sof mac80211 btusb snd_soc_cs35l41_spi amdgpu_xcp_drv snd_hda_codec_hdmi
+<4>[  197.547278]  snd_soc_cs35l41 btrtl snd_soc_wm_adsp snd_sof_utils aesni_intel joydev snd_hda_intel snd_soc_nau8821 atkbd drm_buddy btbcm libarc4 crypto_simd btintel cs_dsp gpu_sched snd_intel_dspcfg btmtk cryptd snd_soc_cs35l41_lib hid_multitouch libps2 rapl snd_intel_sdw_acpi pcspkr wdat_wdt bluetooth vivaldi_fmap mousedev snd_soc_core cfg80211 drm_ttm_helper snd_hda_codec tpm_crb ttm snd_compress ltrf216a tpm_tis snd_hda_core ac97_bus snd_pci_acp5x sp5100_tco drm_display_helper ecdh_generic snd_acp_config snd_pcm_dmaengine snd_hwdep i2c_piix4 snd_soc_acpi cec cdc_acm mmc_block rfkill ccp snd_pcm opt3001 video wmi snd_timer tpm_tis_core 8250_dw snd industrialio i2c_hid_acpi i2c_hid soundcore acpi_cpufreq hid_steam mac_hid pkcs8_key_parser crypto_user fuse loop dm_mod bpf_preload tpm ip_tables x_tables overlay ext4 crc16 mbcache jbd2 usbhid vfat fat btrfs blake2b_generic libcrc32c crc32c_generic xor raid6_pq sdhci_pci cqhci dwc3_pci serio_raw extcon_steamdeck leds_steamdeck
+<4>[  197.547386]  steamdeck_hwmon sdhci nvme xhci_pci crc32c_intel nvme_core mmc_core i8042 xhci_pci_renesas nvme_common steamdeck serio spi_amd
+<4>[  197.547405] CR2: 00000000000329a0
+<4>[  197.547409] ---[ end trace 0000000000000000 ]---
+<4>[  197.701304] RIP: 0010:queued_spin_lock_slowpath+0x24f/0x2b0
+<4>[  197.701323] Code: 90 48 8b 55 00 48 85 d2 74 f5 eb d5 c1 ea 12 83 e0 03 83 ea 01 48 c1 e0 04 48 63 d2 48 05 80 29 03 00 48 03 04 d5 60 88 7b 9a <48> 89 28 8b 45 08 85 c0 75 09 f3 90 8b 45 08 85 c0 74 f7 48 8b 55
+<4>[  197.701328] RSP: 0018:ffffbd6348347ba0 EFLAGS: 00010206
+<4>[  197.701333] RAX: 00000000000329a0 RBX: ffff97922f5a7010 RCX: ffff979233bda080
+<4>[  197.701336] RDX: 0000000000000bd5 RSI: 000000002f5a7008 RDI: ffff97922f5a7010
+<4>[  197.701339] RBP: ffff97946ecf2980 R08: 0000000000000000 R09: ffffbd6348347ae0
+<4>[  197.701342] R10: 0000000000000003 R11: ffff97947ef7ffe8 R12: 0000000000100000
+<4>[  197.701345] R13: 0000000000000001 R14: 0000000000100000 R15: ffff97923979ba00
+<4>[  197.701348] FS:  00007fc0bdab1440(0000) GS:ffff97946ecc0000(0000) knlGS:0000000000000000
+<4>[  197.701351] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[  197.701354] CR2: 00000000000329a0 CR3: 0000000228706000 CR4: 0000000000350ee0
+<0>[  197.701358] Kernel panic - not syncing: Fatal exception
+<4>[  197.701362] NMI backtrace for cpu 3
+<4>[  197.701365] CPU: 3 PID: 2561 Comm: flibitTest Tainted: G      D            6.1.52-valve9-1-neptune-61-00002-g985d0b7eb257 #36 fac4f22e47ed1eee57fa8b3c91193b17cf403288
+<4>[  197.701370] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0119 10/24/2023
+<4>[  197.701374] Call Trace:
+<4>[  197.701379]  <TASK>
+<4>[  197.701385]  dump_stack_lvl+0x37/0x4a
+<4>[  197.701392]  nmi_cpu_backtrace.cold+0x18/0x60
+<4>[  197.701396]  ? lapic_can_unplug_cpu+0x70/0x70
+<4>[  197.701404]  nmi_trigger_cpumask_backtrace+0xf2/0x110
+<4>[  197.701411]  panic+0x138/0x2b0
+<4>[  197.701420]  oops_end.cold+0x18/0x18
+<4>[  197.701425]  page_fault_oops+0x17f/0x2d0
+<4>[  197.701433]  exc_page_fault+0x6d/0x150
+<4>[  197.701439]  asm_exc_page_fault+0x26/0x30
+<4>[  197.701444] RIP: 0010:queued_spin_lock_slowpath+0x24f/0x2b0
+<4>[  197.701450] Code: 90 48 8b 55 00 48 85 d2 74 f5 eb d5 c1 ea 12 83 e0 03 83 ea 01 48 c1 e0 04 48 63 d2 48 05 80 29 03 00 48 03 04 d5 60 88 7b 9a <48> 89 28 8b 45 08 85 c0 75 09 f3 90 8b 45 08 85 c0 74 f7 48 8b 55
+<4>[  197.701453] RSP: 0018:ffffbd6348347ba0 EFLAGS: 00010206
+<4>[  197.701457] RAX: 00000000000329a0 RBX: ffff97922f5a7010 RCX: ffff979233bda080
+<4>[  197.701459] RDX: 0000000000000bd5 RSI: 000000002f5a7008 RDI: ffff97922f5a7010
+<4>[  197.701462] RBP: ffff97946ecf2980 R08: 0000000000000000 R09: ffffbd6348347ae0
+<4>[  197.701464] R10: 0000000000000003 R11: ffff97947ef7ffe8 R12: 0000000000100000
+<4>[  197.701466] R13: 0000000000000001 R14: 0000000000100000 R15: ffff97923979ba00
+<4>[  197.701475]  __mutex_lock.constprop.0+0xe3/0x690
+<4>[  197.701486]  uinput_request_submit+0xe3/0x230 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+<4>[  197.701499]  uinput_dev_upload_effect.cold+0x1d/0x22 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+<4>[  197.701509]  input_ff_upload+0x1c1/0x2d0
+<4>[  197.701516]  evdev_do_ioctl+0x8c4/0xbc0
+<4>[  197.701520]  ? evdev_do_ioctl+0x2f4/0xbc0
+<4>[  197.701527]  evdev_ioctl+0x67/0x90
+<4>[  197.701532]  __x64_sys_ioctl+0x94/0xd0
+<4>[  197.701540]  do_syscall_64+0x60/0x90
+<4>[  197.701544]  ? do_syscall_64+0x6c/0x90
+<4>[  197.701548]  ? evdev_ioctl+0x72/0x90
+<4>[  197.701553]  ? __x64_sys_ioctl+0xac/0xd0
+<4>[  197.701558]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.701563]  ? do_syscall_64+0x6c/0x90
+<4>[  197.701567]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.701572]  ? do_syscall_64+0x6c/0x90
+<4>[  197.701576]  ? syscall_exit_to_user_mode+0x26/0x40
+<4>[  197.701580]  ? do_syscall_64+0x6c/0x90
+<4>[  197.701584]  ? do_syscall_64+0x6c/0x90
+<4>[  197.701588]  entry_SYSCALL_64_after_hwframe+0x64/0xce
+<4>[  197.701592] RIP: 0033:0x7fc0bdf9c76f
+<4>[  197.701628] Code: 00 48 89 44 24 18 31 c0 48 8d 44 24 60 c7 04 24 10 00 00 00 48 89 44 24 08 48 8d 44 24 20 48 89 44 24 10 b8 10 00 00 00 0f 05 <89> c2 3d 00 f0 ff ff 77 18 48 8b 44 24 18 64 48 2b 04 25 28 00 00
+<4>[  197.701631] RSP: 002b:00007ffe1f0c4410 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+<4>[  197.701635] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007fc0bdf9c76f
+<4>[  197.701638] RDX: 00005575258767e0 RSI: 0000000040304580 RDI: 000000000000001b
+<4>[  197.701640] RBP: 0000557525880900 R08: 0000000000000073 R09: 0000000000000001
+<4>[  197.701643] R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+<4>[  197.701645] R13: 000055752588d250 R14: 00007ffe1f0c44e0 R15: 00005575258767e0
+<4>[  197.701651]  </TASK>

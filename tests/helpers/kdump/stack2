@@ -1,0 +1,78 @@
+ ? __die_body.cold+0x1a/0x1f
+ ? page_fault_oops+0x15a/0x2d0
+ ? exc_page_fault+0x6d/0x150
+ ? asm_exc_page_fault+0x26/0x30
+ ? queued_spin_lock_slowpath+0x24f/0x2b0
+ __mutex_lock.constprop.0+0xe3/0x690
+ uinput_request_submit+0xe3/0x230 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+ uinput_dev_upload_effect.cold+0x1d/0x22 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+ input_ff_upload+0x1c1/0x2d0
+ evdev_do_ioctl+0x8c4/0xbc0
+ ? evdev_do_ioctl+0x2f4/0xbc0
+ evdev_ioctl+0x67/0x90
+ __x64_sys_ioctl+0x94/0xd0
+ do_syscall_64+0x60/0x90
+ ? do_syscall_64+0x6c/0x90
+ ? evdev_ioctl+0x72/0x90
+ ? __x64_sys_ioctl+0xac/0xd0
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? do_syscall_64+0x6c/0x90
+ entry_SYSCALL_64_after_hwframe+0x64/0xce
+RIP: 0033:0x7fc0bdf9c76f
+Code: 00 48 89 44 24 18 31 c0 48 8d 44 24 60 c7 04 24 10 00 00 00 48 89 44 24 08 48 8d 44 24 20 48 89 44 24 10 b8 10 00 00 00 0f 05 <89> c2 3d 00 f0 ff ff 77 18 48 8b 44 24 18 64 48 2b 04 25 28 00 00
+RSP: 002b:00007ffe1f0c4410 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007fc0bdf9c76f
+RDX: 00005575258767e0 RSI: 0000000040304580 RDI: 000000000000001b
+RBP: 0000557525880900 R08: 0000000000000073 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+R13: 000055752588d250 R14: 00007ffe1f0c44e0 R15: 00005575258767e0
+ dump_stack_lvl+0x37/0x4a
+ nmi_cpu_backtrace.cold+0x18/0x60
+ ? lapic_can_unplug_cpu+0x70/0x70
+ nmi_trigger_cpumask_backtrace+0xf2/0x110
+ panic+0x138/0x2b0
+ oops_end.cold+0x18/0x18
+ page_fault_oops+0x17f/0x2d0
+ exc_page_fault+0x6d/0x150
+ asm_exc_page_fault+0x26/0x30
+RIP: 0010:queued_spin_lock_slowpath+0x24f/0x2b0
+Code: 90 48 8b 55 00 48 85 d2 74 f5 eb d5 c1 ea 12 83 e0 03 83 ea 01 48 c1 e0 04 48 63 d2 48 05 80 29 03 00 48 03 04 d5 60 88 7b 9a <48> 89 28 8b 45 08 85 c0 75 09 f3 90 8b 45 08 85 c0 74 f7 48 8b 55
+RSP: 0018:ffffbd6348347ba0 EFLAGS: 00010206
+RAX: 00000000000329a0 RBX: ffff97922f5a7010 RCX: ffff979233bda080
+RDX: 0000000000000bd5 RSI: 000000002f5a7008 RDI: ffff97922f5a7010
+RBP: ffff97946ecf2980 R08: 0000000000000000 R09: ffffbd6348347ae0
+R10: 0000000000000003 R11: ffff97947ef7ffe8 R12: 0000000000100000
+R13: 0000000000000001 R14: 0000000000100000 R15: ffff97923979ba00
+ __mutex_lock.constprop.0+0xe3/0x690
+ uinput_request_submit+0xe3/0x230 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+ uinput_dev_upload_effect.cold+0x1d/0x22 [uinput ce721597fa6c52f872c84a4804b5c903d0a5f5b8]
+ input_ff_upload+0x1c1/0x2d0
+ evdev_do_ioctl+0x8c4/0xbc0
+ ? evdev_do_ioctl+0x2f4/0xbc0
+ evdev_ioctl+0x67/0x90
+ __x64_sys_ioctl+0x94/0xd0
+ do_syscall_64+0x60/0x90
+ ? do_syscall_64+0x6c/0x90
+ ? evdev_ioctl+0x72/0x90
+ ? __x64_sys_ioctl+0xac/0xd0
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? syscall_exit_to_user_mode+0x26/0x40
+ ? do_syscall_64+0x6c/0x90
+ ? do_syscall_64+0x6c/0x90
+ entry_SYSCALL_64_after_hwframe+0x64/0xce
+RIP: 0033:0x7fc0bdf9c76f
+Code: 00 48 89 44 24 18 31 c0 48 8d 44 24 60 c7 04 24 10 00 00 00 48 89 44 24 08 48 8d 44 24 20 48 89 44 24 10 b8 10 00 00 00 0f 05 <89> c2 3d 00 f0 ff ff 77 18 48 8b 44 24 18 64 48 2b 04 25 28 00 00
+RSP: 002b:00007ffe1f0c4410 EFLAGS: 00000246 ORIG_RAX: 0000000000000010
+RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007fc0bdf9c76f
+RDX: 00005575258767e0 RSI: 0000000040304580 RDI: 000000000000001b
+RBP: 0000557525880900 R08: 0000000000000073 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000246 R12: 0000000000000000
+R13: 000055752588d250 R14: 00007ffe1f0c44e0 R15: 00005575258767e0

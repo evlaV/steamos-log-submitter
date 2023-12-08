@@ -26,19 +26,31 @@ class KdumpHelper(Helper):
         call_trace_list: list[str] = []
         call_trace_grab = False
 
-        # Extract only the lines between "Kernel panic -" and
+        first_lines = [
+            'Kernel panic -',
+            'BUG: unable to handle page fault for address',
+        ]
+
+        # Extract only the lines between one of the starting prompts and
         # "Kernel Offset:" / "Sending NMI" into the crash summary, and
         # the subset of those lines after " <TASK>" and until the " </TASK>"
         # into the call trace log - notice we remove the useless lines
         # like "Call Trace / <TASK>" and "Sending NMI / Kernel Offset".
         for line in dmesg:
-            if crash_summary_list or 'Kernel panic -' in line:
+            start = False
+            if not crash_summary_list:
+                for check in first_lines:
+                    if check in line:
+                        start = True
+                        break
+            if crash_summary_list or start:
                 crash_summary_list.append(line)
 
                 if call_trace_grab:
-                    call_trace_list.append(line)
                     if ' </TASK>' in line:
                         call_trace_grab = False
+                    else:
+                        call_trace_list.append(line)
                 elif ' <TASK>' in line:
                     call_trace_grab = True
 

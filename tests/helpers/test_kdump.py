@@ -36,6 +36,19 @@ def test_dmesg_parse():
     assert stack == helper.parse_traces(stack_expected)
 
 
+def test_dmesg_parse2():
+    with open(f'{file_base}/crash2') as f:
+        crash_expected = f.read()
+    with open(f'{file_base}/stack2') as f:
+        stack_expected = f.read().rstrip().split('\n')
+    with open(f'{file_base}/dmesg2') as f:
+        crash, stack = helper.get_summaries(f)
+    print(json.dumps(stack, indent=2))
+    print(json.dumps(helper.parse_traces(stack_expected), indent=2))
+    assert crash == crash_expected
+    assert stack == helper.parse_traces(stack_expected)
+
+
 @pytest.mark.asyncio
 async def test_submit_empty(monkeypatch):
     monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
