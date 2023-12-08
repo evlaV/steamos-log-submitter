@@ -55,7 +55,7 @@ class KdumpHelper(Helper):
 
     @classmethod
     def parse_traces(cls, log: list[str]) -> list[dict[str, JSONEncodable]]:
-        strip_re = re.compile(r'^(?:<\d>)?\[\d+\.\d+\] ')
+        strip_re = re.compile(r'^(?:<\d>)?\[\s*\d+\.\d+\] ')
         frame_re = re.compile(r'(?P<q>\? )?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
         rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
         registers_re = re.compile(r'([A-Z0-9]{3}): ([0-9a-f]{16})')
