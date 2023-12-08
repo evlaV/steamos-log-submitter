@@ -64,12 +64,6 @@ class KdumpHelper(Helper):
         registers: Optional[dict[str, str]] = None
 
         def append(frames: Optional[list[dict[str, str]]], regsiters: Optional[dict[str, str]]) -> None:
-            if frames and frames[0]['function'] == 'dump_stack_lvl':
-                frames.pop(0)
-            if frames and frames[0]['function'] == 'panic':
-                frames.pop(0)
-            if not frames:
-                return
             frames.reverse()
             if registers:
                 traces.append({
@@ -85,12 +79,16 @@ class KdumpHelper(Helper):
             line = strip_re.sub('', line.strip())
             frame = frame_re.search(line)
             if line.startswith('RIP: '):
-                append(frames, registers)
+                if frames:
+                    append(frames, registers)
                 frames = None
                 registers = None
 
             if frame:
                 if frame.group('q'):
+                    continue
+                if frame.group('symbol') in ('dump_stack_lvl', 'panic', 'asm_exc_page_fault'):
+                    frames = []
                     continue
                 frame_info = {
                     'function': frame.group('symbol'),
