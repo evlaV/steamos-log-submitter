@@ -23,7 +23,7 @@ class MinidumpHelper(Helper):
             # Invalid appid
             pass
 
-        for attr in ('executable', 'comm', 'path'):
+        for attr in ('executable', 'comm', 'path', 'build_id'):
             try:
                 event.tags[attr] = os.getxattr(fname, f'user.{attr}').decode(errors='replace')
             except OSError:

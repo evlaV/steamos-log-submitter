@@ -137,6 +137,22 @@ def test_broken_xattr(monkeypatch, count_hits) -> None:
     assert count_hits.hits == 1
 
 
+def test_buildid(monkeypatch) -> None:
+    def setxattr(filename: str, name: str, value: bytes) -> None:
+        if name == 'user.build_id':
+            assert value == b'119204b9ea6bcb6be2919ff01d9fe44902088c4c'
+
+    monkeypatch.setattr(hook, 'tee', lambda *_: None)
+    monkeypatch.setattr(os, 'rename', lambda *_: None)
+    monkeypatch.setattr(os, 'setxattr', setxattr)
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'Popen', lambda *args, **kwargs: Popen(stdin=io.BytesIO(), returncode=0))
+    monkeypatch.setattr(sys, 'argv', ['python', '', '', '', '', '', '1', '', '', '',
+                                      os.path.dirname(os.path.abspath(__file__)) + '/elf'])
+
+    assert hook.run()
+
+
 def test_no_collect(monkeypatch) -> None:
     attempt = 0
 
