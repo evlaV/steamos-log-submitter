@@ -105,6 +105,14 @@ def run() -> bool:
                         break
             except OSError as e:
                 logger.warning('Failed to get buildid', exc_info=e)
+            try:
+                package = subprocess.run(['/usr/bin/pacman', '-Qo', path], capture_output=True, errors='replace')
+                if package.returncode == 0:
+                    package_name, package_ver = package.stdout.strip().split(' ')[-2:]
+                    os.setxattr(tmpfile, 'user.pkgname', package_name.encode())
+                    os.setxattr(tmpfile, 'user.pkgver', package_ver.encode())
+            except (OSError, subprocess.SubprocessError) as e:
+                logger.warning('Failed to get package', exc_info=e)
         except OSError as e:
             logger.warning('Failed to set xattrs', exc_info=e)
 

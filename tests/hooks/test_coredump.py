@@ -90,11 +90,14 @@ def test_basic(monkeypatch) -> None:
     def fake_subprocess(*args, **kwargs) -> Popen:
         nonlocal attempt
         ret = Popen(stdin=io.BytesIO(), returncode=0)
-        assert attempt < 2
+        assert attempt < 3
         if attempt == 0:
             assert args[0] == ['/usr/lib/systemd/systemd-coredump', 'P', 'u', 'g', 's', '1', 'c', 'h']
         elif attempt == 1:
             assert args[0] == ['/usr/lib/breakpad/core_handler', 'P', tmpfile]
+        elif attempt == 2:
+            assert args[0] == ['/usr/bin/pacman', '-Qo', 'E']
+            ret.returncode = 1
         attempt += 1
         return ret
 
@@ -114,6 +117,7 @@ def test_basic(monkeypatch) -> None:
     monkeypatch.setattr(os, 'setxattr', setxattr)
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(subprocess, 'Popen', fake_subprocess)
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
     monkeypatch.setattr(sys, 'argv', ['python', 'P', 'e', 'u', 'g', 's', '1', 'c', 'h', 'f', 'E'])
 
     assert hook.run()
@@ -147,10 +151,42 @@ def test_buildid(monkeypatch) -> None:
     monkeypatch.setattr(os, 'setxattr', setxattr)
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(subprocess, 'Popen', lambda *args, **kwargs: Popen(stdin=io.BytesIO(), returncode=0))
+    monkeypatch.setattr(subprocess, 'run', lambda *args, **kwargs: Popen(stdin=io.BytesIO(), returncode=1))
     monkeypatch.setattr(sys, 'argv', ['python', '', '', '', '', '', '1', '', '', '',
                                       os.path.dirname(os.path.abspath(__file__)) + '/elf'])
 
     assert hook.run()
+
+
+def test_package(monkeypatch, count_hits) -> None:
+    tmpfile = f'{sls.pending}/minidump/.staging-1-e-P-None.dmp'
+
+    def fake_subprocess(*args, **kwargs) -> subprocess.CompletedProcess:
+        assert args[0] == ['/usr/bin/pacman', '-Qo', 'E']
+        count_hits()
+        return subprocess.CompletedProcess(args=args[0], stdout='E is owned by steam 0.6.9\n', returncode=0)
+
+    def setxattr(filename: str, name: str, value: bytes) -> None:
+        assert filename == tmpfile
+        if name == 'user.pkgname':
+            assert value == b'steam'
+        elif name == 'user.pkgver':
+            assert value == b'0.6.9'
+        else:
+            return
+        count_hits()
+
+    monkeypatch.setattr(hook, 'tee', lambda *_: None)
+    monkeypatch.setattr(os, 'rename', lambda *_: None)
+    monkeypatch.setattr(os, 'setxattr', setxattr)
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'Popen', lambda *args, **kwargs: Popen(stdin=io.BytesIO(), returncode=0))
+    monkeypatch.setattr(subprocess, 'run', fake_subprocess)
+    monkeypatch.setattr(sys, 'argv', ['python', 'P', 'e', 'u', 'g', 's', '1', 'c', 'h', 'f', 'E'])
+
+    assert hook.run()
+
+    assert count_hits.hits == 3
 
 
 def test_no_collect(monkeypatch) -> None:
