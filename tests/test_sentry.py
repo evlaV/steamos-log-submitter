@@ -77,6 +77,18 @@ async def test_fingerprint(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_extra(mock_config, monkeypatch, open_shim):
+    async def fake_response(self, url, json, **kwargs):
+        assert json.get('extra') == {'sls.version': sls.__version__}
+        return httpx.Response(200)
+
+    open_shim.enoent()
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    assert await event.send()
+
+
+@pytest.mark.asyncio
 async def test_message(monkeypatch):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('message') == 'Rise and shine, Mr. Freeman'

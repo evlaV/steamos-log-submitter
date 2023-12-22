@@ -37,6 +37,7 @@ class SentryEvent:
         self.exceptions: list[dict[str, JSONEncodable]] = []
         self.tags: dict[str, JSONEncodable] = {}
         self.fingerprint: Iterable[str] = ()
+        self.extra: dict[str, JSONEncodable] = {}
         self.timestamp: Optional[float] = None
         self.environment: Optional[str] = sls.util.get_steamos_branch()
         self.message: Optional[str] = None
@@ -83,6 +84,8 @@ class SentryEvent:
 
         tags = dict(self.tags)
         fingerprint = list(self.fingerprint)
+        extra = dict(self.extra)
+        extra['sls.version'] = sls.__version__
         if self.appid is not None:
             if f'appid:{self.appid}' not in fingerprint:
                 fingerprint.append(f'appid:{self.appid}')
@@ -96,6 +99,8 @@ class SentryEvent:
             self._event['tags'] = tags
         if fingerprint:
             self._event['fingerprint'] = fingerprint
+        if extra:
+            self._event['extra'] = extra
 
         if self.exceptions:
             self._event['exception'] = {'values': list(self.exceptions)}
