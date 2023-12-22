@@ -172,13 +172,27 @@ class JournalHelper(Helper):
             return HelperResult(HelperResult.TRANSIENT_ERROR)
 
         tags: dict[str, JSONEncodable] = {}
+        extra: dict[str, JSONEncodable] = {}
         fingerprint = []
 
         unit = cls.unescape(name)
         tags['unit'] = unit
         fingerprint.append(f'unit:{unit}')
 
-        tags['kernel'] = os.uname().release
+        extra['kernel'] = os.uname().release
+
+        log = []
+        message = [unit]
+
+        try:
+            with open(fname) as f:
+                log = json.load(f)
+        except (OSError, json.decoder.JSONDecodeError) as e:
+            cls.logger.warning('Failed to parse saved journal JSON', exc_info=e)
+
+        for entry in log:
+            if 'MESSAGE' in entry:
+                message.append(entry['MESSAGE'])
 
         event = SentryEvent(cls.config['dsn'])
         event.add_attachment({
@@ -188,5 +202,5 @@ class JournalHelper(Helper):
         })
         event.tags = tags
         event.fingerprint = fingerprint
-        event.message = unit
+        event.message = '\n'.join(message)
         return HelperResult.check(await event.send())

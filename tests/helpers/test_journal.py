@@ -260,9 +260,9 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
         assert len(self.attachments) == 1
         assert self.attachments[0]['mime-type'] == 'application/json'
         assert self.attachments[0]['filename'] == 'abc_5fdef.json'
-        assert self.attachments[0]['data'] == b'{}'
+        assert self.attachments[0]['data'] == b'[{"MESSAGE":"Whoa"}]'
         assert self.tags['unit'] == 'abc_def'
-        assert self.message == 'abc_def'
+        assert self.message == 'abc_def\nWhoa'
         assert 'unit:abc_def' in self.fingerprint
         return True
 
@@ -271,7 +271,7 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
     mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
 
     with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
-        f.write('{}')
+        f.write('[{"MESSAGE":"Whoa"}]')
     assert (await helper.submit(f'{helper_directory}/abc_5fdef.json')).code == HelperResult.OK
 
 
