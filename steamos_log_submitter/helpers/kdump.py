@@ -8,6 +8,7 @@ import io
 import os
 import re
 import time
+import typing
 import zipfile
 from typing import Optional, TextIO
 from . import Helper, HelperResult
@@ -19,12 +20,15 @@ from steamos_log_submitter.types import JSONEncodable
 
 class KdumpHelper(Helper):
     valid_extensions = frozenset({'.zip'})
+    strip_re = re.compile(r'^(?:<\d>)?\[\s*\d+\.\d+\] ')
 
     @classmethod
-    def get_summaries(cls, dmesg: TextIO) -> tuple[str, list[dict[str, JSONEncodable]]]:
+    def get_summaries(cls, dmesg: TextIO) -> tuple[str, list[dict[str, JSONEncodable]], dict[str, JSONEncodable]]:
         crash_summary_list: list[str] = []
         call_trace_list: list[str] = []
+        metadata: dict[str, JSONEncodable] = {}
         call_trace_grab = False
+        getting_modules = False
 
         first_lines = [
             'Kernel panic -',
@@ -57,17 +61,28 @@ class KdumpHelper(Helper):
                 if 'Kernel Offset:' in line or 'Sending NMI' in line:
                     crash_summary_list.pop()
                     break
+            if 'Modules linked in: ' in line:
+                getting_modules = True
+                line = line.split('Modules linked in:', 1)[1]
+                metadata['kernel.modules'] = []
+            if getting_modules:
+                line = cls.strip_re.sub('', line.strip())
+                if line.startswith('---') or line.startswith('Unloaded tainted modules:') or line.startswith('CR2:'):
+                    getting_modules = False
+                    continue
+                typing.cast(list, metadata['kernel.modules']).extend(line.strip().split(' '))
 
         crash_summary = ''.join(crash_summary_list)
 
         call_trace: list[dict[str, JSONEncodable]] = []
         if call_trace_list:
             call_trace = cls.parse_traces(call_trace_list[0:-1])
-        return crash_summary, call_trace
+        if 'kernel.modules' in metadata:
+            typing.cast(list, metadata['kernel.modules']).sort()
+        return crash_summary, call_trace, metadata
 
     @classmethod
     def parse_traces(cls, log: list[str]) -> list[dict[str, JSONEncodable]]:
-        strip_re = re.compile(r'^(?:<\d>)?\[\s*\d+\.\d+\] ')
         frame_re = re.compile(r'(?P<q>\? )?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
         rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
         registers_re = re.compile(r'([A-Z0-9]{3}): ([0-9a-f]{16})')
@@ -88,7 +103,7 @@ class KdumpHelper(Helper):
                 })
 
         for line in log:
-            line = strip_re.sub('', line.strip())
+            line = cls.strip_re.sub('', line.strip())
             frame = frame_re.search(line)
             if line.startswith('RIP: '):
                 if frames:
@@ -157,7 +172,7 @@ class KdumpHelper(Helper):
                                 event.build_id = sls.util.get_build_id(build)
                         if zname.startswith('dmesg'):
                             with io.TextIOWrapper(zf) as dmesg:
-                                event.message, stack = cls.get_summaries(dmesg)
+                                event.message, stack, event.extra = cls.get_summaries(dmesg)
             with open(fname, 'rb') as f:
                 attachment = f.read()
         except zipfile.BadZipFile:
