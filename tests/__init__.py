@@ -97,6 +97,10 @@ def patch_module(mock_config, monkeypatch):
         def _setup(cls):
             cls.iface = sls.helpers.HelperInterface(cls)
 
+        @classmethod
+        async def submit(cls, fname: str) -> sls.helpers.HelperResult:
+            raise NotImplementedError
+
     TestHelper.name = 'test'
     TestHelper.config = sls.config.get_config('steamos_log_submitter.helpers.test')
 

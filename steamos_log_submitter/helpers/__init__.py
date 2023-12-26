@@ -3,6 +3,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import abc
 import dbus_next as dbus
 import importlib
 import logging
@@ -105,7 +106,7 @@ class HelperInterface(dbus.service.ServiceInterface):
         return int(float(timestamp))
 
 
-class Helper:
+class Helper(abc.ABC):
     defaults: ClassVar[Optional[dict[str, JSONEncodable]]] = None
     valid_extensions: ClassVar[Container[str]] = frozenset()
 
@@ -175,6 +176,7 @@ class Helper:
         return newer
 
     @classmethod
+    @abc.abstractmethod
     async def submit(cls, fname: str) -> HelperResult:
         raise NotImplementedError
 
