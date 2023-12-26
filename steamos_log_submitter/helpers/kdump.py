@@ -14,7 +14,7 @@ from typing import Optional, TextIO
 from . import Helper, HelperResult
 
 import steamos_log_submitter as sls
-from steamos_log_submitter.sentry import SentryEvent
+from steamos_log_submitter.aggregators.sentry import SentryEvent
 from steamos_log_submitter.types import JSONEncodable
 
 

@@ -9,8 +9,8 @@ import os
 from typing import Optional
 
 import steamos_log_submitter as sls
+from steamos_log_submitter.aggregators.sentry import SentryEvent
 from steamos_log_submitter.dbus import DBusObject
-from steamos_log_submitter.sentry import SentryEvent
 from steamos_log_submitter.types import JSONEncodable
 
 from . import Helper, HelperResult

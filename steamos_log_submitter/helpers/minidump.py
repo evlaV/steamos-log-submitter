@@ -4,7 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import os
-from steamos_log_submitter.sentry import MinidumpEvent
+from steamos_log_submitter.aggregators.sentry import MinidumpEvent
 from . import Helper, HelperResult
 
 

@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import os
-from steamos_log_submitter.sentry import SentryEvent
+from steamos_log_submitter.aggregators.sentry import SentryEvent
 from . import Helper, HelperResult
 
 

@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import pytest
 import steamos_log_submitter as sls
-import steamos_log_submitter.sentry as sentry
+import steamos_log_submitter.aggregators.sentry as sentry
 from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.gpu import GPUHelper as helper
 from .. import custom_dsn, unreachable

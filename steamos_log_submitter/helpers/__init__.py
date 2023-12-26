@@ -19,7 +19,6 @@ from typing import Any, ClassVar, Optional, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
-import steamos_log_submitter.sentry
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.daemon import DaemonInterface

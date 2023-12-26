@@ -8,7 +8,7 @@ import httpx
 import pytest
 import json
 import steamos_log_submitter as sls
-import steamos_log_submitter.sentry as sentry
+import steamos_log_submitter.aggregators.sentry as sentry
 from . import mock_config, open_shim  # NOQA: F401
 
 

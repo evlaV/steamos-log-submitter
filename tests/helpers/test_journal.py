@@ -9,7 +9,7 @@ import json
 import os
 import pytest
 import steamos_log_submitter as sls
-import steamos_log_submitter.sentry as sentry
+import steamos_log_submitter.aggregators.sentry as sentry
 from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.journal import JournalHelper as helper
 from .. import always_raise, awaitable, unreachable, Process

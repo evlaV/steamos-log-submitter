@@ -14,12 +14,13 @@ import uuid
 from typing import IO, Optional
 
 import steamos_log_submitter as sls
+import steamos_log_submitter.aggregators as aggregators
 from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
 
 
-class SentryEvent:
+class SentryEvent(aggregators.AggregatorEvent):
     def __init__(self, dsn: str):
         self._raw_envelope: Optional[io.BytesIO] = None
         self._envelope: Optional[gzip.GzipFile] = None
