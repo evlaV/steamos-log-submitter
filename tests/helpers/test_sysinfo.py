@@ -548,6 +548,58 @@ async def test_collect_system_no_swap(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_collect_system_board(monkeypatch, open_shim):
+    def fake_dmi(fname):
+        if fname.endswith('/sys_vendor'):
+            return 'Valve\n'
+        if fname.endswith('/bios_version'):
+            return 'F7A0100\n'
+        if fname.endswith('/product_name'):
+            return 'Jupiter\n'
+        assert False
+
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
+    monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
+    open_shim.cb(fake_dmi)
+
+    assert dict(await SystemType.list()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+        'vram': '1024 MB',
+        'mem': '14400000 kB',
+        'bios': 'F7A0100',
+        'product': 'Jupiter',
+    }
+
+
+@pytest.mark.asyncio
+async def test_collect_system_board_3rd_party(monkeypatch, open_shim):
+    def fake_dmi(fname):
+        if fname.endswith('/sys_vendor'):
+            return 'Gasket\n'
+        assert False
+
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(os, 'access', lambda x, y: True)
+    monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
+    monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
+    open_shim.cb(fake_dmi)
+
+    assert dict(await SystemType.list()) == {
+        'branch': 'main',
+        'release': '20230704',
+        'devmode': True,
+        'vram': '1024 MB',
+        'mem': '14400000 kB',
+    }
+
+
+@pytest.mark.asyncio
 async def test_collect_batteries_none(monkeypatch, mock_dbus):
     bus = 'org.freedesktop.UPower'
     mock_dbus.add_bus(bus)

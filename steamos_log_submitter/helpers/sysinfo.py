@@ -409,6 +409,17 @@ class SystemType(SysinfoType):
         if swap:
             sysinfo['swap'] = swap
 
+        sys_vendor = read_file('/sys/class/dmi/id/sys_vendor')
+        if sys_vendor == 'Valve':
+            bios_version = read_file('/sys/class/dmi/id/bios_version')
+            if bios_version:
+                assert isinstance(bios_version, str)
+                sysinfo['bios'] = bios_version
+            product_name = read_file('/sys/class/dmi/id/product_name')
+            if product_name:
+                assert isinstance(product_name, str)
+                sysinfo['product'] = product_name
+
         return sysinfo
 
 
