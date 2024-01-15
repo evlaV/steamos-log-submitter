@@ -147,7 +147,7 @@ class SysinfoHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        raise NotImplementedError
+        return HelperResult(HelperResult.PERMANENT_ERROR)
 
     @classmethod
     async def list(cls, type: str) -> Optional[JSONEncodable]:
