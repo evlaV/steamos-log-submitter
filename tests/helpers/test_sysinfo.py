@@ -7,9 +7,9 @@ import asyncio
 import collections
 import json
 import os
-import pyalsa.alsacard as alsacard  # type: ignore[import]
-import pyalsa.alsacontrol as alsacontrol  # type: ignore[import]
-import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import]
+import pyalsa.alsacard as alsacard  # type: ignore[import-untyped]
+import pyalsa.alsacontrol as alsacontrol  # type: ignore[import-untyped]
+import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import-untyped]
 import pytest
 import time
 import typing

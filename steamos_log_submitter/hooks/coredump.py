@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Iterable
-from elftools.elf.elffile import ELFFile  # type: ignore[import]
+from elftools.elf.elffile import ELFFile  # type: ignore[import-untyped]
 from typing import BinaryIO
 
 import steamos_log_submitter as sls

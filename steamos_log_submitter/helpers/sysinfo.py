@@ -9,9 +9,9 @@ import dbus_next as dbus
 import json
 import logging
 import os
-import pyalsa.alsacard as alsacard  # type: ignore[import]
-import pyalsa.alsacontrol as alsacontrol  # type: ignore[import]
-import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import]
+import pyalsa.alsacard as alsacard  # type: ignore[import-untyped]
+import pyalsa.alsacontrol as alsacontrol  # type: ignore[import-untyped]
+import pyalsa.alsahcontrol as alsahcontrol  # type: ignore[import-untyped]
 import re
 import struct
 import time
