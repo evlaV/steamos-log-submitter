@@ -33,7 +33,7 @@ mypy:
     - docker
     - linux
   script:
-    - pacman -Sy --noconfirm --needed python-pip
+    - pacman -Sy --noconfirm --needed python-pip python-pyalsa
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
     - pip install mypy .[mypy]
