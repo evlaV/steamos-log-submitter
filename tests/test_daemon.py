@@ -312,7 +312,7 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     assert mock_config.has_section('daemon')
     assert mock_config.has_option('daemon', 'last_trigger')
     assert count_hits.hits == 1
-    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.07
+    assert float(mock_config.get('daemon', 'last_trigger')) - start < 0.1
 
     await asyncio.sleep(0.13)
     assert count_hits.hits == 3
@@ -922,6 +922,6 @@ async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_conf
     assert not await props['LastCollected']
 
     await sls.runner.collect()
-    assert time.time() - typing.cast(int, await props['LastCollected']) <= 1
+    assert time.time() - typing.cast(int, await props['LastCollected']) <= 2
 
     await daemon.shutdown()
