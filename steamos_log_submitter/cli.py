@@ -146,7 +146,7 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
     trigger = subparsers.add_parser('trigger',
                                     description='Trigger an immediate log collection and submission',
                                     help='Trigger collection/submission')
-    trigger.add_argument('--wait', action='store_true', help='Wait until complete')
+    trigger.add_argument('-w', '--wait', action='store_true', help='Wait until complete')
     trigger.set_defaults(func=do_trigger)
 
     enable = subparsers.add_parser('enable',
