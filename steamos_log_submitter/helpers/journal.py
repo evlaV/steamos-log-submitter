@@ -3,7 +3,6 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import asyncio
 import dbus_next as dbus
 import json
 import os
@@ -47,36 +46,25 @@ class JournalHelper(Helper):
 
     @classmethod
     async def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict]], Optional[str]]:
-        cmd = ['journalctl', '-o', 'json', '-u', unit]
-        if cursor is not None:
-            cmd.extend(['--after-cursor', cursor])
-        try:
-            journal = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
-            assert journal.stdout
+        logs, cursor = await sls.util.read_journal(unit, cursor)
+        if not logs:
+            return None, cursor
 
-            invocations: dict[str, list] = {}
-            cursor = None
-            while True:
-                line = await journal.stdout.readline()
-                if not line:
-                    break
-                log = json.loads(line.decode())
-                invocation = log.get('INVOCATION_ID')
-                if not invocation:
-                    invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
-                logs = invocations.get(invocation, [])
-                logs.append(log)
-                invocations[invocation] = logs
-
-                cursor = log['__CURSOR']
-        except OSError as e:
-            cls.logger.error('Failed to exec journalctl', exc_info=e)
-            return None, None
+        invocations: dict[str, list] = {}
+        for log in logs:
+            invocation = log.get('INVOCATION_ID')
+            if not invocation:
+                invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
+            assert isinstance(invocation, str)
+            invocation_logs = invocations.get(invocation, [])
+            invocation_logs.append(log)
+            invocations[invocation] = invocation_logs
 
         pruned_invocations = []
-        for logs in invocations.values():
-            if 'UNIT_RESULT' in logs[-1]:
-                pruned_invocations.extend(logs)
+        print(invocations)
+        for invocation_logs in invocations.values():
+            if 'UNIT_RESULT' in invocation_logs[-1]:
+                pruned_invocations.extend(invocation_logs)
 
         return pruned_invocations, cursor
 

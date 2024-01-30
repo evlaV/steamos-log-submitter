@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import grp
 import hashlib
 import httpx
+import json
 import logging
 import io
 import os
@@ -15,6 +17,8 @@ import subprocess
 import time
 from types import TracebackType
 from typing import Optional, Type, Union
+
+from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,7 @@ __all__ = [
     'get_steamos_branch',
     'snake_case',
     'telemetry_unit_id',
+    'read_journal',
 ]
 
 
@@ -205,3 +210,27 @@ def snake_case(text: str) -> str:
                     snaked.append('_')
             snaked.append(char)
     return ''.join(snaked).lower()
+
+
+async def read_journal(unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
+    cmd = ['journalctl', '-o', 'json', '-u', unit]
+    if cursor is not None:
+        cmd.extend(['--after-cursor', cursor])
+    try:
+        journal = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        assert journal.stdout
+
+        logs: list[dict[str, JSONEncodable]] = []
+        cursor = None
+        while True:
+            line = await journal.stdout.readline()
+            if not line:
+                break
+            log = json.loads(line.decode())
+            logs.append(log)
+            cursor = log['__CURSOR']
+    except OSError as e:
+        logger.error('Failed to exec journalctl', exc_info=e)
+        return None, None
+
+    return logs, cursor

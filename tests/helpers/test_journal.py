@@ -276,8 +276,8 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+async def test_subprocess_failure(monkeypatch, mock_dbus, data_directory, helper_directory):
     os.mkdir(f'{sls.pending}/journal')
-    monkeypatch.setattr(asyncio.subprocess, 'create_subprocess_exec', always_raise(OSError))
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', always_raise(OSError))
 
     assert not await helper.collect()
