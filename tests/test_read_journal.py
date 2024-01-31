@@ -7,8 +7,8 @@ import asyncio
 import json
 import pytest
 import steamos_log_submitter as sls
-from . import always_raise
-from . import fake_async_subprocess  # NOQA: F401
+from . import always_raise, Process
+from . import count_hits, fake_async_subprocess  # NOQA: F401
 from .dbus import mock_dbus  # NOQA: F401
 
 
@@ -21,6 +21,29 @@ async def test_journal_cursor_update(fake_async_subprocess, mock_dbus):
 
     logs, cursor = await sls.util.read_journal('unit')
     assert cursor == 'foo'
+
+
+@pytest.mark.asyncio
+async def test_journal_kernel(count_hits, fake_async_subprocess, monkeypatch):
+    tested_unit = ''
+
+    async def test_args(*args, **kwargs):
+        count_hits()
+        if tested_unit == 'kernel':
+            assert list(args) == ['journalctl', '-o', 'json', '-k']
+        else:
+            assert list(args) == ['journalctl', '-o', 'json', '-u', tested_unit]
+        return Process(stdout=b'')
+
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', test_args)
+
+    tested_unit = 'kernel'
+    await sls.util.read_journal(tested_unit)
+    assert count_hits.hits == 1
+
+    tested_unit = 'steamos_log_submitter.service'
+    await sls.util.read_journal(tested_unit)
+    assert count_hits.hits == 2
 
 
 @pytest.mark.asyncio
