@@ -36,6 +36,16 @@ def get_appid(pid: int) -> Optional[int]:
 
     while pid > 1:
         try:
+            with open(f'/proc/{pid}/environ') as f:
+                env = {kv.split('=')[0]: kv.split('=', 1)[1] for kv in f.read().split('\0') if '=' in kv}
+                if env:
+                    try:
+                        return int(env['SteamGameId'])
+                    except (KeyError, ValueError):
+                        pass
+        except OSError as e:
+            logger.error(f'Failed to read /proc/{pid}/environ', exc_info=e)
+        try:
             with open(f'/proc/{pid}/stat') as f:
                 stat = f.read()
         except OSError as e:
