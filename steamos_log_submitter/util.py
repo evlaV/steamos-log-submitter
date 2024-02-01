@@ -35,9 +35,26 @@ __all__ = [
 ]
 
 
+def get_pid_stat(pid: int) -> tuple[Optional[str], Optional[int]]:
+    stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
+
+    try:
+        with open(f'/proc/{pid}/stat') as f:
+            stat = f.read()
+    except OSError as e:
+        logger.error(f'Failed to read /proc/{pid}/stat: {e}')
+        return None, None
+
+    stat_match = stat_parse.match(stat)
+    if not stat_match:
+        return None, None
+    comm = stat_match.group(1)
+    ppid = int(stat_match.group(2))
+    return comm, ppid
+
+
 def get_appid(pid: int) -> Optional[int]:
     appid = None
-    stat_parse = re.compile(r'\d+\s+\((.*)\)\s+[A-Za-z]\s+(\d+)')
 
     while pid > 1:
         try:
@@ -53,19 +70,10 @@ def get_appid(pid: int) -> Optional[int]:
             pass
         except OSError as e:
             logger.error(f'Failed to read /proc/{pid}/environ: {e}')
-        try:
-            with open(f'/proc/{pid}/stat') as f:
-                stat = f.read()
-        except OSError as e:
-            logger.error(f'Failed to read /proc/{pid}/stat: {e}')
-            return None
 
-        stat_match = stat_parse.match(stat)
-        if not stat_match:
+        comm, ppid = get_pid_stat(pid)
+        if comm is None or ppid is None:
             return None
-        comm = stat_match.group(1)
-        ppid = int(stat_match.group(2))
-
         if comm == 'reaper':
             try:
                 with open(f'/proc/{pid}/cmdline') as f:
