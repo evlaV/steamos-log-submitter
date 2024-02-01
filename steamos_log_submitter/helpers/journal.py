@@ -139,7 +139,7 @@ class JournalHelper(Helper):
             except json.decoder.JSONDecodeError as e:
                 cls.logger.warning(f'Failed decoding log pending/journal/{cls.escape(unit)}.json', exc_info=e)
             except OSError as e:
-                cls.logger.error(f'Failed loading log pending/journal/{cls.escape(unit)}.json', exc_info=e)
+                cls.logger.error(f'Failed loading log pending/journal/{cls.escape(unit)}.json: {e}')
                 continue
 
             old_journal.extend(journal)
@@ -151,13 +151,13 @@ class JournalHelper(Helper):
                 cls.data[f'{cls.escape(unit)}.cursor'] = cursor
                 updated = True
             except OSError as e:
-                cls.logger.error(f'Failed writing log pending/journal/{cls.escape(unit)}.json', exc_info=e)
+                cls.logger.error(f'Failed writing log pending/journal/{cls.escape(unit)}.json: {e}')
 
         if updated:
             try:
                 cls.data.write()
             except OSError as e:
-                cls.logger.error('Failed writing updated cursor information', exc_info=e)
+                cls.logger.error(f'Failed writing updated cursor information: {e}')
 
         return await super().collect()
 

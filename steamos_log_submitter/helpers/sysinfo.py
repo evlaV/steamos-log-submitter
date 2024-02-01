@@ -141,7 +141,7 @@ class SysinfoHelper(Helper):
             try:
                 cls.data.write()
             except OSError as e:
-                cls.logger.error('Failed writing updated timestamp information', exc_info=e)
+                cls.logger.error(f'Failed writing updated timestamp information: {e}')
 
         return await super().collect()
 
@@ -384,7 +384,7 @@ class SystemType(SysinfoType):
                     if mem and swap:
                         break
         except OSError as e:
-            cls.logger.error('Failed read meminfo', exc_info=e)
+            cls.logger.error(f'Failed read meminfo: {e}')
         return mem, swap
 
     @classmethod

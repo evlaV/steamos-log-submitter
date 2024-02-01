@@ -44,12 +44,12 @@ def get_appid(pid: int) -> Optional[int]:
                     except (KeyError, ValueError):
                         pass
         except OSError as e:
-            logger.error(f'Failed to read /proc/{pid}/environ', exc_info=e)
+            logger.error(f'Failed to read /proc/{pid}/environ: {e}')
         try:
             with open(f'/proc/{pid}/stat') as f:
                 stat = f.read()
         except OSError as e:
-            logger.error(f'Failed to read /proc/{pid}/stat', exc_info=e)
+            logger.error(f'Failed to read /proc/{pid}/stat: {e}')
             return None
 
         stat_match = stat_parse.match(stat)
@@ -63,7 +63,7 @@ def get_appid(pid: int) -> Optional[int]:
                 with open(f'/proc/{pid}/cmdline') as f:
                     cmdline = f.read()
             except OSError as e:
-                logger.error(f'Failed to read /proc/{pid}/cmdline', exc_info=e)
+                logger.error(f'Failed to read /proc/{pid}/cmdline: {e}')
                 return None
 
             cmdline_args = cmdline.split('\0')
@@ -163,16 +163,16 @@ class drop_root:
         try:
             os.setegid(self.target_gid)
             os.seteuid(self.target_uid)
-        except PermissionError as e:
-            logger.error("Couldn't drop permissions", exc_info=e)
+        except PermissionError:
+            logger.error("Couldn't drop permissions")
             raise
 
     def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> bool:
         try:
             os.seteuid(self.uid)
             os.setegid(self.gid)
-        except PermissionError as e:
-            logger.error("Couldn't undrop permissions", exc_info=e)
+        except PermissionError:
+            logger.error("Couldn't undrop permissions")
         return not exc_type
 
 

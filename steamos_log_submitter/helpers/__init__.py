@@ -243,7 +243,7 @@ class Helper(abc.ABC):
         try:
             return (log for log in os.listdir(f'{base}/{cls.name}') if cls.filter_log(log) and os.access(f'{base}/{cls.name}/{log}', os.R_OK))
         except OSError as e:
-            cls.logger.error(f'Encountered error listing logs for {cls.name}', exc_info=e)
+            cls.logger.error(f'Encountered error listing logs for {cls.name}: {e}')
             return ()
 
 
