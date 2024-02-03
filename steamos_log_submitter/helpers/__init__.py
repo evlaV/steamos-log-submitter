@@ -135,6 +135,8 @@ class Helper(abc.ABC):
         module = cls.__module__
         if module == __name__:
             return
+        cls.extra_ifaces = []
+        cls.child_services = {}
         cls.name = module.split('.', 2)[2]
         cls.config = sls.config.get_config(module)
         cls.data = sls.data.get_data(module, defaults=cls.defaults)
