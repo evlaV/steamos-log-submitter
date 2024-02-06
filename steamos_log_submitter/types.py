@@ -4,9 +4,10 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from collections.abc import Callable, Mapping, Sequence
+import dbus_next as dbus
 from typing import Optional, Protocol, TypeAlias, TypeVar, Union
 
-DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | Mapping[str, 'DBusEncodable'] | Mapping[int, 'DBusEncodable'] | tuple['DBusEncodable', ...] | bool | float | int | str
+DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | Mapping[str, 'DBusEncodable'] | Mapping[int, 'DBusEncodable'] | tuple['DBusEncodable', ...] | dbus.Variant | bool | float | int | str
 DBusCallable: TypeAlias = Union['DBusCallableAsync', 'DBusCallableSync']
 JSON: TypeAlias = list['JSON'] | dict[str, 'JSON'] | bool | float | int | str | None
 JSONEncodable: TypeAlias = Sequence['JSONEncodable'] | Mapping[str, 'JSONEncodable'] | JSON
