@@ -76,6 +76,27 @@ def test_fn_signature_type():
     ], return_annotation='ai')
 
 
+def test_to_variant():
+    assert sls.dbus.to_variant(0).signature == 'i'
+    assert sls.dbus.to_variant(1).signature == 'i'
+    assert sls.dbus.to_variant(0x8000_0000).signature == 'u'
+    assert sls.dbus.to_variant(0xFFFF_FFFF).signature == 'u'
+    assert sls.dbus.to_variant(0x1_0000_0000).signature == 't'
+    assert sls.dbus.to_variant(0xFFFF_FFFF_FFFF_FFFF).signature == 't'
+    assert sls.dbus.to_variant(0x1_0000_0000_0000_0000).signature == 'd'
+    assert sls.dbus.to_variant(-1).signature == 'i'
+    assert sls.dbus.to_variant(-0x8000_0000).signature == 'i'
+    assert sls.dbus.to_variant(-0x8000_0001).signature == 'x'
+    assert sls.dbus.to_variant(-0xFFFF_FFFF).signature == 'x'
+    assert sls.dbus.to_variant(-0x8000_0000_0000_0000).signature == 'x'
+    assert sls.dbus.to_variant(-0x8000_0000_0000_0001).signature == 'd'
+    assert sls.dbus.to_variant(1.0).signature == 'd'
+    assert sls.dbus.to_variant(False).signature == 'b'
+    assert sls.dbus.to_variant(True).signature == 'b'
+    assert sls.dbus.to_variant('a').signature == 's'
+    assert sls.dbus.to_variant(b'a').signature == 'ay'
+
+
 @pytest.mark.asyncio
 async def test_dbusify():
     @sls.dbus.dbusify

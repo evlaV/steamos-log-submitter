@@ -70,6 +70,30 @@ def fn_signature(fn: DBusCallable) -> inspect.Signature:
     return inspect.Signature(arguments_signature, return_annotation=return_signature)
 
 
+def to_variant(datum: DBusEncodable) -> dbus.Variant:
+    if isinstance(datum, bool):
+        return dbus.Variant('b', datum)
+    if isinstance(datum, int):
+        if datum >= 0x1_0000_0000_0000_0000:
+            return dbus.Variant('d', float(datum))
+        if datum >= 0x1_0000_0000:
+            return dbus.Variant('t', datum)
+        if datum >= 0x8000_0000:
+            return dbus.Variant('u', datum)
+        if datum < -0x8000_0000_0000_0000:
+            return dbus.Variant('d', float(datum))
+        if datum < -0x8000_0000:
+            return dbus.Variant('x', datum)
+        return dbus.Variant('i', datum)
+    if isinstance(datum, float):
+        return dbus.Variant('d', datum)
+    if isinstance(datum, str):
+        return dbus.Variant('s', datum)
+    if isinstance(datum, bytes):
+        return dbus.Variant('ay', datum)
+    raise NotImplementedError
+
+
 def adbusify(fn: DBusCallableAsync) -> DBusCallableAsync:
     async def wrapped(*args: DBusEncodable) -> Optional[DBusEncodable]:
         coro = typing.cast(DBusCallableAsync, fn)(*args)
