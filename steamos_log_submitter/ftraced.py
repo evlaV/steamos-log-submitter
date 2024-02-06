@@ -38,7 +38,7 @@ class FtraceDaemon:
 
     async def _send_event(self, trace: list[bytes], data: dict[str, DBusEncodable]) -> None:
         iface = await self.trace_obj.interface(f'{DBUS_NAME}.Trace')
-        await iface.log_event([e.decode(errors='replace') for e in trace], data)
+        await iface.log_event([e.decode(errors='replace') for e in trace], {k: sls.dbus.to_variant(v) for k, v in data.items()})
 
     def _pipe_event(self) -> None:
         assert self.pipe

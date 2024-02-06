@@ -62,6 +62,14 @@ def open_shim(monkeypatch):
         def eacces(cls):
             cls.do_raise(PermissionError)
 
+        @staticmethod
+        def empty():
+            def open_fake(fname: str, mode='r', *args, **kwargs):
+                if 'b' in mode:
+                    return io.BytesIO()
+                return io.StringIO()
+            monkeypatch.setattr(builtins, 'open', open_fake)
+
     return OpenShim()
 
 
