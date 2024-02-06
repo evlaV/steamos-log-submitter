@@ -35,10 +35,12 @@ class FtraceDaemon:
         if command == b'shutdown\n' and self.server:
             writer.close()
             self.server.close()
+        await self._drain_logger()
 
     async def _send_event(self, trace: list[bytes], data: dict[str, DBusEncodable]) -> None:
         iface = await self.trace_obj.interface(f'{DBUS_NAME}.Trace')
         await iface.log_event([e.decode(errors='replace') for e in trace], {k: sls.dbus.to_variant(v) for k, v in data.items()})
+        await self._drain_logger()
 
     def _pipe_event(self) -> None:
         assert self.pipe
@@ -54,6 +56,7 @@ class FtraceDaemon:
                 data['appid'] = appid
             if comm is not None:
                 data['comm'] = comm
+        logger.info(f'Forwarding event: {entry}, data: {data}')
         self._tasks.append(asyncio.create_task(self._send_event(entry, data)))
 
     async def open(self) -> None:
@@ -72,6 +75,7 @@ class FtraceDaemon:
         await self.server.start_serving()
 
         self.trace_obj = sls.dbus.DBusObject(DBUS_NAME, f'{DBUS_ROOT}/helpers/Trace')
+        await self._drain_logger()
 
     async def close(self) -> None:
         if self.pipe is not None:
@@ -102,8 +106,17 @@ class FtraceDaemon:
             await self.server.serve_forever()
         finally:
             await self.close()
+        await self._drain_logger()
+
+    @staticmethod
+    async def _drain_logger() -> None:
+        try:
+            await sls.logging.RemoteHandler.drain()
+        finally:
+            pass
 
 
 if __name__ == '__main__':
+    sls.logging.reconfigure_logging('/var/log/steamos-log-submitter/ftraced.log', remote=True)
     daemon = FtraceDaemon()
     asyncio.run(daemon.run())
