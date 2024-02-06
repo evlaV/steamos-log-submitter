@@ -37,27 +37,27 @@ class FtraceDaemon:
             self.server.close()
         await self._drain_logger()
 
-    async def _send_event(self, trace: list[bytes], data: dict[str, DBusEncodable]) -> None:
+    async def _send_event(self, trace: str, data: dict[str, DBusEncodable]) -> None:
         iface = await self.trace_obj.interface(f'{DBUS_NAME}.Trace')
-        await iface.log_event([e.decode(errors='replace') for e in trace], {k: sls.dbus.to_variant(v) for k, v in data.items()})
+        await iface.log_event(trace, {k: sls.dbus.to_variant(v) for k, v in data.items()})
         await self._drain_logger()
 
     def _pipe_event(self) -> None:
         assert self.pipe
-        entry = self.pipe.readline().split()
+        line = self.pipe.readline().rstrip(b'\n')
+        entry = line.split()
         data: dict[str, DBusEncodable] = {}
         if entry[-1].startswith(b'pid='):
             # Grab process info before it dies in the case of an OOM event
             pid = int(entry[-1].split(b'=')[1])
             appid = sls.util.get_appid(pid)
             comm, _ = sls.util.get_pid_stat(pid)
-            data['pid'] = pid
             if appid is not None:
                 data['appid'] = appid
             if comm is not None:
                 data['comm'] = comm
-        logger.info(f'Forwarding event: {entry}, data: {data}')
-        self._tasks.append(asyncio.create_task(self._send_event(entry, data)))
+        logger.info(f'Forwarding event: {line.decode(errors="replace")}; data: {data}')
+        self._tasks.append(asyncio.create_task(self._send_event(line.decode(errors='replace'), data)))
 
     async def open(self) -> None:
         os.makedirs(self.BASE, exist_ok=True)
@@ -104,6 +104,8 @@ class FtraceDaemon:
             await self.open()
             assert self.server
             await self.server.serve_forever()
+        except OSError as e:
+            logger.error('Failed to start server', exc_info=e)
         finally:
             await self.close()
         await self._drain_logger()
