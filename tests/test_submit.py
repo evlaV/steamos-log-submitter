@@ -115,7 +115,7 @@ async def test_broken_module(helper_directory, online):
 async def test_success(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-    count_hits.ret = helpers.HelperResult()
+    count_hits.ret = helpers.HelperResult.OK
 
     patch_module.submit = awaitable(count_hits)
     await submit()
@@ -130,7 +130,7 @@ async def test_success(helper_directory, online, patch_module, count_hits):
 async def test_transient_failure(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
-    count_hits.ret = helpers.HelperResult(helpers.HelperResult.TRANSIENT_ERROR)
+    count_hits.ret = helpers.HelperResult.TRANSIENT_ERROR
 
     patch_module.submit = awaitable(count_hits)
     await submit()
@@ -145,7 +145,7 @@ async def test_transient_failure(helper_directory, online, patch_module, count_h
 async def test_permanent_failure(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, collections.OrderedDict([('test/log', ''), ('test/log2', '')]))
-    count_hits.ret = helpers.HelperResult(helpers.HelperResult.PERMANENT_ERROR)
+    count_hits.ret = helpers.HelperResult.PERMANENT_ERROR
 
     patch_module.submit = awaitable(count_hits)
     await submit()
@@ -163,7 +163,7 @@ async def test_permanent_failure(helper_directory, online, patch_module, count_h
 async def test_class_failure(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, collections.OrderedDict([('test/log', ''), ('test/log2', '')]))
-    count_hits.ret = helpers.HelperResult(helpers.HelperResult.CLASS_ERROR)
+    count_hits.ret = helpers.HelperResult.CLASS_ERROR
 
     patch_module.submit = awaitable(count_hits)
     await submit()
@@ -184,8 +184,8 @@ async def test_filename(helper_directory, online, patch_module):
 
     async def fake_submit(fname):
         if fname == f'{sls.pending}/test/log':
-            return helpers.HelperResult()
-        return helpers.HelperResult(helpers.HelperResult.PERMANENT_ERROR)
+            return helpers.HelperResult.OK
+        return helpers.HelperResult.PERMANENT_ERROR
 
     patch_module.submit = fake_submit
     await submit()
@@ -205,7 +205,7 @@ def test_lock(helper_directory, online, patch_module):
 
     async def fake_submit(fname):
         time.sleep(0.1)
-        return helpers.HelperResult()
+        return helpers.HelperResult.OK
 
     patch_module.submit = fake_submit
     running = 0
@@ -256,7 +256,7 @@ async def test_list(helper_directory, online, patch_module, count_hits):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
 
-    count_hits.ret = helpers.HelperResult()
+    count_hits.ret = helpers.HelperResult.OK
 
     patch_module.submit = awaitable(count_hits)
     assert await submit() == ['test/log']

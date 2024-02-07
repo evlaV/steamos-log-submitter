@@ -347,13 +347,13 @@ def test_dmesg_parse2():
 @pytest.mark.asyncio
 async def test_submit_empty(monkeypatch):
     monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
-    assert (await helper.submit(f'{file_base}/empty.zip')).code == HelperResult.PERMANENT_ERROR
+    assert await helper.submit(f'{file_base}/empty.zip') == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
 async def test_submit_bad_zip(monkeypatch):
     monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
-    assert (await helper.submit(f'{file_base}/bad.zip')).code == HelperResult.PERMANENT_ERROR
+    assert await helper.submit(f'{file_base}/bad.zip') == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
@@ -365,7 +365,7 @@ async def test_submit_multiple_zip(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    assert (await helper.submit(f'{file_base}/dmesg-202310050102.zip')).code == HelperResult.OK
+    assert await helper.submit(f'{file_base}/dmesg-202310050102.zip') == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -375,7 +375,7 @@ async def test_submit_multiple_timestamp(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    assert (await helper.submit(f'{file_base}/dmesg-202310050102.zip')).code == HelperResult.OK
+    assert await helper.submit(f'{file_base}/dmesg-202310050102.zip') == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -386,7 +386,7 @@ async def test_submit_build_info(monkeypatch):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    assert (await helper.submit(f'{file_base}/kdumpst-202310050540.zip')).code == HelperResult.OK
+    assert await helper.submit(f'{file_base}/kdumpst-202310050540.zip') == HelperResult.OK
 
 
 @pytest.mark.asyncio

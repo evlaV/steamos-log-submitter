@@ -37,4 +37,4 @@ class MinidumpHelper(Helper):
             with open(fname, 'rb') as f:
                 return HelperResult.check(await event.send_minidump(f))
         except ValueError:
-            return HelperResult(HelperResult.PERMANENT_ERROR)
+            return HelperResult.PERMANENT_ERROR

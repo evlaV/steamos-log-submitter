@@ -64,15 +64,15 @@ async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> li
                     continue
                 logger.debug(f'Found log {helper.name}/{log}')
                 result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
-                if result.code == sls.helpers.HelperResult.OK:
+                if result == sls.helpers.HelperResult.OK:
                     logger.debug(f'Succeeded in submitting {helper.name}/{log}')
                     submitted.append(log)
                     os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
                 else:
-                    logger.warning(f'Failed to submit log {helper.name}/{log} with code {result.code}')
-                if result.code == sls.helpers.HelperResult.PERMANENT_ERROR:
+                    logger.warning(f'Failed to submit log {helper.name}/{log} with code {result}')
+                if result == sls.helpers.HelperResult.PERMANENT_ERROR:
                     os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
-                elif result.code == sls.helpers.HelperResult.CLASS_ERROR:
+                elif result == sls.helpers.HelperResult.CLASS_ERROR:
                     break
     except LockHeldError:
         # Another process is currently working on this directory

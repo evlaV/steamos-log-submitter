@@ -163,7 +163,7 @@ class JournalHelper(Helper):
             with open(fname, 'rb') as f:
                 attachment = f.read()
         except OSError:
-            return HelperResult(HelperResult.TRANSIENT_ERROR)
+            return HelperResult.TRANSIENT_ERROR
 
         tags: dict[str, JSONEncodable] = {}
         extra: dict[str, JSONEncodable] = {}

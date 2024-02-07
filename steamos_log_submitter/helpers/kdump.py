@@ -190,12 +190,12 @@ class KdumpHelper(Helper):
             with open(fname, 'rb') as f:
                 attachment = f.read()
         except zipfile.BadZipFile:
-            return HelperResult(HelperResult.PERMANENT_ERROR)
+            return HelperResult.PERMANENT_ERROR
         except OSError:
-            return HelperResult(HelperResult.TRANSIENT_ERROR)
+            return HelperResult.TRANSIENT_ERROR
 
         if event.message is None or stack is None:
-            return HelperResult(HelperResult.PERMANENT_ERROR)
+            return HelperResult.PERMANENT_ERROR
 
         t = time.strptime(name.split('-')[-1], '%Y%m%d%H%M')
         event.timestamp = calendar.timegm(t)

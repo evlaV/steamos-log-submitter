@@ -257,7 +257,7 @@ async def test_list_pending(dbus_client, helper_directory):
 async def test_list_uploaded(dbus_client, helper_directory, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
-    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult())
+    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult.OK)
     daemon, client = await dbus_client
 
     assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
@@ -288,7 +288,7 @@ async def test_list_uploaded(dbus_client, helper_directory, patch_module):
 async def test_list_failed(dbus_client, helper_directory, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
-    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult(sls.helpers.HelperResult.PERMANENT_ERROR))
+    patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult.PERMANENT_ERROR)
     daemon, client = await dbus_client
 
     assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}

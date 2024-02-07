@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import abc
 import dbus_next as dbus
+import enum
 import importlib
 import logging
 import os
@@ -14,7 +15,7 @@ import tempfile
 import typing
 from collections.abc import Container, Iterable
 from types import TracebackType
-from typing import Any, ClassVar, Final, Optional, Type
+from typing import Any, ClassVar, Optional, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -27,15 +28,11 @@ from steamos_log_submitter.types import JSONEncodable
 logger = logging.getLogger(__name__)
 
 
-class HelperResult:
-    OK: Final[int] = 0
-    TRANSIENT_ERROR: Final[int] = -1
-    PERMANENT_ERROR: Final[int] = -2
-    CLASS_ERROR: Final[int] = -3
-
-    def __init__(self, code: int = OK):
-        super(HelperResult, self).__init__()
-        self.code = code
+class HelperResult(enum.Enum):
+    OK = 0
+    TRANSIENT_ERROR = -1
+    PERMANENT_ERROR = -2
+    CLASS_ERROR = -3
 
     @staticmethod
     def check(result: bool, *, true_code: int = OK, false_code: int = TRANSIENT_ERROR) -> 'HelperResult':

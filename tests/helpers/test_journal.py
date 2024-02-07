@@ -284,7 +284,7 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
 
     with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
         f.write('[{"MESSAGE":"Whoa"}]')
-    assert (await helper.submit(f'{helper_directory}/abc_5fdef.json')).code == HelperResult.OK
+    assert await helper.submit(f'{helper_directory}/abc_5fdef.json') == HelperResult.OK
 
 
 @pytest.mark.asyncio

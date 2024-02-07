@@ -24,7 +24,7 @@ async def test_bad_file(monkeypatch, open_shim):
     monkeypatch.setattr(sentry.SentryEvent, 'send', unreachable)
     open_shim(b'!')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.PERMANENT_ERROR
+    assert await helper.submit('fake.json') == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_no_timestamp(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -59,7 +59,7 @@ async def test_bad_timestamp(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"timestamp":"fake"}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -77,7 +77,7 @@ async def test_timestamp(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"timestamp":1234.0}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -96,7 +96,7 @@ async def test_no_appid(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -115,7 +115,7 @@ async def test_bad_appid(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"appid":null}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -134,7 +134,7 @@ async def test_appid(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"appid":1234}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -154,7 +154,7 @@ async def test_exe(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"executable":"hl2.exe"}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -174,7 +174,7 @@ async def test_comm(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"comm":"hl2"}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -193,7 +193,7 @@ async def test_kernel(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"kernel":"4.20.69-valve1"}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit
 
 
@@ -212,5 +212,5 @@ async def test_mesa(monkeypatch, open_shim):
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"mesa":"23.1.3.170235.radeonsi_3.5.1-1"}')
 
-    assert (await helper.submit('fake.json')).code == HelperResult.OK
+    assert await helper.submit('fake.json') == HelperResult.OK
     assert hit

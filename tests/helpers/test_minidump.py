@@ -35,7 +35,7 @@ async def test_submit_metadata(monkeypatch, open_shim):
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
-    assert (await helper.submit('fake-0-456.dmp')).code == HelperResult.OK
+    assert await helper.submit('fake-0-456.dmp') == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -59,7 +59,7 @@ async def test_no_metadata(monkeypatch, open_shim):
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
-    assert (await helper.submit('fake.dmp')).code == HelperResult.OK
+    assert await helper.submit('fake.dmp') == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -82,7 +82,7 @@ async def test_no_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.comm', b'comm')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert (await helper.submit(mdmp.name)).code == HelperResult.OK
+    assert await helper.submit(mdmp.name) == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -104,7 +104,7 @@ async def test_partial_xattrs(monkeypatch):
     os.setxattr(mdmp.name, 'user.executable', b'exe')
     os.setxattr(mdmp.name, 'user.path', b'/fake/exe')
 
-    assert (await helper.submit(mdmp.name)).code == HelperResult.OK
+    assert await helper.submit(mdmp.name) == HelperResult.OK
 
 
 @pytest.mark.asyncio
@@ -118,7 +118,7 @@ async def test_400_corrupted(monkeypatch, open_shim):
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
-    assert (await helper.submit('fake.dmp')).code == HelperResult.PERMANENT_ERROR
+    assert await helper.submit('fake.dmp') == HelperResult.PERMANENT_ERROR
 
 
 @pytest.mark.asyncio
@@ -132,4 +132,4 @@ async def test_400_not_corrupted(monkeypatch, open_shim):
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
-    assert (await helper.submit('fake.dmp')).code == HelperResult.TRANSIENT_ERROR
+    assert await helper.submit('fake.dmp') == HelperResult.TRANSIENT_ERROR
