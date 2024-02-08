@@ -167,6 +167,18 @@ async def test_journal_error(monkeypatch, mock_dbus, mock_unit):
 
 
 @pytest.mark.asyncio
+async def test_journal_error_cursor(monkeypatch, mock_dbus, data_directory, mock_unit, helper_directory):
+    monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args: (None, None)))
+    monkeypatch.setattr(builtins, 'open', unreachable)
+
+    helper.data['unit_2eservice.cursor'] = 'foo'
+    assert not await helper.collect()
+
+    assert 'unit_2eservice.cursor' in helper.data
+    assert helper.data.get('unit_2eservice.cursor') == 'foo'
+
+
+@pytest.mark.asyncio
 async def test_journal_cursor_read(monkeypatch, mock_dbus, data_directory, mock_unit):
     configured_cursor = 'Passport'
 
