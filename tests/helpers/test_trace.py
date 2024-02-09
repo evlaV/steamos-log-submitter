@@ -5,9 +5,14 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import math
+import pytest
+
 import steamos_log_submitter as sls
+from steamos_log_submitter.helpers.trace import TraceHelper as helper
 from steamos_log_submitter.helpers.trace import \
-    TraceEvent, TraceHelper, TraceLine
+    TraceEvent, TraceLine
+
+from .. import awaitable
 
 
 def test_line():
@@ -46,37 +51,41 @@ def test_invalid_line():
         pass
 
 
-def test_oom_event(monkeypatch):
+@pytest.mark.asyncio
+async def test_oom_event(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_appid', lambda x: 12345 if x == 14351 else None)
+    monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args, **kwargs: None))
 
     line = ' GamepadUI Input-4886    [003] .N.1. 23828.572941: mark_victim: pid=14351'
-    event = TraceHelper.prepare_event(line, {})
+    event = await helper.prepare_event(line, {})
     assert event.type == TraceEvent.Type.OOM
     assert event.pid == 14351
     assert event.appid == 12345
     assert math.fabs(event.uptime - 23828.572941) < 0.000001
 
 
-def test_oom_event_invalid(monkeypatch):
+@pytest.mark.asyncio
+async def test_oom_event_invalid(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_appid', lambda x: 12345 if x == 14351 else None)
+    monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
     line = ' GamepadUI Input-4886    [003] .N.1. 23828.572941: mark_victim:'
     try:
-        TraceHelper.prepare_event(line, {})
+        await helper.prepare_event(line, {})
         assert False
     except ValueError:
         pass
 
     line = ' GamepadUI Input-4886    [003] .N.1. 23828.572941: mark_victim: pod=14351'
     try:
-        TraceHelper.prepare_event(line, {})
+        await helper.prepare_event(line, {})
         assert False
     except ValueError:
         pass
 
     line = ' GamepadUI Input-4886    [003] .N.1. 23828.572941: mark_victim: pid=I4351'
     try:
-        TraceHelper.prepare_event(line, {})
+        await helper.prepare_event(line, {})
         assert False
     except ValueError:
         pass

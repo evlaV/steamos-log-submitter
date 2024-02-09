@@ -6,7 +6,9 @@
 import dbus_next as dbus
 import enum
 import json
+import re
 import time
+from collections.abc import Iterable
 from typing import Final, Optional, Self
 
 import steamos_log_submitter as sls
@@ -27,6 +29,7 @@ class TraceEvent:
         self.pid: Optional[int] = None
         self.timestamp = 0.0
         self.uptime = 0.0
+        self.journal: Optional[list[str]] = None
 
     def to_json(self) -> str:
         data: dict[str, JSONEncodable] = {
@@ -40,10 +43,22 @@ class TraceEvent:
             data['pid'] = self.pid
         if self.appid is not None:
             data['appid'] = self.appid
+        if self.journal is not None:
+            data['journal'] = self.journal
         return json.dumps(data)
 
 
 class TraceHelper(Helper):
+    valid_extensions = frozenset({'.json'})
+
+    JOURNAL_STARTS: Final[dict[TraceEvent.Type, Iterable[re.Pattern]]] = {
+        TraceEvent.Type.OOM: [re.compile('invoked oom-killer')],
+    }
+
+    JOURNAL_ENDS: Final[dict[TraceEvent.Type, Iterable[re.Pattern]]] = {
+        TraceEvent.Type.OOM: [re.compile('Out of memory: Killed process')],
+    }
+
     @classmethod
     def _setup(cls) -> None:
         super()._setup()
@@ -54,7 +69,7 @@ class TraceHelper(Helper):
         return HelperResult.PERMANENT_ERROR
 
     @classmethod
-    def prepare_event(cls, line: str, data: dict[str, DBusEncodable]) -> TraceEvent:
+    async def prepare_event(cls, line: str, data: dict[str, DBusEncodable]) -> TraceEvent:
         trace = TraceLine(line)
 
         event = None
@@ -83,11 +98,45 @@ class TraceHelper(Helper):
         if event.appid is None and event.pid is not None:
             event.appid = sls.util.get_appid(event.pid)
 
+        event.journal = await cls.read_journal(event.type)
+
         return event
 
     @classmethod
-    async def read_journal(cls, type: TraceEvent.Type) -> Optional[list[dict[str, JSONEncodable]]]:
-        pass
+    async def read_journal(cls, type: TraceEvent.Type) -> Optional[list[str]]:
+        if type not in cls.JOURNAL_STARTS:
+            return None
+
+        cursor = cls.data.get(f'{type}.cursor')
+        if cursor is not None:
+            assert isinstance(cursor, str)
+        lines, cursor = await sls.util.read_journal('kernel', cursor, current_boot=True)
+        if lines is None:
+            return None
+
+        if cursor is not None:
+            cls.data[f'{type}.cursor'] = cursor
+
+        capture: list[str] = []
+        for line in lines:
+            message = line.get('MESSAGE')
+            if message is None:
+                continue
+            assert isinstance(message, str)
+            if capture:
+                capture.append(message)
+                searches = cls.JOURNAL_ENDS[type]
+            else:
+                searches = cls.JOURNAL_STARTS[type]
+
+            for pattern in searches:
+                if pattern.search(message):
+                    if capture:
+                        return capture
+                    capture.append(message)
+                    break
+
+        return capture
 
 
 class TraceLine:
@@ -120,5 +169,9 @@ class TraceInterface(dbus.service.ServiceInterface):
     @dbus.service.method()
     async def LogEvent(self, trace: 's', data: 'a{sv}'):  # type: ignore[valid-type,name-defined,no-untyped-def] # NOQA: F821, F722
         TraceHelper.logger.debug(f'Got trace event {trace} with additional data {data}')
-        event = TraceHelper.prepare_event(trace, data)
-        event.to_json()
+        ts = time.time_ns()
+        event = await TraceHelper.prepare_event(trace, data)
+        event.timestamp = ts / 1_000_000_000
+        log = event.to_json()
+        with open(f'{sls.pending}/{TraceHelper.name}/{ts}.json', 'w') as f:
+            f.write(log)
