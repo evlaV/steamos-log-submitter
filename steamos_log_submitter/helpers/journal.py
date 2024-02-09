@@ -45,7 +45,7 @@ class JournalHelper(Helper):
     ]
 
     @classmethod
-    async def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict]], Optional[str]]:
+    async def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
         logs, cursor = await sls.util.read_journal(unit, cursor)
         if not logs:
             return None, cursor
