@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import math
+import os
 import pytest
 
 import steamos_log_submitter as sls
@@ -13,6 +14,9 @@ from steamos_log_submitter.helpers.trace import \
     TraceEvent, TraceLine
 
 from .. import awaitable
+from .. import data_directory  # NOQA: F401
+
+file_base = f'{os.path.dirname(__file__)}/trace'
 
 
 def test_line():
@@ -110,3 +114,35 @@ def test_event_dump():
     event.timestamp = 0.0
     event.uptime = 1.0
     assert json.loads(event.to_json()) == {'type': 'oom', 'uptime': 1.0}
+
+
+@pytest.mark.asyncio
+async def test_read_journal_split_lock(monkeypatch, data_directory):
+    async def read_journal(unit, cursor, current_boot):
+        assert unit == 'kernel'
+        assert current_boot is True
+
+        f = open(f'{file_base}/split.journal')
+        return (json.loads(line) for line in f), None
+
+    monkeypatch.setattr(sls.util, 'read_journal', read_journal)
+
+    logs = await helper.read_journal(TraceEvent.Type.SPLIT_LOCK, 467819546)
+    assert logs == ['x86/split lock detection: #AC: CContentUpdateC/50909 took a split_lock trap at address: 0xe4b04c8f']
+    assert helper.data['split_lock.cursor'] == 's=4b2d7f42939e4ee1a134a9868400ec66;i=2fc1134;b=39d7eeb17922499aadf23165e93d76fc;m=1be16657;t=610f8f5441b3e;x=85b4e06b52707ed9'
+
+
+@pytest.mark.asyncio
+async def test_read_journal_timing(monkeypatch, data_directory):
+    async def read_journal(unit, cursor, current_boot):
+        assert unit == 'kernel'
+        assert current_boot is True
+
+        f = open(f'{file_base}/split.journal')
+        return (json.loads(line) for line in f), None
+
+    monkeypatch.setattr(sls.util, 'read_journal', read_journal)
+
+    logs = await helper.read_journal(TraceEvent.Type.SPLIT_LOCK, 467869090)
+    assert logs == ['x86/split lock detection: #AC: CContentUpdateC/50910 took a split_lock trap at address: 0xe4b04c8f']
+    assert helper.data['split_lock.cursor'] == 's=4b2d7f42939e4ee1a134a9868400ec66;i=2fc1135;b=39d7eeb17922499aadf23165e93d76fc;m=1be166b2;t=610f8f5441b99;x=9ede380c30ce54a6'

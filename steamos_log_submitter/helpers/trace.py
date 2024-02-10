@@ -51,8 +51,10 @@ class TraceEvent:
 class TraceHelper(Helper):
     valid_extensions = frozenset({'.json'})
 
+    TIMING_BUFFER = 100000
     JOURNAL_STARTS: Final[dict[TraceEvent.Type, Iterable[re.Pattern]]] = {
         TraceEvent.Type.OOM: [re.compile('invoked oom-killer')],
+        TraceEvent.Type.SPLIT_LOCK: [re.compile(r'x86/split lock detection: #AC: .{1,15}/\d+ .+ split_lock trap')],
     }
 
     JOURNAL_ENDS: Final[dict[TraceEvent.Type, Iterable[re.Pattern]]] = {
@@ -81,6 +83,8 @@ class TraceHelper(Helper):
 
             event = TraceEvent(TraceEvent.Type.OOM)
             event.pid = int(trace.extra_args[0].split('=', 1)[1])
+        if trace.function == 'split_lock_warn':
+            event = TraceEvent(TraceEvent.Type.SPLIT_LOCK)
 
         if event is None:
             raise ValueError
@@ -98,12 +102,12 @@ class TraceHelper(Helper):
         if event.appid is None and event.pid is not None:
             event.appid = sls.util.get_appid(event.pid)
 
-        event.journal = await cls.read_journal(event.type)
+        event.journal = await cls.read_journal(event.type, int(event.uptime * 1_000_000))
 
         return event
 
     @classmethod
-    async def read_journal(cls, type: TraceEvent.Type) -> Optional[list[str]]:
+    async def read_journal(cls, type: TraceEvent.Type, start_usec: int) -> Optional[list[str]]:
         if type not in cls.JOURNAL_STARTS:
             return None
 
@@ -114,27 +118,38 @@ class TraceHelper(Helper):
         if lines is None:
             return None
 
-        if cursor is not None:
-            cls.data[f'{type}.cursor'] = cursor
-
+        capturing = False
         capture: list[str] = []
         for line in lines:
+            timestamp = line.get('_SOURCE_MONOTONIC_TIMESTAMP', '0')
+            assert isinstance(timestamp, str)
+            if int(timestamp) < start_usec - cls.TIMING_BUFFER:
+                continue
             message = line.get('MESSAGE')
             if message is None:
                 continue
             assert isinstance(message, str)
-            if capture:
+            if not capturing:
+                for pattern in cls.JOURNAL_STARTS[type]:
+                    if pattern.search(message):
+                        capturing = True
+                        break
+            if capturing:
                 capture.append(message)
-                searches = cls.JOURNAL_ENDS[type]
-            else:
-                searches = cls.JOURNAL_STARTS[type]
-
-            for pattern in searches:
-                if pattern.search(message):
-                    if capture:
-                        return capture
-                    capture.append(message)
+                # Lack of an end expression indicates a one-line message
+                if type not in cls.JOURNAL_ENDS:
+                    capturing = False
+                else:
+                    for pattern in cls.JOURNAL_ENDS[type]:
+                        if pattern.search(message):
+                            capturing = False
+                            break
+                if not capturing:
+                    cursor = line['__CURSOR']
                     break
+
+        if cursor is not None:
+            cls.data[f'{type}.cursor'] = cursor
 
         return capture
 
