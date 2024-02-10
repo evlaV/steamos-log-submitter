@@ -130,6 +130,12 @@ class JournalHelper(Helper):
                 cls.logger.error(f'Failed reading journal for unit {unit}')
                 continue
 
+            for message in journal:
+                if '_HOSTNAME' in message:
+                    del message['_HOSTNAME']
+                if '_MACHINE_ID' in message:
+                    del message['_MACHINE_ID']
+
             old_journal = []
             try:
                 with open(f'{sls.pending}/journal/{cls.escape(unit)}.json', 'rt') as f:
