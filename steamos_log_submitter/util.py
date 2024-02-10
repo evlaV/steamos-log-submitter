@@ -15,6 +15,8 @@ import pwd
 import re
 import subprocess
 import time
+import typing
+from elftools.elf.elffile import ELFFile
 from types import TracebackType
 from typing import Optional, Type, Union
 
@@ -269,3 +271,33 @@ def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
             return data.strip()
     except FileNotFoundError:
         return None
+
+
+def get_exe_build_id(path: str) -> Optional[str]:
+    try:
+        with open(path, 'rb') as progf:
+            elf = ELFFile(progf)
+            for section in elf.iter_sections():
+                if section.name != '.note.gnu.build-id':
+                    continue
+                if type(section).__name__ != 'NoteSection':
+                    logger.warning(f'Correctly named section has wrong type {type(section).__name__}')
+                    continue
+                for note in section.iter_notes():
+                    if note.n_type == 'NT_GNU_BUILD_ID':
+                        return typing.cast(str, note.n_desc)
+                break
+    except OSError as e:
+        logger.warning('Failed to get buildid', exc_info=e)
+    return None
+
+
+def get_path_package(path: str) -> Optional[tuple[str, str]]:
+    try:
+        package = subprocess.run(['/usr/bin/pacman', '-Qo', path], capture_output=True, errors='replace')
+        if package.returncode == 0:
+            pkgname, pkgver = package.stdout.strip().split(' ')[-2:]
+            return pkgname, pkgver
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.warning('Failed to get package', exc_info=e)
+    return None

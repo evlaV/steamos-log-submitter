@@ -12,7 +12,6 @@ import subprocess
 import sys
 import time
 from collections.abc import Iterable
-from elftools.elf.elffile import ELFFile
 from typing import BinaryIO
 
 import steamos_log_submitter as sls
@@ -89,30 +88,14 @@ def run() -> bool:
 
             os.setxattr(tmpfile, 'user.path', path.encode())
 
-            try:
-                with open(path, 'rb') as progf:
-                    elf = ELFFile(progf)
-                    for section in elf.iter_sections():
-                        if section.name != '.note.gnu.build-id':
-                            continue
-                        if type(section).__name__ != 'NoteSection':
-                            logger.warning(f'Correctly named section has wrong type {type(section).__name__}')
-                            continue
-                        for note in section.iter_notes():
-                            if note.n_type == 'NT_GNU_BUILD_ID':
-                                os.setxattr(tmpfile, 'user.build_id', note.n_desc.encode())
-                                break
-                        break
-            except OSError as e:
-                logger.warning('Failed to get buildid', exc_info=e)
-            try:
-                package = subprocess.run(['/usr/bin/pacman', '-Qo', path], capture_output=True, errors='replace')
-                if package.returncode == 0:
-                    package_name, package_ver = package.stdout.strip().split(' ')[-2:]
-                    os.setxattr(tmpfile, 'user.pkgname', package_name.encode())
-                    os.setxattr(tmpfile, 'user.pkgver', package_ver.encode())
-            except (OSError, subprocess.SubprocessError) as e:
-                logger.warning('Failed to get package', exc_info=e)
+            build_id = sls.util.get_exe_build_id(path)
+            if build_id is not None:
+                os.setxattr(tmpfile, 'user.build_id', build_id.encode())
+
+            package = sls.util.get_path_package(path)
+            if package is not None:
+                os.setxattr(tmpfile, 'user.pkgname', package[0].encode())
+                os.setxattr(tmpfile, 'user.pkgver', package[1].encode())
         except OSError as e:
             logger.warning('Failed to set xattrs', exc_info=e)
 
