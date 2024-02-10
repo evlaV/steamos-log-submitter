@@ -43,6 +43,9 @@ def get_appid(pid: int) -> Optional[int]:
                         return int(env['SteamGameId'])
                     except (KeyError, ValueError):
                         pass
+        except PermissionError:
+            # Don't log a permission error; that just means we're not in a root context
+            pass
         except OSError as e:
             logger.error(f'Failed to read /proc/{pid}/environ: {e}')
         try:
