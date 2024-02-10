@@ -6,12 +6,14 @@
 import dbus_next as dbus
 import enum
 import json
+import os
 import re
 import time
 from collections.abc import Iterable
 from typing import Final, Optional, Self
 
 import steamos_log_submitter as sls
+from steamos_log_submitter.aggregators.sentry import SentryEvent
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.types import DBusEncodable, JSONEncodable
 
@@ -30,6 +32,11 @@ class TraceEvent:
         self.timestamp = 0.0
         self.uptime = 0.0
         self.journal: Optional[list[str]] = None
+        self.path: Optional[str] = None
+        self.executable: Optional[str] = None
+        self.build_id: Optional[str] = None
+        self.pkgname: Optional[str] = None
+        self.pkgver: Optional[str] = None
 
     def to_json(self) -> str:
         data: dict[str, JSONEncodable] = {
@@ -45,6 +52,14 @@ class TraceEvent:
             data['appid'] = self.appid
         if self.journal is not None:
             data['journal'] = self.journal
+        if self.path is not None:
+            data['path'] = self.path
+        if self.build_id is not None:
+            data['build_id'] = self.build_id
+        if self.pkgname is not None:
+            data['pkgname'] = self.pkgname
+        if self.pkgver is not None:
+            data['pkgver'] = self.pkgver
         return json.dumps(data)
 
 
@@ -68,7 +83,33 @@ class TraceHelper(Helper):
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
-        return HelperResult.PERMANENT_ERROR
+        basename = os.path.basename(fname)
+        event = SentryEvent(cls.config['dsn'])
+        try:
+            with open(fname, 'rb') as f:
+                log = f.read()
+        except OSError as e:
+            cls.logger.error(f'Failed to open log file {basename}: {e}')
+            return HelperResult.TRANSIENT_ERROR
+        try:
+            parsed_log = json.loads(log)
+        except json.decoder.JSONDecodeError as e:
+            cls.logger.error(f'Trace JSON {basename} failed to parse', exc_info=e)
+            return HelperResult.PERMANENT_ERROR
+
+        event.timestamp = parsed_log.get('timestamp')
+        event.appid = parsed_log.get('appid')
+        for attr in ('executable', 'comm', 'path', 'build_id', 'pkgname', 'pkgver'):
+            if attr in parsed_log:
+                event.tags[attr] = parsed_log[attr]
+
+        event.add_attachment({
+                'mime-type': 'application/json',
+                'filename': 'trace.json',
+                'data': log
+            })
+
+        return HelperResult.check(await event.send())
 
     @classmethod
     async def prepare_event(cls, line: str, data: dict[str, DBusEncodable]) -> TraceEvent:
@@ -98,6 +139,14 @@ class TraceHelper(Helper):
             if not isinstance(data['appid'], int):
                 raise ValueError
             event.appid = data['appid']
+
+        if 'path' in data:
+            event.path = str(data['path'])
+            event.executable = os.path.basename(event.path)
+            event.build_id = sls.util.get_exe_build_id(event.path)
+            package = sls.util.get_path_package(event.path)
+            if package:
+                event.pkgname, event.pkgver = package
 
         if event.appid is None and event.pid is not None:
             event.appid = sls.util.get_appid(event.pid)
