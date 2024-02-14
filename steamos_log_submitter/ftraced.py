@@ -52,10 +52,6 @@ class FtraceDaemon:
             pid = int(entry[-1].split(b'=')[1])
             appid = sls.util.get_appid(pid)
             comm, _ = sls.util.get_pid_stat(pid)
-            try:
-                data['path'] = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
-            except OSError:
-                pass
             if appid is not None:
                 data['appid'] = appid
             if comm is not None:
