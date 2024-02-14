@@ -19,14 +19,24 @@ from .. import data_directory  # NOQA: F401
 file_base = f'{os.path.dirname(__file__)}/trace'
 
 
-def test_line():
+def test_line_oom():
     line = TraceLine(' GamepadUI-Input-4886    [003] .N.1. 23828.572941: mark_victim: pid=14351')
-    assert line.task == 'GamepadUI-Input'
+    assert line.comm == 'GamepadUI-Input'
     assert line.pid == 4886
     assert line.cpu == 3
     assert math.fabs(line.timestamp - 23828.572941) < 0.000001
     assert line.function == 'mark_victim'
     assert line.extra_args == ['pid=14351']
+
+
+def test_line_split_lock():
+    line = TraceLine(' CContentUpdateC-50910   [012] ...1.   468.269056: split_lock_warn <-handle_user_split_lock')
+    assert line.comm == 'CContentUpdateC'
+    assert line.pid == 50910
+    assert line.cpu == 12
+    assert math.fabs(line.timestamp - 468.269056) < 0.000001
+    assert line.function == 'split_lock_warn'
+    assert line.extra_args == ['<-handle_user_split_lock']
 
 
 def test_invalid_line():
@@ -65,6 +75,7 @@ async def test_oom_event(monkeypatch):
     assert event.type == TraceEvent.Type.OOM
     assert event.pid == 14351
     assert event.appid == 12345
+    assert event.comm == 'GamepadUI Input'
     assert math.fabs(event.uptime - 23828.572941) < 0.000001
 
 
@@ -93,6 +104,20 @@ async def test_oom_event_invalid(monkeypatch):
         assert False
     except ValueError:
         pass
+
+
+@pytest.mark.asyncio
+async def test_split_lock_event(monkeypatch):
+    monkeypatch.setattr(sls.util, 'get_appid', lambda x: 12345 if x == 50910 else None)
+    monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args, **kwargs: None))
+
+    line = ' CContentUpdateC-50910   [012] ...1.   468.269056: split_lock_warn <-handle_user_split_lock'
+    event = await helper.prepare_event(line, {})
+    assert event.type == TraceEvent.Type.SPLIT_LOCK
+    assert event.pid == 50910
+    assert event.appid == 12345
+    assert event.comm == 'CContentUpdateC'
+    assert math.fabs(event.uptime - 468.269056) < 0.000001
 
 
 def test_event_dump():

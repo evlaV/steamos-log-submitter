@@ -34,6 +34,7 @@ class TraceEvent:
         self.journal: Optional[list[str]] = None
         self.path: Optional[str] = None
         self.executable: Optional[str] = None
+        self.comm: Optional[str] = None
         self.build_id: Optional[str] = None
         self.pkgname: Optional[str] = None
         self.pkgver: Optional[str] = None
@@ -46,20 +47,9 @@ class TraceEvent:
             data['timestamp'] = self.timestamp
         if self.uptime:
             data['uptime'] = self.uptime
-        if self.pid is not None:
-            data['pid'] = self.pid
-        if self.appid is not None:
-            data['appid'] = self.appid
-        if self.journal is not None:
-            data['journal'] = self.journal
-        if self.path is not None:
-            data['path'] = self.path
-        if self.build_id is not None:
-            data['build_id'] = self.build_id
-        if self.pkgname is not None:
-            data['pkgname'] = self.pkgname
-        if self.pkgver is not None:
-            data['pkgver'] = self.pkgver
+        for attr in ('pid', 'appid', 'journal', 'path', 'executable', 'comm', 'build_id', 'pkgname', 'pkgver'):
+            if getattr(self, attr) is not None:
+                data[attr] = getattr(self, attr)
         return json.dumps(data)
 
 
@@ -108,6 +98,12 @@ class TraceHelper(Helper):
                 'filename': 'trace.json',
                 'data': log
             })
+        if 'executable' in parsed_log:
+            event.message = f'{parsed_log["type"]}: {parsed_log.get("executable")}'
+        elif 'comm' in parsed_log:
+            event.message = f'{parsed_log["type"]}: {parsed_log.get("comm")}'
+        else:
+            event.message = parsed_log['type']
 
         return HelperResult.check(await event.send())
 
@@ -131,6 +127,7 @@ class TraceHelper(Helper):
             raise ValueError
 
         event.timestamp = time.time()
+        event.comm = trace.comm
         event.uptime = trace.timestamp
         if event.pid is None:
             event.pid = trace.pid
@@ -139,6 +136,9 @@ class TraceHelper(Helper):
             if not isinstance(data['appid'], int):
                 raise ValueError
             event.appid = data['appid']
+
+        if 'comm' in data:
+            event.comm = str(data['comm'])
 
         if 'path' in data:
             event.path = str(data['path'])
@@ -213,12 +213,12 @@ class TraceLine:
 
     def __init__(self, line: str):
         self.raw: Final[str] = line
-        task = line[:16]
+        comm = line[:16]
         columns = line[17:].split()
         if len(columns) < 5 or line[16] != '-':
             raise ValueError('Invalid trace event', line)
 
-        self.task: Final[str] = task.lstrip()
+        self.comm: Final[str] = comm.lstrip()
         self.pid: Final[int] = int(columns[self.Column.PID])
         self.cpu: Final[int] = int(columns[self.Column.CPU][1:-1])
         self.timestamp: Final[float] = float(columns[self.Column.TIMESTAMP].rstrip(':'))
@@ -234,6 +234,9 @@ class TraceInterface(dbus.service.ServiceInterface):
     async def LogEvent(self, trace: 's', data: 'a{sv}'):  # type: ignore[valid-type,name-defined,no-untyped-def] # NOQA: F821, F722
         TraceHelper.logger.debug(f'Got trace event {trace} with additional data {data}')
         ts = time.time_ns()
+        for k, v in data.items():
+            if isinstance(v, dbus.Variant):
+                data[k] = v.value
         event = await TraceHelper.prepare_event(trace, data)
         event.timestamp = ts / 1_000_000_000
         log = event.to_json()
