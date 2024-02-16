@@ -94,6 +94,9 @@ class SentryEvent:
         unit_id = sls.util.telemetry_unit_id()
         if unit_id:
             tags['unit_id'] = unit_id
+            self._event['user'] = {
+                'id': unit_id
+            }
 
         if tags:
             self._event['tags'] = tags

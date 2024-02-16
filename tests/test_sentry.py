@@ -55,6 +55,7 @@ async def test_tags(mock_config, monkeypatch, open_shim):
 async def test_id_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id()}
+        assert json.get('user') == {'id': sls.util.telemetry_unit_id()}
         return httpx.Response(200)
 
     open_shim.enoent()
