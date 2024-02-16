@@ -75,7 +75,8 @@ def run() -> bool:
     tmpfile = f'{sls.pending}/minidump/.staging-{minidump}'
     systemd = subprocess.Popen(['/usr/lib/systemd/systemd-coredump', P, u, g, s, t, c, h], stdin=subprocess.PIPE)
 
-    if should_collect(E):
+    path = E.replace('!', '/')
+    if should_collect(path):
         breakpad = subprocess.Popen(['/usr/lib/breakpad/core_handler', P, tmpfile], stdin=subprocess.PIPE)
         tee(sys.stdin.buffer, (breakpad, systemd))
 
@@ -86,7 +87,6 @@ def run() -> bool:
             os.setxattr(tmpfile, 'user.executable', f.encode())
             os.setxattr(tmpfile, 'user.comm', e.encode())
 
-            path = E.replace('!', '/')
             os.setxattr(tmpfile, 'user.path', path.encode())
 
             try:
