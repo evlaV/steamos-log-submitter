@@ -212,7 +212,9 @@ def snake_case(text: str) -> str:
     return ''.join(snaked).lower()
 
 
-async def read_journal(unit: str, cursor: Optional[str] = None, *, current_boot: bool = False) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
+async def read_journal(unit: str, cursor: Optional[str] = None, *,
+                       current_boot: bool = False,
+                       start_ago_ms: Optional[int] = None) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
     cmd = ['journalctl', '-o', 'json']
     if unit == 'kernel':
         cmd.append('-k')
@@ -222,6 +224,8 @@ async def read_journal(unit: str, cursor: Optional[str] = None, *, current_boot:
         cmd.extend(['--after-cursor', cursor])
     if current_boot:
         cmd.extend(['-b', '0'])
+    if start_ago_ms is not None:
+        cmd.extend(['-S', f'-{start_ago_ms}ms'])
     try:
         journal = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         assert journal.stdout is not None

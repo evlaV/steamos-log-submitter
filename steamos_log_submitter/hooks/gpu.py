@@ -4,6 +4,7 @@
 #
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import asyncio
 import importlib.machinery
 import json
 import logging
@@ -11,6 +12,7 @@ import os
 import shutil
 import subprocess
 import time
+import typing
 from typing import Union
 
 import steamos_log_submitter as sls
@@ -24,7 +26,7 @@ __loader__: importlib.machinery.SourceFileLoader
 logger = logging.getLogger(__loader__.name)
 
 
-def run() -> None:
+async def run() -> None:
     ts = time.time_ns()
     env: dict[str, Union[str, int]] = {}
     log: dict[str, JSONEncodable] = {
@@ -58,6 +60,15 @@ def run() -> None:
         log['mesa'] = mesa.stdout.strip().split(' ')[1]
     except (OSError, subprocess.SubprocessError):
         pass
+    journal, _ = await sls.util.read_journal('kernel', current_boot=True, start_ago_ms=15000)
+    if journal:
+        relevant: list[str] = []
+        for line in journal:
+            for context in ('amdgpu', 'drm', 'i915', 'nouveau'):
+                if context in typing.cast(str, line.get('MESSAGE', '')):
+                    relevant.append(typing.cast(str, line['MESSAGE']))
+                    break
+        log['journal'] = relevant
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
         shutil.chown(f.name, user='steamos-log-submitter')
@@ -66,7 +77,7 @@ def run() -> None:
 if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging('/var/log/steamos-log-submitter/gpu-crash.log', remote=True)
     try:
-        run()
+        asyncio.run(run())
         trigger('gpu')
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)

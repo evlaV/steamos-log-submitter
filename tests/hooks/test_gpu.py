@@ -16,7 +16,7 @@ import time
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
 
-from .. import always_raise, StringIO
+from .. import always_raise, awaitable, StringIO
 
 
 @pytest.fixture
@@ -41,7 +41,8 @@ def fake_mesa(monkeypatch):
     monkeypatch.setattr(subprocess, 'run', fn)
 
 
-def test_basic(monkeypatch, fake_mesa) -> None:
+@pytest.mark.asyncio
+async def test_basic(monkeypatch, fake_mesa) -> None:
     blob = StringIO()
 
     def staging_file(category: str, name: str, mode: str) -> io.StringIO:
@@ -57,9 +58,10 @@ def test_basic(monkeypatch, fake_mesa) -> None:
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: ([{'MESSAGE': 'amdgpu: a'}, {'MESSAGE': 'drm: b'}, {'MESSAGE': 'not'}], None)))
     monkeypatch.setattr(sls.helpers, 'StagingFile', staging_file)
 
-    hook.run()
+    await hook.run()
 
     blob.seek(0)
     value = json.load(blob)
@@ -74,17 +76,20 @@ def test_basic(monkeypatch, fake_mesa) -> None:
     assert value['mesa'] == '23.2.34-1'
     assert value['pid'] == 456
     assert value['timestamp'] == 0.123456789
+    assert value['journal'] == ['amdgpu: a', 'drm: b']
 
 
-def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
+@pytest.mark.asyncio
+async def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': 'foo'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
-    hook.run()
+    await hook.run()
 
     staging_file.seek(0)
     value = json.load(staging_file)
@@ -93,15 +98,17 @@ def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
     assert 'pid' not in value
 
 
-def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
+@pytest.mark.asyncio
+async def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: None)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
-    hook.run()
+    await hook.run()
 
     staging_file.seek(0)
     value = json.load(staging_file)
@@ -109,15 +116,17 @@ def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
     assert 'appid' not in value
 
 
-def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
+@pytest.mark.asyncio
+async def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', always_raise(FileNotFoundError))
     monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
-    hook.run()
+    await hook.run()
 
     staging_file.seek(0)
     value = json.load(staging_file)
@@ -125,7 +134,8 @@ def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
     assert 'executable' not in value
 
 
-def test_invalid_mesa(monkeypatch, staging_file) -> None:
+@pytest.mark.asyncio
+async def test_invalid_mesa(monkeypatch, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
@@ -133,8 +143,9 @@ def test_invalid_mesa(monkeypatch, staging_file) -> None:
     monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
-    hook.run()
+    await hook.run()
 
     staging_file.seek(0)
     value = json.load(staging_file)
