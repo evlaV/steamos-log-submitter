@@ -80,11 +80,17 @@ def get_appid(pid: int) -> Optional[int]:
                 if arg == 'SteamLaunch':
                     steam_launch = True
                 elif arg.startswith('AppId=') and steam_launch:
-                    appid = int(arg[6:])
+                    try:
+                        appid = int(arg[6:])
+                    except ValueError:
+                        return None
                 elif arg == '--':
                     break
 
         pid = ppid
+    if appid and appid & 0x80000000:
+        # This is a non-Steam game
+        return None
     return appid
 
 

@@ -73,6 +73,22 @@ def test_no_appid(build_proc_chain):
     assert sls.util.get_appid(2) is None
 
 
+def test_nonsteam_appid(build_proc_chain):
+    procs: ProcChain = {
+        2:  (1, ['reaper', 'SteamLaunch', 'AppId=3000000000'], {})
+    }
+    build_proc_chain(procs)
+    assert sls.util.get_appid(2) is None
+
+
+def test_invalid_appid(build_proc_chain):
+    procs: ProcChain = {
+        2:  (1, ['reaper', 'SteamLaunch', 'AppId=G'], {})
+    }
+    build_proc_chain(procs)
+    assert sls.util.get_appid(2) is None
+
+
 def test_stop_parsing(build_proc_chain):
     procs: ProcChain = {
         2:  (1, ['reaper', 'SteamLaunch', '--', 'AppId=100'], {})
@@ -115,3 +131,11 @@ def test_environ(build_proc_chain):
     }
     build_proc_chain(procs)
     assert sls.util.get_appid(2) == 36
+
+
+def test_environ_invalid_appid(build_proc_chain):
+    procs: ProcChain = {
+        2:  (1, ['hl2.exe'], {'SteamGameId': 'Man'}),
+    }
+    build_proc_chain(procs)
+    assert sls.util.get_appid(2) is None
