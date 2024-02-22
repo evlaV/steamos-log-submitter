@@ -74,7 +74,7 @@ class KdumpHelper(Helper):
                     continue
                 typing.cast(list, metadata['kernel.modules']).extend(line.strip().split(' '))
 
-        crash_summary = ''.join(crash_summary_list)
+        crash_summary = ''.join(cls.strip_re.sub('', line) for line in crash_summary_list)
 
         call_trace: list[dict[str, JSONEncodable]] = []
         if call_trace_list:

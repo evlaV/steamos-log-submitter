@@ -1,43 +1,43 @@
-<0>[87495.660594] Kernel panic - not syncing: Fatal exception
-<4>[87495.660594] NMI backtrace for cpu 1
-<4>[87495.660594] CPU: 1 PID: 813 Comm: insmod Tainted: G      D    OE      6.3.0-rc2-gpiccoli #370 554e9808f2c955558158615ac312e0649ee12f6e
-<4>[87495.660594] Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS 0.0.0 02/06/2015
-<4>[87495.660594] Call Trace:
-<4>[87495.660594]  <TASK>
-<4>[87495.660594]  dump_stack_lvl+0x48/0x60
-<4>[87495.660594]  nmi_cpu_backtrace+0xd6/0x110
-<4>[87495.660594]  ? __pfx_nmi_raise_cpu_backtrace+0x10/0x10
-<4>[87495.660594]  nmi_trigger_cpumask_backtrace+0x114/0x140
-<4>[87495.660594]  panic+0x338/0x340
-<4>[87495.660594]  oops_end+0xa9/0xf0
-<4>[87495.660594]  page_fault_oops+0x178/0x4a0
-<4>[87495.660594]  ? sysfs_add_bin_file_mode_ns+0x3e/0xd0
-<4>[87495.660594]  exc_page_fault+0x75/0x170
-<4>[87495.660594]  asm_exc_page_fault+0x26/0x30
-<4>[87495.660594] RIP: 0010:lp_init_module+0x28/0xff0 [lp]
-<4>[87495.660594] Code: 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 48 c7 c7 df 80 96 c0 55 53 48 83 ec 10 65 48 8b 04 25 28 00 00 00 48 89 44 24 08 31 c0 <8b> 34 25 00 00 00 00 e8 1c f7 c2 c7 4c 8b 05 95 b6 05 00 4d 85 c0
-<4>[87495.660594] RSP: 0018:ffffae6200b43da0 EFLAGS: 00010246
-<4>[87495.660594] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
-<4>[87495.660594] RDX: 0000000000000cc0 RSI: ffffffff88573363 RDI: ffffffffc09680df
-<4>[87495.660594] RBP: ffffffffc090f010 R08: 0000000000000010 R09: ffff987bc3717580
-<4>[87495.660594] R10: ffff987bc230b6d0 R11: 0000000000000000 R12: ffff987bc3717580
-<4>[87495.660594] R13: ffffae6200b43e60 R14: 0000000000000003 R15: 0000000000000000
-<4>[87495.660594]  ? __pfx_init_module+0x10/0x10 [lp 5f5d4349d440a929ed1f619558f0ce9d5a203d09]
-<4>[87495.660594]  ? do_init_module+0x23/0x200
-<4>[87495.660594]  ? __pfx_init_module+0x10/0x10 [lp 5f5d4349d440a929ed1f619558f0ce9d5a203d09]
-<4>[87495.660594]  do_one_initcall+0x45/0x220
-<4>[87495.660594]  ? kmalloc_trace+0x29/0x90
-<4>[87495.660594]  do_init_module+0x4c/0x200
-<4>[87495.660594]  __do_sys_finit_module+0xb4/0x130
-<4>[87495.660594]  do_syscall_64+0x5d/0x90
-<4>[87495.660594]  ? do_syscall_64+0x6d/0x90
-<4>[87495.660594]  entry_SYSCALL_64_after_hwframe+0x72/0xdc
-<4>[87495.660594] RIP: 0033:0x7f6270b197fd
-<4>[87495.660594] Code: 5d c3 66 2e 0f 1f 84 00 00 00 00 00 90 f3 0f 1e fa 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 5b 75 0d 00 f7 d8 64 89 01 48
-<4>[87495.660594] RSP: 002b:00007ffe0db4c088 EFLAGS: 00000246 ORIG_RAX: 0000000000000139
-<4>[87495.660594] RAX: ffffffffffffffda RBX: 00005576612a4790 RCX: 00007f6270b197fd
-<4>[87495.660594] RDX: 0000000000000000 RSI: 000055765f5ffcb2 RDI: 0000000000000003
-<4>[87495.660594] RBP: 000055765f5ffcb2 R08: 0000000000000000 R09: 00005576612a6ed0
-<4>[87495.660594] R10: 0000000000000003 R11: 0000000000000246 R12: 0000000000000000
-<4>[87495.660594] R13: 00005576612a4760 R14: 00007ffe0db4c2c8 R15: 00005576612a48a0
-<4>[87495.660594]  </TASK>
+Kernel panic - not syncing: Fatal exception
+NMI backtrace for cpu 1
+CPU: 1 PID: 813 Comm: insmod Tainted: G      D    OE      6.3.0-rc2-gpiccoli #370 554e9808f2c955558158615ac312e0649ee12f6e
+Hardware name: QEMU Standard PC (Q35 + ICH9, 2009), BIOS 0.0.0 02/06/2015
+Call Trace:
+ <TASK>
+ dump_stack_lvl+0x48/0x60
+ nmi_cpu_backtrace+0xd6/0x110
+ ? __pfx_nmi_raise_cpu_backtrace+0x10/0x10
+ nmi_trigger_cpumask_backtrace+0x114/0x140
+ panic+0x338/0x340
+ oops_end+0xa9/0xf0
+ page_fault_oops+0x178/0x4a0
+ ? sysfs_add_bin_file_mode_ns+0x3e/0xd0
+ exc_page_fault+0x75/0x170
+ asm_exc_page_fault+0x26/0x30
+RIP: 0010:lp_init_module+0x28/0xff0 [lp]
+Code: 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 48 c7 c7 df 80 96 c0 55 53 48 83 ec 10 65 48 8b 04 25 28 00 00 00 48 89 44 24 08 31 c0 <8b> 34 25 00 00 00 00 e8 1c f7 c2 c7 4c 8b 05 95 b6 05 00 4d 85 c0
+RSP: 0018:ffffae6200b43da0 EFLAGS: 00010246
+RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+RDX: 0000000000000cc0 RSI: ffffffff88573363 RDI: ffffffffc09680df
+RBP: ffffffffc090f010 R08: 0000000000000010 R09: ffff987bc3717580
+R10: ffff987bc230b6d0 R11: 0000000000000000 R12: ffff987bc3717580
+R13: ffffae6200b43e60 R14: 0000000000000003 R15: 0000000000000000
+ ? __pfx_init_module+0x10/0x10 [lp 5f5d4349d440a929ed1f619558f0ce9d5a203d09]
+ ? do_init_module+0x23/0x200
+ ? __pfx_init_module+0x10/0x10 [lp 5f5d4349d440a929ed1f619558f0ce9d5a203d09]
+ do_one_initcall+0x45/0x220
+ ? kmalloc_trace+0x29/0x90
+ do_init_module+0x4c/0x200
+ __do_sys_finit_module+0xb4/0x130
+ do_syscall_64+0x5d/0x90
+ ? do_syscall_64+0x6d/0x90
+ entry_SYSCALL_64_after_hwframe+0x72/0xdc
+RIP: 0033:0x7f6270b197fd
+Code: 5d c3 66 2e 0f 1f 84 00 00 00 00 00 90 f3 0f 1e fa 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 5b 75 0d 00 f7 d8 64 89 01 48
+RSP: 002b:00007ffe0db4c088 EFLAGS: 00000246 ORIG_RAX: 0000000000000139
+RAX: ffffffffffffffda RBX: 00005576612a4790 RCX: 00007f6270b197fd
+RDX: 0000000000000000 RSI: 000055765f5ffcb2 RDI: 0000000000000003
+RBP: 000055765f5ffcb2 R08: 0000000000000000 R09: 00005576612a6ed0
+R10: 0000000000000003 R11: 0000000000000246 R12: 0000000000000000
+R13: 00005576612a4760 R14: 00007ffe0db4c2c8 R15: 00005576612a48a0
+ </TASK>
