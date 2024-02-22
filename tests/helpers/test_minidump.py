@@ -22,6 +22,7 @@ async def test_submit_metadata(monkeypatch, open_shim):
         data = kwargs['data']
         assert data.get('sentry[tags][unit_id]') == 'unit'
         assert data.get('sentry[tags][appid]') == '456'
+        assert data.get('sentry[tags][product]') == 'Valve'
         assert data.get('sentry[release]') == '20220202.202'
         assert data.get('sentry[environment]') == 'rel'
         return httpx.Response(200)
@@ -29,6 +30,7 @@ async def test_submit_metadata(monkeypatch, open_shim):
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: 'unit')
     monkeypatch.setattr(util, 'get_steamos_branch', lambda: 'rel')
+    monkeypatch.setattr(util, 'read_file', lambda _: 'Valve')
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
@@ -41,6 +43,7 @@ async def test_no_metadata(monkeypatch, open_shim):
         data = kwargs['data']
         assert 'sentry[tags][unit_id]' not in data
         assert 'sentry[tags][appid]' not in data
+        assert 'sentry[tags][product]' not in data
         assert 'sentry[tags][executable]' not in data
         assert 'sentry[tags][comm]' not in data
         assert 'sentry[tags][path]' not in data
@@ -51,6 +54,7 @@ async def test_no_metadata(monkeypatch, open_shim):
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(util, 'get_steamos_branch', lambda: None)
+    monkeypatch.setattr(util, 'read_file', lambda _: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
@@ -107,6 +111,7 @@ async def test_400_corrupted(monkeypatch, open_shim):
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
+    monkeypatch.setattr(util, 'read_file', lambda _: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
@@ -120,6 +125,7 @@ async def test_400_not_corrupted(monkeypatch, open_shim):
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
+    monkeypatch.setattr(util, 'read_file', lambda _: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
     open_shim(b'MDMP')
 
