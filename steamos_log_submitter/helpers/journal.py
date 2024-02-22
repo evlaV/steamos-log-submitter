@@ -61,7 +61,6 @@ class JournalHelper(Helper):
             invocations[invocation] = invocation_logs
 
         pruned_invocations = []
-        print(invocations)
         for invocation_logs in invocations.values():
             if 'UNIT_RESULT' in invocation_logs[-1]:
                 pruned_invocations.extend(invocation_logs)

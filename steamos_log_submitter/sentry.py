@@ -99,10 +99,8 @@ class SentryEvent:
             }
 
         sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
-        print(sys_vendor)
         if sys_vendor == 'Valve':
             product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
-            print(product_name)
             if product_name:
                 assert isinstance(product_name, str)
                 tags['product'] = product_name
