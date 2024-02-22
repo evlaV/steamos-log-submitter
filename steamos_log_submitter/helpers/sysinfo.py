@@ -17,7 +17,7 @@ import struct
 import time
 import typing
 from collections.abc import Callable
-from typing import Optional, Type, Union
+from typing import Optional, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
@@ -25,17 +25,6 @@ from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.dbus import DBusObject
 from steamos_log_submitter.types import JSON, JSONEncodable
 from . import Helper, HelperResult
-
-
-def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
-    try:
-        with open(path, 'rb' if binary else 'r') as f:
-            data: bytes = f.read()
-            if binary:
-                return data
-            return data.strip()
-    except FileNotFoundError:
-        return None
 
 
 class SysinfoType:
@@ -169,8 +158,8 @@ class UsbType(SysinfoType):
             if dev.startswith('usb'):
                 # This is a hub/root
                 continue
-            vid = read_file(f'{usb}/{dev}/idVendor')
-            pid = read_file(f'{usb}/{dev}/idProduct')
+            vid = sls.util.read_file(f'{usb}/{dev}/idVendor')
+            pid = sls.util.read_file(f'{usb}/{dev}/idProduct')
             if not vid or not pid:
                 continue
             assert isinstance(vid, str)
@@ -179,12 +168,12 @@ class UsbType(SysinfoType):
                 'vid': vid,
                 'pid': pid,
             }
-            manufacturer = read_file(f'{usb}/{dev}/manufacturer')
+            manufacturer = sls.util.read_file(f'{usb}/{dev}/manufacturer')
             if manufacturer is not None:
                 assert isinstance(manufacturer, str)
                 info['manufacturer'] = manufacturer
 
-            product = read_file(f'{usb}/{dev}/product')
+            product = sls.util.read_file(f'{usb}/{dev}/product')
             if product is not None:
                 assert isinstance(product, str)
                 info['product'] = product
@@ -255,10 +244,10 @@ class MonitorsType(SysinfoType):
             if not re.match(r'card\d+-', dev):
                 continue
             info: dict[str, JSONEncodable] = {}
-            modes = read_file(f'{drm}/{dev}/modes', binary=False)
+            modes = sls.util.read_file(f'{drm}/{dev}/modes', binary=False)
             if isinstance(modes, str):
                 info['modes'] = modes.split('\n')
-            edid = read_file(f'{drm}/{dev}/edid', binary=True)
+            edid = sls.util.read_file(f'{drm}/{dev}/edid', binary=True)
             if edid:
                 assert isinstance(edid, bytes)
                 info['edid'] = edid.hex()
@@ -409,13 +398,13 @@ class SystemType(SysinfoType):
         if swap:
             sysinfo['swap'] = swap
 
-        sys_vendor = read_file('/sys/class/dmi/id/sys_vendor')
+        sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
         if sys_vendor == 'Valve':
-            bios_version = read_file('/sys/class/dmi/id/bios_version')
+            bios_version = sls.util.read_file('/sys/class/dmi/id/bios_version')
             if bios_version:
                 assert isinstance(bios_version, str)
                 sysinfo['bios'] = bios_version
-            product_name = read_file('/sys/class/dmi/id/product_name')
+            product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
             if product_name:
                 assert isinstance(product_name, str)
                 sysinfo['product'] = product_name

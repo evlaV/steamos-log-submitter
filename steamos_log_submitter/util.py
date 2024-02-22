@@ -250,3 +250,14 @@ async def read_journal(unit: str, cursor: Optional[str] = None, *,
         return None, None
 
     return logs, cursor
+
+
+def read_file(path: str, binary: bool = False) -> Union[bytes, str, None]:
+    try:
+        with open(path, 'rb' if binary else 'r') as f:
+            data: bytes = f.read()
+            if binary:
+                return data
+            return data.strip()
+    except FileNotFoundError:
+        return None

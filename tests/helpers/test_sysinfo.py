@@ -32,13 +32,13 @@ def make_usb_devs(monkeypatch, devs):
         if dev not in devs:
             return None
         return devs[dev].get(node)
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
 
 
 @pytest.mark.asyncio
 async def test_collect_usb_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', unreachable)
+    monkeypatch.setattr(sls.util, 'read_file', unreachable)
     devices = await UsbType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -47,7 +47,7 @@ async def test_collect_usb_none(monkeypatch):
 @pytest.mark.asyncio
 async def test_collect_usb_nondev(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['usb1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', unreachable)
+    monkeypatch.setattr(sls.util, 'read_file', unreachable)
     devices = await UsbType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -178,7 +178,7 @@ async def test_collect_bluetooth_adapter_partial_device(monkeypatch, mock_dbus):
 @pytest.mark.asyncio
 async def test_collect_monitors_none(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: [])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', unreachable)
+    monkeypatch.setattr(sls.util, 'read_file', unreachable)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -187,7 +187,7 @@ async def test_collect_monitors_none(monkeypatch):
 @pytest.mark.asyncio
 async def test_collect_monitors_other_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['version'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', unreachable)
+    monkeypatch.setattr(sls.util, 'read_file', unreachable)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -196,7 +196,7 @@ async def test_collect_monitors_other_only(monkeypatch):
 @pytest.mark.asyncio
 async def test_collect_monitors_card_only(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', unreachable)
+    monkeypatch.setattr(sls.util, 'read_file', unreachable)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -205,7 +205,7 @@ async def test_collect_monitors_card_only(monkeypatch):
 @pytest.mark.asyncio
 async def test_collect_monitors_nothing(monkeypatch):
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', lambda _, binary: None)
+    monkeypatch.setattr(sls.util, 'read_file', lambda _, binary: None)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert not len(devices)
@@ -232,7 +232,7 @@ async def test_collect_monitors_edid(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -265,7 +265,7 @@ async def test_collect_monitors_edid_bad_checksum(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -296,7 +296,7 @@ async def test_collect_monitors_edid_short(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -328,7 +328,7 @@ async def test_collect_monitors_edid_ignore_timing_desc(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -361,7 +361,7 @@ async def test_collect_monitors_edid_bad_magic(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -393,7 +393,7 @@ async def test_collect_monitors_edid_no_modes(monkeypatch):
         assert False, f'Bad filename {fname}'
 
     monkeypatch.setattr(os, 'listdir', lambda _: ['card0-DP-1'])
-    monkeypatch.setattr(sls.helpers.sysinfo, 'read_file', read_file)
+    monkeypatch.setattr(sls.util, 'read_file', read_file)
     devices = await MonitorsType.list()
     assert isinstance(devices, list)
     assert len(devices) == 1
@@ -1243,21 +1243,6 @@ async def test_collect_new_section(monkeypatch, data_directory, helper_directory
     assert len(cache['monitors']) == 0
     assert len(cache['usb']) == 1
     assert {'_version': UsbType.version, 'vid': '1234', 'pid': '5678'} in cache['usb']
-
-
-def test_read_file_text(open_shim):
-    open_shim('text')
-    assert sls.helpers.sysinfo.read_file('') == 'text'
-
-
-def test_read_file_binary(open_shim):
-    open_shim(b'bytes')
-    assert sls.helpers.sysinfo.read_file('', binary=True) == b'bytes'
-
-
-def test_read_file_none(open_shim):
-    open_shim(None)
-    assert sls.helpers.sysinfo.read_file('') is None
 
 
 @pytest.mark.asyncio
