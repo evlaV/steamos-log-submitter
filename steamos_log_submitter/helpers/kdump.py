@@ -33,6 +33,8 @@ class KdumpHelper(Helper):
         first_lines = [
             'Kernel panic -',
             'BUG: unable to handle page fault for address',
+            'PREEMPT SMP NOPTI',
+            'general protection fault',
         ]
 
         # Extract only the lines between one of the starting prompts and
