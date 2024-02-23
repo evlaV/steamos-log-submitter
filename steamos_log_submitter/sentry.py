@@ -12,7 +12,6 @@ import logging
 import typing
 import urllib.parse
 import uuid
-from collections.abc import Iterable
 from typing import IO, Optional
 
 import steamos_log_submitter as sls
@@ -36,7 +35,7 @@ class SentryEvent:
         self.attachments: list[dict[str, str | bytes]] = []
         self.exceptions: list[dict[str, JSONEncodable]] = []
         self.tags: dict[str, JSONEncodable] = {}
-        self.fingerprint: Iterable[str] = ()
+        self.fingerprint: list[str] = []
         self.extra: dict[str, JSONEncodable] = {}
         self.timestamp: Optional[float] = None
         self.environment: Optional[str] = sls.util.get_steamos_branch()

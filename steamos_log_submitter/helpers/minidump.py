@@ -29,6 +29,9 @@ class MinidumpHelper(Helper):
             except OSError:
                 cls.logger.warning(f'Failed to get {attr} xattr on minidump.')
 
+        if 'executable' in event.tags:
+            event.fingerprint.append(f'executable:{event.tags["executable"]}')
+
         cls.logger.debug(f'Uploading minidump {fname}')
         try:
             with open(fname, 'rb') as f:
