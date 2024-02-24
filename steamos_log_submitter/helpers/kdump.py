@@ -21,9 +21,9 @@ from steamos_log_submitter.types import JSONEncodable
 class KdumpHelper(Helper):
     valid_extensions = frozenset({'.zip'})
     strip_re = re.compile(r'^(?:<\d>)?\[\s*\d+\.\d+\] ')
-    frame_re = re.compile(r'(?P<q>\? )?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
+    frame_re = re.compile(r'(?P<q>\? )?(?:[0-9a-f]{4}:)?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
     rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
-    registers_re = re.compile(r'([A-Z0-9]{3}): ([0-9a-f]{16})')
+    registers_re = re.compile(r'\b([A-Z0-9]{2,3}): *([0-9a-f]{4,16})')
 
     @classmethod
     def get_summaries(cls, dmesg: TextIO) -> tuple[str, list[dict[str, JSONEncodable]], dict[str, JSONEncodable]]:
@@ -33,12 +33,12 @@ class KdumpHelper(Helper):
         call_trace_grab = False
         getting_modules = False
 
-        first_lines = [
+        first_lines = (
             'Kernel panic -',
             'BUG: unable to handle page fault for address',
             'PREEMPT SMP NOPTI',
             'general protection fault',
-        ]
+        )
 
         # Extract only the lines between one of the starting prompts and
         # "Kernel Offset:" / "Sending NMI" into the crash summary, and

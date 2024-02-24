@@ -33,6 +33,14 @@ def test_call_trace_parse_strip_internal():
     assert stack_expected == helper.parse_traces(stack)
 
 
+def test_call_trace_parse3():
+    with open(f'{file_base}/stack3.json') as f:
+        stack_expected = json.load(f)
+    with open(f'{file_base}/stack3') as f:
+        stack = f.read().rstrip().split('\n')
+    assert stack_expected == helper.parse_traces(stack)
+
+
 def test_dmesg_parse():
     with open(f'{file_base}/crash') as f:
         crash_expected = f.read()

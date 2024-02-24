@@ -1,0 +1,37 @@
+[{
+	"frames": [
+		{ "function": "asm_common_interrupt", "instruction_addr": "0x26", "addr_mode": "rel" },
+		{ "function": "common_interrupt", "instruction_addr": "0x3", "addr_mode": "rel" }
+	],
+	"registers": {
+		"rax": "0xffffffffa2403d98", "rbx": "0x0000000000000000", "rcx": "0xffffffffa140176d",
+		"rdx": "0x0000000000000000", "rsi": "0x0000000000000044", "rdi": "0xffffffffa2403d98",
+		"rbp": "0x0000000000000000", "r08": "0x0000000000000000", "r09": "0x0000000000000000",
+		"r10": "0x0000000000000000", "r11": "0x0000000000000000", "r12": "0x0000000000000000",
+		"r13": "0x0000000000000000", "r14": "0x0000000000000000", "r15": "0x0000000000000000",
+		"fs": "0x0000000000000000", "gs": "0xffff9b3ab1c00000",
+		"cs": "0x0010", "ds": "0x0000", "es": "0x0000", "cr0": "0x0000000080050033",
+		"cr2": "0xffffffffa14017c1", "cr3": "0x000000015571c000", "cr4": "0x0000000000350ef0",
+		"rsp": "0xffffffffa2403d90"
+	}
+},
+{
+	"frames": [
+		{ "function": "secondary_startup_64_no_verify", "instruction_addr": "0xe5", "addr_mode": "rel" },
+		{ "function": "start_kernel", "instruction_addr": "0x95d", "addr_mode": "rel" },
+		{ "function": "arch_call_rest_init", "instruction_addr": "0xe", "addr_mode": "rel" },
+		{ "function": "rest_init", "instruction_addr": "0xc8", "addr_mode": "rel" },
+		{ "function": "cpu_startup_entry", "instruction_addr": "0x1d", "addr_mode": "rel" },
+		{ "function": "do_idle", "instruction_addr": "0x1df", "addr_mode": "rel" },
+		{ "function": "cpuidle_enter", "instruction_addr": "0x2d", "addr_mode": "rel" },
+		{ "function": "cpuidle_enter_state", "instruction_addr": "0xdc", "addr_mode": "rel" }
+	],
+	"registers": {
+		"rax": "0xffff9b3ab1c31b40", "rbx": "0xffff9b3840b12400", "rcx": "0x0000000000000000",
+		"rdx": "0x0000000000000000", "rsi": "0xfffffffe52c082d6", "rdi": "0x0000000000000000",
+		"rbp": "0x0000000000000002", "r08": "0x0000000000000002", "r09": "0x000000002db6d614",
+		"r10": "0xffff9b3ab1c30644", "r11": "0x000000000000011a", "r12": "0xffffffffa254c140",
+		"r13": "0x0000035595fcc965", "r14": "0x0000000000000002", "r15": "0x0000000000000000",
+		"cr2": "0xffffffffa14017c1", "rsp": "0xffffffffa2403e40"
+	}
+}]
