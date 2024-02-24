@@ -21,7 +21,7 @@ async def test_submit_metadata(monkeypatch, open_shim):
     async def post(*args, **kwargs):
         data = kwargs['data']
         assert data.get('sentry[tags][unit_id]') == 'unit'
-        assert data.get('sentry[tags][appid]') == '456'
+        assert data.get('sentry[tags][appid]') == 456
         assert data.get('sentry[tags][product]') == 'Valve'
         assert data.get('sentry[release]') == '20220202.202'
         assert data.get('sentry[environment]') == 'rel'

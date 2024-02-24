@@ -105,7 +105,7 @@ async def test_message(monkeypatch):
 async def test_appid(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': '1234'}
+        assert json.get('tags') == {'appid': 1234}
         return httpx.Response(200)
 
     open_shim.enoent()
@@ -119,7 +119,7 @@ async def test_appid(mock_config, monkeypatch, open_shim):
 async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': '1234'}
+        assert json.get('tags') == {'appid': 1234}
         return httpx.Response(200)
 
     open_shim.enoent()
@@ -134,14 +134,14 @@ async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
 async def test_appid_tag_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': '1234'}
+        assert json.get('tags') == {'appid': 1234}
         return httpx.Response(200)
 
     open_shim.enoent()
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')
     event.appid = 1234
-    event.tags = {'appid': 1234}
+    event.tags = {'appid': '1234'}
     assert await event.send()
 
 

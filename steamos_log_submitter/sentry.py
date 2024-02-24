@@ -88,7 +88,7 @@ class SentryEvent:
         if self.appid is not None:
             if f'appid:{self.appid}' not in fingerprint:
                 fingerprint.append(f'appid:{self.appid}')
-            tags['appid'] = str(self.appid)
+            tags['appid'] = self.appid
 
         unit_id = sls.util.telemetry_unit_id()
         if unit_id:
