@@ -1,0 +1,17 @@
+[{
+	"frames": [
+		{ "function": "entry_SYSCALL_64_after_hwframe", "instruction_addr": "0x72", "addr_mode": "rel" },
+		{ "function": "do_syscall_64", "instruction_addr": "0x5d", "addr_mode": "rel" },
+		{ "function": "__do_sys_finit_module", "instruction_addr": "0xb4", "addr_mode": "rel" },
+		{ "function": "do_init_module", "instruction_addr": "0x4c", "addr_mode": "rel" },
+		{ "function": "do_one_initcall", "instruction_addr": "0x45", "addr_mode": "rel" }
+	],
+	"registers": {
+		"rax": "0x0000000000000000", "rbx": "0x0000000000000000", "rcx": "0x0000000000000000",
+		"rdx": "0x0000000000000cc0", "rsi": "0xffffffff88573363", "rdi": "0xffffffffc09680df",
+		"rbp": "0xffffffffc090f010", "r08": "0x0000000000000010", "r09": "0xffff987bc3717580",
+		"r10": "0xffff987bc230b6d0", "r11": "0x0000000000000000", "r12": "0xffff987bc3717580",
+		"r13": "0xffffae6200b43e60", "r14": "0x0000000000000003", "r15": "0x0000000000000000",
+		"rsp": "0xffffae6200b43da0"
+	}
+}]

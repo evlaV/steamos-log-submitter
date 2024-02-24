@@ -21,6 +21,9 @@ from steamos_log_submitter.types import JSONEncodable
 class KdumpHelper(Helper):
     valid_extensions = frozenset({'.zip'})
     strip_re = re.compile(r'^(?:<\d>)?\[\s*\d+\.\d+\] ')
+    frame_re = re.compile(r'(?P<q>\? )?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
+    rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
+    registers_re = re.compile(r'([A-Z0-9]{3}): ([0-9a-f]{16})')
 
     @classmethod
     def get_summaries(cls, dmesg: TextIO) -> tuple[str, list[dict[str, JSONEncodable]], dict[str, JSONEncodable]]:
@@ -85,12 +88,15 @@ class KdumpHelper(Helper):
 
     @classmethod
     def parse_traces(cls, log: list[str]) -> list[dict[str, JSONEncodable]]:
-        frame_re = re.compile(r'(?P<q>\? )?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
-        rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
-        registers_re = re.compile(r'([A-Z0-9]{3}): ([0-9a-f]{16})')
         traces: list[dict[str, JSONEncodable]] = []
         frames: Optional[list[dict[str, str]]] = None
         registers: Optional[dict[str, str]] = None
+
+        ignore_frames = (
+            'asm_exc_page_fault',
+            'dump_stack_lvl',
+            'panic',
+        )
 
         def append(frames: list[dict[str, str]], regsiters: Optional[dict[str, str]]) -> None:
             frames.reverse()
@@ -106,7 +112,7 @@ class KdumpHelper(Helper):
 
         for line in log:
             line = cls.strip_re.sub('', line.strip())
-            frame = frame_re.search(line)
+            frame = cls.frame_re.search(line)
             if line.startswith('RIP: '):
                 if frames:
                     append(frames, registers)
@@ -116,7 +122,9 @@ class KdumpHelper(Helper):
             if frame:
                 if frame.group('q'):
                     continue
-                if frame.group('symbol') in ('dump_stack_lvl', 'panic', 'asm_exc_page_fault'):
+                if not frames and frame.group('symbol').startswith('__'):
+                    continue
+                if frame.group('symbol') in ignore_frames:
                     frames = []
                     continue
                 frame_info = {
@@ -132,14 +140,14 @@ class KdumpHelper(Helper):
                 frames.append(frame_info)
                 continue
 
-            rsp = rsp_re.search(line)
+            rsp = cls.rsp_re.search(line)
             if rsp:
                 if not registers:
                     registers = {}
                 registers['rsp'] = "0x" + rsp.group(1)
                 continue
 
-            registers_matches = registers_re.findall(line)
+            registers_matches = cls.registers_re.findall(line)
             if registers_matches:
                 if not registers:
                     registers = {}
