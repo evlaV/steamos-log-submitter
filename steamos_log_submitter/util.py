@@ -88,7 +88,7 @@ def get_appid(pid: int) -> Optional[int]:
                     break
 
         pid = ppid
-    if appid and appid & 0x80000000:
+    if appid and appid >= 0x80000000:
         # This is a non-Steam game
         return None
     return appid
