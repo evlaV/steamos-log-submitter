@@ -235,13 +235,3 @@ async def test_envelope_timestamp(monkeypatch):
     event.timestamp = 0.1
     event.add_attachment({'data': b''})
     assert await event.send()
-
-
-def test_flatten():
-    flatten = sentry.MinidumpEvent._flatten
-    assert flatten({}, 's') == {}
-    assert flatten({'a': 'b'}, 's') == {'s[a]': 'b'}
-    assert flatten({'a': 1}, 's') == {'s[a]': 1}
-    assert flatten({'a': True}, 's') == {'s[a]': True}
-    assert flatten({'a': {}}, 's') == {}
-    assert flatten({'a': {'b': 'c'}}, 's') == {'s[a][b]': 'c'}

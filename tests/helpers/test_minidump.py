@@ -4,6 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import httpx
+import json
 import os
 import pytest
 import tempfile
@@ -19,12 +20,12 @@ dsn = custom_dsn('helpers.minidump')
 @pytest.mark.asyncio
 async def test_submit_metadata(monkeypatch, open_shim):
     async def post(*args, **kwargs):
-        data = kwargs['data']
-        assert data.get('sentry[tags][unit_id]') == 'unit'
-        assert data.get('sentry[tags][appid]') == 456
-        assert data.get('sentry[tags][product]') == 'Valve'
-        assert data.get('sentry[release]') == '20220202.202'
-        assert data.get('sentry[environment]') == 'rel'
+        data = json.loads(kwargs['data']['sentry'])
+        assert data.get('tags', {}).get('unit_id') == 'unit'
+        assert data.get('tags', {}).get('appid') == 456
+        assert data.get('tags', {}).get('product') == 'Valve'
+        assert data.get('release') == '20220202.202'
+        assert data.get('environment') == 'rel'
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
@@ -40,15 +41,15 @@ async def test_submit_metadata(monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_no_metadata(monkeypatch, open_shim):
     async def post(*args, **kwargs):
-        data = kwargs['data']
-        assert 'sentry[tags][unit_id]' not in data
-        assert 'sentry[tags][appid]' not in data
-        assert 'sentry[tags][product]' not in data
-        assert 'sentry[tags][executable]' not in data
-        assert 'sentry[tags][comm]' not in data
-        assert 'sentry[tags][path]' not in data
-        assert 'sentry[release]' not in data
-        assert 'sentry[environment]' not in data
+        data = json.loads(kwargs['data']['sentry'])
+        assert 'unit_id' not in data.get('tags', {})
+        assert 'appid' not in data.get('tags', {})
+        assert 'product' not in data.get('tags', {})
+        assert 'executable' not in data.get('tags', {})
+        assert 'comm' not in data.get('tags', {})
+        assert 'path' not in data.get('tags', {})
+        assert 'release' not in data
+        assert 'environment' not in data
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
@@ -64,11 +65,11 @@ async def test_no_metadata(monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_no_xattrs(monkeypatch):
     async def post(*args, **kwargs):
-        data = kwargs['data']
-        assert data.get('sentry[tags][executable]') == 'exe'
-        assert data.get('sentry[tags][comm]') == 'comm'
-        assert data.get('sentry[tags][path]') == '/fake/exe'
-        assert data.get('sentry[fingerprint]') == ['executable:exe']
+        data = json.loads(kwargs['data']['sentry'])
+        assert data.get('tags', {}).get('executable') == 'exe'
+        assert data.get('tags', {}).get('comm') == 'comm'
+        assert data.get('tags', {}).get('path') == '/fake/exe'
+        assert data.get('fingerprint') == ['executable:exe']
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
@@ -87,11 +88,11 @@ async def test_no_xattrs(monkeypatch):
 @pytest.mark.asyncio
 async def test_partial_xattrs(monkeypatch):
     async def post(*args, **kwargs):
-        data = kwargs['data']
-        assert data.get('sentry[tags][executable]') == 'exe'
-        assert 'sentry[tags][comm]' not in data
-        assert data.get('sentry[tags][path]') == '/fake/exe'
-        assert data.get('sentry[fingerprint]') == ['executable:exe']
+        data = json.loads(kwargs['data']['sentry'])
+        assert data.get('tags', {}).get('executable') == 'exe'
+        assert 'comm' not in data.get('tags', {})
+        assert data.get('tags', {}).get('path') == '/fake/exe'
+        assert data.get('fingerprint') == ['executable:exe']
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)

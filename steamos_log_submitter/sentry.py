@@ -9,7 +9,6 @@ import httpx
 import io
 import json
 import logging
-import typing
 import urllib.parse
 import uuid
 from typing import IO, Optional
@@ -176,21 +175,10 @@ class MinidumpEvent(SentryEvent):
         super()._initialize()
         self._event = {}
 
-    @classmethod
-    def _flatten(cls, d: dict[str, JSONEncodable], prefix: str) -> dict[str, JSONEncodable]:
-        flat: dict[str, JSONEncodable] = {}
-        for key, value in d.items():
-            key = f'{prefix}[{key}]'
-            if isinstance(value, dict):
-                flat.update(cls._flatten(typing.cast(dict[str, JSONEncodable], value), key))
-            else:
-                flat[key] = value
-        return flat
-
     async def send_minidump(self, minidump: IO[bytes]) -> bool:
         self.seal()
 
-        metadata: dict[str, JSONEncodable] = self._flatten(self._event, 'sentry')
+        metadata: dict[str, JSONEncodable] = {'sentry': json.dumps(self._event)}
 
         async with httpx.AsyncClient() as client:
             post = await client.post(self.dsn, files={'upload_file_minidump': minidump}, data=metadata)
