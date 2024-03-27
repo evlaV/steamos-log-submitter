@@ -1,15 +1,24 @@
 #  SPDX-License-Identifier: LGPL-2.1-or-later
 #
-#  Copyright (c) 2022-2023 Valve Software
+#  Copyright (c) 2022-2024 Valve Software
 #  Author: Vicki Pfau <vi@endrift.com>
 
 d	/var/log/steamos-log-submitter	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter	0750	steamos-log-submitter	steamos-log-submitter	-	-
 # User config file should be group writable
-f	@LOCALSTATEDIR@/lib/steamos-log-submitter/user.cfg	0664	steamos-log-submitter	steamos-log-submitter	-	-
+f	@LOCALSTATEDIR@/lib/steamos-log-submitter/user.cfg	0660	steamos-log-submitter	steamos-log-submitter	-	-
+f	@LOCALSTATEDIR@/lib/steamos-log-submitter/local.cfg	0640	steamos-log-submitter	steamos-log-submitter	-	-
+
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending 	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed  	0750	steamos-log-submitter	steamos-log-submitter	-	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/data	0750	steamos-log-submitter	steamos-log-submitter	-	-
+
+z	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
+z	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
+z	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
+z	@LOCALSTATEDIR@/lib/steamos-log-submitter/data/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
+
 # Clean up submissions after 2 weeks, or 1 week if it's already been uploaded
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/gpu     	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/journal 	0750	steamos-log-submitter	steamos-log-submitter	14d	-
