@@ -41,6 +41,14 @@ def test_call_trace_parse3():
     assert stack_expected == helper.parse_traces(stack)
 
 
+def test_parse_irq():
+    with open(f'{file_base}/stack_irq.json') as f:
+        stack_expected = json.load(f)
+    with open(f'{file_base}/stack_irq') as f:
+        stack = f.read().rstrip().split('\n')
+    assert stack_expected == helper.parse_traces(stack)
+
+
 def test_dmesg_parse():
     with open(f'{file_base}/crash') as f:
         crash_expected = f.read()

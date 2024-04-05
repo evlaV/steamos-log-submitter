@@ -30,7 +30,7 @@ class KdumpHelper(Helper):
         crash_summary_list: list[str] = []
         call_trace_list: list[str] = []
         metadata: dict[str, JSONEncodable] = {}
-        call_trace_grab = False
+        call_trace_grab: Optional[str] = None
         getting_modules = False
 
         first_lines = (
@@ -39,6 +39,8 @@ class KdumpHelper(Helper):
             'PREEMPT SMP NOPTI',
             'general protection fault',
         )
+
+        trace_types = ('TASK', 'IRQ')
 
         # Extract only the lines between one of the starting prompts and
         # "Kernel Offset:" / "Sending NMI" into the crash summary, and
@@ -56,12 +58,14 @@ class KdumpHelper(Helper):
                 crash_summary_list.append(line)
 
                 if call_trace_grab:
-                    if ' </TASK>' in line:
-                        call_trace_grab = False
+                    if f' </{call_trace_grab}>' in line:
+                        call_trace_grab = None
                     else:
                         call_trace_list.append(line)
-                elif ' <TASK>' in line:
-                    call_trace_grab = True
+                else:
+                    for type in trace_types:
+                        if f' <{type}>' in line:
+                            call_trace_grab = type
 
                 if 'Kernel Offset:' in line or 'Sending NMI' in line:
                     crash_summary_list.pop()
