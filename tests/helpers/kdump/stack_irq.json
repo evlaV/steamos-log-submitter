@@ -1,0 +1,44 @@
+[{
+	"frames": [
+		{ "function": "asm_common_interrupt", "instruction_addr": "0x26", "addr_mode": "rel" },
+		{ "function": "common_interrupt", "instruction_addr": "0x81", "addr_mode": "rel" },
+		{ "function": "__common_interrupt", "instruction_addr": "0x46", "addr_mode": "rel" },
+		{ "function": "handle_edge_irq", "instruction_addr": "0x9a", "addr_mode": "rel" },
+		{ "function": "handle_irq_event", "instruction_addr": "0x3b", "addr_mode": "rel" },
+		{ "function": "__handle_irq_event_percpu", "instruction_addr": "0x4d", "addr_mode": "rel" },
+		{ "function": "amdgpu_irq_handler", "instruction_addr": "0x23", "addr_mode": "rel", "package": "amdgpu" },
+		{ "function": "amdgpu_ih_process", "instruction_addr": "0x8d", "addr_mode": "rel", "package": "amdgpu" },
+		{ "function": "amdgpu_irq_dispatch", "instruction_addr": "0xd1", "addr_mode": "rel", "package": "amdgpu" },
+		{ "function": "gmc_v10_0_process_interrupt.cold", "instruction_addr": "0x15", "addr_mode": "rel", "package": "amdgpu" }
+	],
+	"registers": {
+		"rax": "0x0000000000000000", "rbx": "0xffffb083c0290e90", "rcx": "0x0000000000000027",
+		"rdx": "0x0000000000000000", "rsi": "0x0000000000000050", "rdi": "0xffff941cda780000",
+		"rbp": "0xffffb083c0290e70", "r08": "0x0000000000000000", "r09": "0xffffb083c0290b80",
+		"r10": "0x0000000000000003", "r11": "0xffff941ffef7ffe8", "r12": "0xffff941cda780000",
+		"r13": "0x0000800105d2a000", "r14": "0xffff941cda780048", "r15": "0x0000000000000001",
+		"rsp": "0xffffb083c0290e00",
+		"fs": "0x0000000000000000", "gs": "0xffff941feed40000",
+		"cs": "0x0010", "ds": "0x0000", "es": "0x0000", "cr0": "0x0000000080050033",
+		"cr2": "0x0000000000000000", "cr3": "0x00000001cebec000", "cr4": "0x0000000000350ee0"
+	}
+},
+{
+	"frames": [
+		{ "function": "secondary_startup_64_no_verify", "instruction_addr": "0xe5", "addr_mode": "rel" },
+		{ "function": "start_secondary", "instruction_addr": "0x123", "addr_mode": "rel" },
+		{ "function": "cpu_startup_entry", "instruction_addr": "0x1d", "addr_mode": "rel" },
+		{ "function": "do_idle", "instruction_addr": "0x1df", "addr_mode": "rel" },
+		{ "function": "cpuidle_enter", "instruction_addr": "0x2d", "addr_mode": "rel" },
+		{ "function": "cpuidle_enter_state", "instruction_addr": "0xdc", "addr_mode": "rel" }
+	],
+	"registers": {
+		"rax": "0xffff941feed71b40", "rbx": "0xffff941cc2d63c00", "rcx": "0x0000000000000000",
+		"rdx": "0x0000000000000005", "rsi": "0xfffffffc3cc1d856", "rdi": "0x0000000000000000",
+		"rbp": "0x0000000000000002", "r08": "0x0000000000000002", "r09": "0x000000002db6dd91",
+		"r10": "0xffff941feed70644", "r11": "0x00000000000002a2", "r12": "0xffffffff88d4c140",
+		"r13": "0x0000000764749d28", "r14": "0x0000000000000002", "r15": "0x0000000000000000",
+		"rsp": "0xffffb083c0133e90"
+	}
+}]
+

@@ -1,0 +1,45 @@
+RIP: 0010:gmc_v10_0_process_interrupt.cold+0x15/0x24 [amdgpu]
+Code: ea 5b 48 c7 c6 c8 e0 65 c2 5d 41 5c 41 5d 41 5e e9 31 53 5a c5 44 89 f8 8b 75 9c 4c 89 e7 48 6b c0 48 49 8b 84 04 28 eb 00 00 <48> 8b 00 e8 3c a5 9d c5 31 c0 e9 ea 10 be ff 48 c7 c7 18 7e 5f c2
+RSP: 0018:ffffb083c0290e00 EFLAGS: 00010046
+RAX: 0000000000000000 RBX: ffffb083c0290e90 RCX: 0000000000000027
+RDX: 0000000000000000 RSI: 0000000000000050 RDI: ffff941cda780000
+RBP: ffffb083c0290e70 R08: 0000000000000000 R09: ffffb083c0290b80
+R10: 0000000000000003 R11: ffff941ffef7ffe8 R12: ffff941cda780000
+R13: 0000800105d2a000 R14: ffff941cda780048 R15: 0000000000000001
+FS:  0000000000000000(0000) GS:ffff941feed40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000000 CR3: 00000001cebec000 CR4: 0000000000350ee0
+Call Trace:
+ <IRQ>
+ ? __die_body.cold+0x1a/0x1f
+ ? page_fault_oops+0x15a/0x2d0
+ ? exc_page_fault+0x6d/0x150
+ ? asm_exc_page_fault+0x26/0x30
+ ? gmc_v10_0_process_interrupt.cold+0x15/0x24 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ ? amdgpu_irq_dispatch+0xd1/0x210 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ ? gmc_v10_0_sw_fini+0x40/0x40 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ amdgpu_irq_dispatch+0xd1/0x210 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ amdgpu_ih_process+0x8d/0x140 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ amdgpu_irq_handler+0x23/0x60 [amdgpu e0d710f8e39e7338a7cd1f6c8bbe98d9f66bcfe2]
+ __handle_irq_event_percpu+0x4d/0x190
+ handle_irq_event+0x3b/0x80
+ handle_edge_irq+0x9a/0x260
+ __common_interrupt+0x46/0xa0
+ common_interrupt+0x81/0xa0
+ </IRQ>
+ <TASK>
+ asm_common_interrupt+0x26/0x40
+RIP: 0010:cpuidle_enter_state+0xdc/0x410
+Code: 49 89 c5 0f 1f 44 00 00 31 ff e8 0f f0 7d ff 45 84 ff 74 12 9c 58 f6 c4 02 0f 85 20 03 00 00 31 ff e8 98 a9 84 ff fb 45 85 f6 <0f> 88 85 01 00 00 49 63 d6 48 8d 04 52 48 8d 04 82 49 8d 0c c4 48
+RSP: 0018:ffffb083c0133e90 EFLAGS: 00000202
+RAX: ffff941feed71b40 RBX: ffff941cc2d63c00 RCX: 0000000000000000
+RDX: 0000000000000005 RSI: fffffffc3cc1d856 RDI: 0000000000000000
+RBP: 0000000000000002 R08: 0000000000000002 R09: 000000002db6dd91
+R10: ffff941feed70644 R11: 00000000000002a2 R12: ffffffff88d4c140
+R13: 0000000764749d28 R14: 0000000000000002 R15: 0000000000000000
+ cpuidle_enter+0x2d/0x40
+ do_idle+0x1df/0x260
+ cpu_startup_entry+0x1d/0x20
+ start_secondary+0x123/0x140
+ secondary_startup_64_no_verify+0xe5/0xeb
+ </TASK>
