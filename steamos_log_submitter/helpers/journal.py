@@ -35,6 +35,7 @@ class JournalHelper(Helper):
         'steamos-install-steamcl.service',
         'steamos-kdumpst-layer.service',
         'steamos-log-submitter.service',
+        'steamos-manager.service',
         'steamos-mkvarboot.service',
         'steamos-offload.target',
         'steamos-settings-importer.service',
