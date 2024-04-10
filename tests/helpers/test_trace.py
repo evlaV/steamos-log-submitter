@@ -120,6 +120,25 @@ async def test_split_lock_event(monkeypatch):
     assert math.fabs(event.uptime - 468.269056) < 0.000001
 
 
+@pytest.mark.asyncio
+async def test_data_fields(monkeypatch):
+    monkeypatch.setattr(sls.util, 'get_appid', lambda x: 12345 if x == 50910 else None)
+    monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args, **kwargs: None))
+
+    line = ' CContentUpdateC-50910   [012] ...1.   468.269056: split_lock_warn <-handle_user_split_lock'
+    event = await helper.prepare_event(line, {
+        'appid': 54321,
+        'comm': 'CContentUpdateContext',
+        'path': '/usr/bin/hl2',
+    })
+    assert event.type == TraceEvent.Type.SPLIT_LOCK
+    assert event.pid == 50910
+    assert event.appid == 54321
+    assert event.comm == 'CContentUpdateContext'
+    assert event.path == '/usr/bin/hl2'
+    assert event.executable == 'hl2'
+
+
 def test_event_dump():
     event = TraceEvent(TraceEvent.Type.OOM)
     event.timestamp = 0.0
