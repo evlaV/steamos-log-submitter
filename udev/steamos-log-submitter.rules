@@ -5,5 +5,4 @@
 #
 # If a GPU crash occurs, log it
 ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", RUN+="/usr/bin/python -m steamos_log_submitter.hooks.gpu"
-
-ACTION=="add", SUBSYSTEM=="devcoredump", RUN+="cat /sys%E{DEVPATH}/data > /var/lib/steamos-log-submitter/pending/devcoredump/%E{SEQNUM}"
+ACTION=="add", SUBSYSTEM=="devcoredump", RUN+="/usr/bin/python -m steamos_log_submitter.hooks.devcoredump /sys%E{DEVPATH}"
