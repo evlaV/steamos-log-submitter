@@ -29,6 +29,7 @@ async def run() -> bool:
 
     ts = time.time_ns()
     dumpdir = sys.argv[1]
+    logger.info(f'Found dump at {dumpdir}')
     failing_dev = None
     driver = None
     metadata: dict[str, JSONEncodable] = {
@@ -74,17 +75,17 @@ async def run() -> bool:
     else:
         filename = f'{driver}-{devname}-{ts}.zip'
 
-    with open(f'{dumpdir}/data', 'rb') as dump:
-        with sls.helpers.StagingFile('devcoredump', filename, 'wb') as f:
-            zf = zipfile.ZipFile(f, mode='x', compression=zipfile.ZIP_DEFLATED)
+    with sls.helpers.StagingFile('devcoredump', filename, 'wb') as f:
+        with zipfile.ZipFile(f, mode='x', compression=zipfile.ZIP_DEFLATED) as zf:
             with zf.open('metadata.json', 'w') as zff:
                 zff.write(json.dumps(metadata).encode())
             with zf.open('dump', 'w') as zff:
-                while True:
-                    block = dump.read(4096)
-                    if not block:
-                        break
-                    zff.write(block)
+                with open(f'{dumpdir}/data', 'rb') as dump:
+                    while True:
+                        block = dump.read(4096)
+                        if not block:
+                            break
+                        zff.write(block)
 
     return True
 
