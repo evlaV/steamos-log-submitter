@@ -24,7 +24,9 @@ __loader__: importlib.machinery.SourceFileLoader
 logger = logging.getLogger(__loader__.name)
 
 
-async def run() -> None:
+async def run() -> bool:
+    driver_blocklist = ('amdgpu',)  # amdgpu is handled by the gpu hook
+
     ts = time.time_ns()
     dumpdir = sys.argv[1]
     failing_dev = None
@@ -45,6 +47,9 @@ async def run() -> None:
         metadata['driver'] = driver
     except OSError as e:
         logger.error(f'Failed to determine failing device driver: {e}')
+
+    if driver in driver_blocklist:
+        return False
 
     journal = None
     if driver is not None:
@@ -81,11 +86,13 @@ async def run() -> None:
                         break
                     zff.write(block)
 
+    return True
+
 
 if __name__ == '__main__':  # pragma: no cover
     reconfigure_logging('/var/log/steamos-log-submitter/devcoredump.log', remote=True)
     try:
-        asyncio.run(run())
-        trigger('devcoredump')
+        if asyncio.run(run()):
+            trigger('devcoredump')
     except Exception as e:
         logger.critical('Unhandled exception', exc_info=e)
