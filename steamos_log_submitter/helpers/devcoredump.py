@@ -56,4 +56,13 @@ class DevcoredumpHelper(Helper):
             event.tags['driver'] = metadata['driver']
             event.fingerprint.append(f'driver:{metadata["driver"]}')
 
-        return HelperResult.PERMANENT_ERROR
+        if 'driver' in metadata and 'failing_device' in metadata:
+            event.message = f'{metadata["driver"]}: {metadata["failing_device"]}'
+        elif 'failing_device' in metadata:
+            event.message = f'{metadata["failing_device"]}'
+        elif 'driver' in metadata:
+            event.message = f'{metadata["driver"]}'
+        else:
+            event.message = 'Unknown device'
+
+        return HelperResult.check(await event.send())
