@@ -401,7 +401,7 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
-    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.07)
+    monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.08)
 
     start = time.time()
     daemon, bus = await dbus_daemon
