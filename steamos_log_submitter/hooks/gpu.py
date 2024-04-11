@@ -9,7 +9,6 @@ import importlib.machinery
 import json
 import logging
 import os
-import shutil
 import subprocess
 import time
 import typing
@@ -71,7 +70,6 @@ async def run() -> None:
         log['journal'] = relevant
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
-        shutil.chown(f.name, user='steamos-log-submitter')
 
 
 if __name__ == '__main__':  # pragma: no cover

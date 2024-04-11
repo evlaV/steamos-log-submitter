@@ -10,6 +10,7 @@ import importlib
 import logging
 import os
 import pkgutil
+import shutil
 import sys
 import tempfile
 import typing
@@ -278,6 +279,8 @@ class StagingFile:
 
     def close(self) -> None:
         self._tempfile.close()
+        if os.geteuid() == 0:
+            shutil.chown(self.name, user='steamos-log-submitter')
         os.rename(self.name, self._final_name)
 
     def __getattr__(self, attr: str) -> Any:  # type: ignore[misc]

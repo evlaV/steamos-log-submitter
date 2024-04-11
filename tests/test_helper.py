@@ -7,6 +7,7 @@ import asyncio
 import importlib
 import os
 import pytest
+import shutil
 import time
 import typing
 
@@ -18,8 +19,9 @@ from .daemon import dbus_daemon  # NOQA: F401
 from .dbus import real_dbus  # NOQA: F401
 
 
-def test_staging_file_rename(helper_directory):
+def test_staging_file_rename(helper_directory, monkeypatch):
     setup_categories(['test'])
+    monkeypatch.setattr(os, 'geteuid', lambda: 998)
     f = helpers.StagingFile('test', 'foo')
     assert not os.access(f'{sls.pending}/test/foo', os.F_OK)
     assert os.access(f.name, os.F_OK)
@@ -30,8 +32,30 @@ def test_staging_file_rename(helper_directory):
     assert os.stat(f'{sls.pending}/test/foo').st_ino == ino
 
 
-def test_staging_file_context_manager(helper_directory):
+def test_staging_file_chown(count_hits, helper_directory, monkeypatch):
+    def chown(fname, user, *args, **kwargs):
+        assert user == 'steamos-log-submitter'
+        count_hits()
+
     setup_categories(['test'])
+    monkeypatch.setattr(shutil, 'chown', chown)
+
+    monkeypatch.setattr(os, 'geteuid', lambda: 998)
+
+    f = helpers.StagingFile('test', 'foo')
+    f.close()
+    assert count_hits.hits == 0
+
+    monkeypatch.setattr(os, 'geteuid', lambda: 0)
+
+    f = helpers.StagingFile('test', 'bar')
+    f.close()
+    assert count_hits.hits == 1
+
+
+def test_staging_file_context_manager(helper_directory, monkeypatch):
+    setup_categories(['test'])
+    monkeypatch.setattr(os, 'geteuid', lambda: 998)
     with helpers.StagingFile('test', 'foo') as f:
         assert not os.access(f'{sls.pending}/test/foo', os.F_OK)
         assert os.access(f.name, os.F_OK)
