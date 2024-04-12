@@ -28,7 +28,7 @@ class DevcoredumpHelper(Helper):
                 with zf.open('metadata.json') as f:
                     metadata_json = f.read()
                     metadata = json.loads(metadata_json.decode())
-        except zipfile.BadZipFile as e:
+        except (KeyError, zipfile.BadZipFile) as e:
             cls.logger.error(f'Invalid zip file: {e}')
             return HelperResult.PERMANENT_ERROR
         except json.decoder.JSONDecodeError as e:
