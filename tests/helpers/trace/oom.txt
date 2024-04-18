@@ -1,0 +1,166 @@
+gamemoded invoked oom-killer: gfp_mask=0x140cca(GFP_HIGHUSER_MOVABLE|__GFP_COMP), order=0, oom_score_adj=200
+CPU: 1 PID: 1158 Comm: gamemoded Not tainted 6.1.52-valve19-2-neptune-61-00002-g985d0b7eb257 #57 9d05e4f5ea6d8e337c63069bb9a8eac6307ebe4a
+Hardware name: Valve Galileo/Galileo, BIOS F7G0106T03 12/04/2023
+Call Trace:
+ <TASK>
+ dump_stack_lvl+0x37/0x4a
+ dump_header+0x4a/0x211
+ oom_kill_process.cold+0xb/0x10
+ out_of_memory+0x1f1/0x520
+ __alloc_pages_slowpath.constprop.0+0xc8f/0xde0
+ __alloc_pages+0x32d/0x350
+ folio_alloc+0x1b/0x50
+ __filemap_get_folio+0x164/0x370
+ filemap_fault+0x139/0x910
+ ? filemap_map_pages+0x139/0x690
+ __do_fault+0x33/0x110
+ do_fault+0x1cc/0x420
+ __handle_mm_fault+0x620/0xfc0
+ handle_mm_fault+0xf2/0x2e0
+ do_user_addr_fault+0x206/0x570
+ exc_page_fault+0x6d/0x150
+ asm_exc_page_fault+0x26/0x30
+RIP: 0033:0x7fae287a8ebe
+Code: Unable to access opcode bytes at 0x7fae287a8e94.
+RSP: 002b:00007fae28472c70 EFLAGS: 00010246
+RAX: ffffffffffffff92 RBX: 0000000000000000 RCX: 00007fae287a8ebe
+RDX: 0000000000000000 RSI: 0000000000000189 RDI: 0000559b681aa508
+RBP: 0000000000000000 R08: 0000000000000000 R09: 00000000ffffffff
+R10: 00007fae28472dc0 R11: 0000000000000246 R12: 0000559b681aa4b8
+R13: 0000000000000000 R14: 0000559b681aa508 R15: 0000000000000000
+ </TASK>
+Mem-Info:
+active_anon:504503 inactive_anon:1220090 isolated_anon:11
+ active_file:4134 inactive_file:674 isolated_file:0
+ unevictable:238 dirty:6 writeback:0
+ slab_reclaimable:24677 slab_unreclaimable:40668
+ mapped:2112 shmem:530120 pagetables:7240
+ sec_pagetables:0 bounce:0
+ kernel_misc_reclaimable:0
+ free:32601 free_pcp:0 free_cma:0
+Node 0 active_anon:2018012kB inactive_anon:4880360kB active_file:16796kB inactive_file:2436kB unevictable:952kB isolated(anon):44kB isolated(file):0kB mapped:8448kB dirty:24kB writeback:0kB shmem:2120480kB shmem_thp: 0kB shmem_pmdmapped: 0kB anon_thp: 907264kB writeback_tmp:0kB kernel_stack:10944kB pagetables:28960kB sec_pagetables:0kB all_unreclaimable? no
+Node 0 DMA free:13300kB boost:0kB min:68kB low:84kB high:100kB reserved_highatomic:0KB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB writepending:0kB present:15992kB managed:15360kB mlocked:0kB bounce:0kB free_pcp:0kB local_pcp:0kB free_cma:0kB
+lowmem_reserve[]: 0 1808 14777 14777 14777
+Node 0 DMA32 free:59760kB boost:0kB min:8260kB low:10324kB high:12388kB reserved_highatomic:0KB active_anon:41308kB inactive_anon:373416kB active_file:0kB inactive_file:968kB unevictable:0kB writepending:0kB present:1935736kB managed:1867488kB mlocked:0kB bounce:0kB free_pcp:0kB local_pcp:0kB free_cma:0kB
+lowmem_reserve[]: 0 0 12968 12968 12968
+Node 0 Normal free:57344kB boost:0kB min:59248kB low:74060kB high:88872kB reserved_highatomic:0KB active_anon:1514876kB inactive_anon:4968772kB active_file:3704kB inactive_file:15128kB unevictable:952kB writepending:24kB present:13618688kB managed:13287084kB mlocked:952kB bounce:0kB free_pcp:0kB local_pcp:0kB free_cma:0kB
+lowmem_reserve[]: 0 0 0 0 0
+Node 0 DMA: 1*4kB (U) 0*8kB 1*16kB (U) 1*32kB (U) 1*64kB (U) 1*128kB (U) 1*256kB (U) 1*512kB (U) 0*1024kB 2*2048kB (UM) 2*4096kB (M) = 13300kB
+Node 0 DMA32: 34*4kB (UM) 39*8kB (UM) 103*16kB (UME) 98*32kB (UME) 60*64kB (UME) 54*128kB (UME) 48*256kB (UME) 50*512kB (UME) 2*1024kB (U) 2*2048kB (UM) 0*4096kB = 60016kB
+Node 0 Normal: 704*4kB (UME) 452*8kB (UE) 859*16kB (UME) 547*32kB (UME) 216*64kB (UE) 58*128kB (UME) 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 58928kB
+Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=1048576kB
+Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
+535116 total pagecache pages
+0 pages in swap cache
+Free swap  = 0kB
+Total swap = 0kB
+3892604 pages RAM
+0 pages HighMem/MovableOnly
+100121 pages reserved
+0 pages cma reserved
+0 pages hwpoisoned
+Tasks state (memory values in pages):
+[  pid  ]   uid  tgid total_vm      rss pgtables_bytes swapents oom_score_adj name
+[    384]     0   384    15444      899   106496        0          -250 systemd-journal
+[    418]     0   418     4319      213    73728       10             0 systemd-userdbd
+[    430]     0   430     8854      704    90112        0         -1000 systemd-udevd
+[    654]   977   654     5526      626    81920        0             0 systemd-resolve
+[    656]   976   656    22964      268    81920        0             0 systemd-timesyn
+[    671]    81   671     2348      212    57344       13          -900 dbus-broker-lau
+[    672]    81   672     1397      442    45056        0          -900 dbus-broker
+[    674]   972   674     2297      241    57344        0             0 avahi-daemon
+[    675]     0   675     3123      166    57344        0             0 bluetoothd
+[    676]     0   676    17296     2061    94208        0             0 ds-inhibit
+[    677]     0   677    47041     6997   188416        0             0 firewalld
+[    678]     0   678    21265     4065   122880        0             0 python3
+[    681]     0   681    17305     2186    90112        0         -1000 fancontrol.py
+[    684]  1000   684     2536      164    53248        0             0 socat
+[    686]  1000   686    20761     3051   122880        0             0 python
+[    700]   973   700    65668     7958   204800        3             0 python
+[    708]     0   708     4672      511    73728        0             0 systemd-logind
+[    715]     0   715     1074       64    53248        0             0 vpower
+[    836]   972   836     2198      100    53248        0             0 avahi-daemon
+[    865]     0   865   117497     1272   139264       33             0 udisksd
+[    879]     0   879     5308      552    81920       37           100 systemd
+[    886]     0   886   115923     1434   184320        0             0 NetworkManager
+[    887]   102   887    97988     3333   126976        0             0 polkitd
+[    898]     0   898     5887      432    73728        0           100 (sd-pam)
+[    936]     0   936     4123       47    69632       33             0 iwd
+[   1046]     0  1046     2778      282    57344        0         -1000 sshd
+[   1082]     0  1082    50213     1033   172032        0             0 sddm
+[   1086]  1000  1086     5470      719    81920       36           100 systemd
+[   1113]  1000  1113     5889      435    77824        0           100 (sd-pam)
+[   1151]  1000  1151     3672       89    49152        0           200 gamemoded
+[   1161]  1000  1161     2215       88    57344        0           200 dbus-broker-lau
+[   1165]  1000  1165     1058       71    49152       29           200 dbus-broker
+[   1259]  1000  1259    72271    14927   352256        1           200 pipewire
+[   1260]  1000  1260   164030     2509   282624        0           200 wireplumber
+[   1261]   133  1261     5772       63    53248        0             0 rtkit-daemon
+[   1699]  1000  1699    58047     9739   180224        1           200 pipewire-pulse
+[   1759]     0  1759    90733      932   118784       17             0 upowerd
+[   3169]     0  3169    58288      715    81920        0             0 atomupd-daemon
+[  24102]     0 24102     3672      374    69632        0             0 sshd
+[  24108]  1000 24108     3727      498    69632        0             0 sshd
+[  24110]  1000 24110    14343      466    65536        0             0 bash
+[  24208]     0 24208    31146      577   155648        0             0 sddm-helper
+[  24215]  1000 24215    14016      107    69632        0             0 start-gamescope
+[  24231]  1000 24231    17272      224    98304        0             0 systemctl
+[  24232]  1000 24232    14047      125    61440        0           200 gamescope-sessi
+[  24261]  1000 24261   155406     6030   286720       23           200 gamescope-wl
+[  24278]  1000 24278   249206     9958   434176        0           200 Xwayland
+[  24279]  1000 24279   230813     8143   425984        0           200 Xwayland
+[  24326]  1000 24326    18354      846    98304        0           200 xbindkeys
+[  24329]  1000 24329   107393      873    98304        0           200 ibus-daemon
+[  24330]  1000 24330    14047      123    49152        0           200 gamescope-sessi
+[  24331]  1000 24331    14047      123    49152        0           200 gamescope-sessi
+[  24332]  1000 24332      649       30    40960        0           200 powerbuttond
+[  24334]  1000 24334     1579       60    49152        0           200 wakehook
+[  24336]  1000 24336     4455      245    73728        0           200 steam_notif_dae
+[  24338]  1000 24338    14047      124    49152        0           200 gamescope-sessi
+[  24339]  1000 24339    14111      187    73728        0           200 bash
+[  24340]  1000 24340   334984    11999   581632       22           200 mangoapp
+[  24360]  1000 24360    88708      633   106496        0           200 ibus-dconf
+[  24363]  1000 24363   107128      643   114688       13           200 ibus-portal
+[  24621]  1000 24621   130106     1488   159744       51           200 xdg-desktop-por
+[  24628]  1000 24628   145404      625   139264       51           200 xdg-document-po
+[  24632]  1000 24632    88533      603    98304        0           200 xdg-permission-
+[  24640]  1000 24640      624       23    45056        0           200 fusermount3
+[  24653]  1000 24653    95476      187   106496        0           200 at-spi-bus-laun
+[  24660]  1000 24660     2215       81    53248        0           200 dbus-broker-lau
+[  24663]  1000 24663      998       34    40960        0           200 dbus-broker
+[  24673]  1000 24673    58779      189    86016        0           200 at-spi2-registr
+[  25569]  1000 25569   255167    37862  1171456       78           200 steam
+[  25605]  1000 25605     1148       27    53248        0           200 srt-bwrap
+[  25763]  1000 25763    19653      100   143360        0           200 pressure-vessel
+[  25787]  1000 25787   953128    19635  1339392       69           200 steamwebhelper
+[  25802]  1000 25802    82014     2836   303104        0           200 steamwebhelper
+[  25808]  1000 25808    96833     2906   466944        0           200 steamwebhelper
+[  25809]  1000 25809    96831     2920   458752        0           200 steamwebhelper
+[  25837]  1000 25837   701383    22480  1085440       62           200 steamwebhelper
+[  25872]  1000 25872   259771     3464   528384       31           200 steamwebhelper
+[  25882]  1000 25882    73790      598   147456       27           200 steam-runtime-l
+[  25946]  1000 25946   189198     4343   417792        0           200 steamwebhelper
+[  25956]  1000 25956 12771857    64507  1679360       90           300 steamwebhelper
+[  26347]  1000 26347 12246175     5796   704512       28           300 steamwebhelper
+[  26480]  1000 26480   227263     3557   528384       71           200 steamwebhelper
+[  27144]  1000 27144     7026       88    53248        0           200 reaper
+[  27145]  1000 27145     1152       30    53248        0           200 srt-bwrap
+[  27223]  1000 27223     6806      150   122880        0           200 pressure-vessel
+[  27247]  1000 27247    10827     2380    90112        0           200 python3
+[  27254]  1000 27254   549152     5892   557056        0           200 steam.exe
+[  27256]  1000 27256    10797     3520    94208        0           200 wineserver
+[  27260]  1000 27260   638544     3587   385024        0           200 services.exe
+[  27263]  1000 27263   543128     4055   405504       29           200 winedevice.exe
+[  27274]  1000 27274   614858     5417   487424       59           200 winedevice.exe
+[  27290]  1000 27290   542098     2474   348160        0           200 plugplay.exe
+[  27298]  1000 27298   490903     1503   266240        0           200 svchost.exe
+[  27306]  1000 27306   538591     4965   454656        0           200 explorer.exe
+[  27318]  1000 27318   556450     2463   303104        0           200 rpcss.exe
+[  27328]  1000 27328   554974     5437   483328        0           200 tabtip.exe
+[  27345]  1000 27345  1871106   645899  7516160      187           200 gotg.exe
+[  28112]     0 28112     4455      235    69632        0             0 systemd-userwor
+[  28130]     0 28130     4455      235    73728        0             0 systemd-userwor
+[  28166]     0 28166     4455      234    69632        0             0 systemd-userwor
+[  28175]  1000 28175   250424   230547  1921024        0             0 python
+oom-kill:constraint=CONSTRAINT_NONE,nodemask=(null),cpuset=/,mems_allowed=0,global_oom,task_memcg=/user.slice/user-1000.slice/user@1000.service/app.slice/gamescope-session.service,task=gotg.exe,pid=27345,uid=1000
+Out of memory: Killed process 27345 (gotg.exe) total-vm:7484424kB, anon-rss:2583484kB, file-rss:0kB, shmem-rss:112kB, UID:1000 pgtables:7340kB oom_score_adj:200

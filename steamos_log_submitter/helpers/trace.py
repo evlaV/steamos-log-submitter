@@ -184,7 +184,7 @@ class TraceHelper(Helper):
                         capturing = True
                         break
             if capturing:
-                capture.append(message)
+                capture.extend(message.split('\n'))
                 # Lack of an end expression indicates a one-line message
                 if type not in cls.JOURNAL_ENDS:
                     capturing = False

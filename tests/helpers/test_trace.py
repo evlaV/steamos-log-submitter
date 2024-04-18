@@ -177,6 +177,24 @@ async def test_read_journal_split_lock(monkeypatch, data_directory):
 
 
 @pytest.mark.asyncio
+async def test_read_journal_oom(monkeypatch, data_directory):
+    async def read_journal(unit, cursor, current_boot):
+        assert unit == 'kernel'
+        assert current_boot is True
+
+        f = open(f'{file_base}/oom.journal')
+        return (json.loads(line) for line in f), None
+
+    monkeypatch.setattr(sls.util, 'read_journal', read_journal)
+
+    logs = await helper.read_journal(TraceEvent.Type.OOM, 91302804751)
+    with open(f'{file_base}/oom.txt') as f:
+        expected = f.read().rstrip().split('\n')
+    assert logs == expected
+    assert helper.data['oom.cursor'] == 's=084fbc3ec7ed4a8cb75ddc2a30572ae1;i=64b1e6;b=09d4b42917114404bc769c85d6afda85;m=15429f08d8;t=61654bec29bcb;x=1b9c4714c5332170'
+
+
+@pytest.mark.asyncio
 async def test_read_journal_timing(monkeypatch, data_directory):
     async def read_journal(unit, cursor, current_boot):
         assert unit == 'kernel'
