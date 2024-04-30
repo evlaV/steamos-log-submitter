@@ -8,6 +8,7 @@ run_pytest:
   tags:
     - docker
     - linux
+    - internal
   script:
     - pacman -Sy --noconfirm --needed dbus-python python-pip python-pyalsa
     - python -m venv --system-site-packages venv
@@ -20,6 +21,7 @@ lint:
   tags:
     - docker
     - linux
+    - internal
   script:
     - pacman -Sy --noconfirm --needed python-pip
     - python -m venv --system-site-packages venv
@@ -32,6 +34,7 @@ mypy:
   tags:
     - docker
     - linux
+    - internal
   script:
     - pacman -Sy --noconfirm --needed python-pip python-pyalsa
     - python -m venv --system-site-packages venv
