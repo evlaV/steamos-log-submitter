@@ -6,9 +6,7 @@ image: registry.gitlab.steamos.cloud/steam/steamos-docker-images/holo-main/base:
 run_pytest:
   stage: test
   tags:
-    - docker
-    - linux
-    - internal
+    - x86_64-linux-kvm-docker-internalnetwork
   script:
     - pacman -Sy --noconfirm --needed dbus-python python-pip python-pyalsa
     - python -m venv --system-site-packages venv
@@ -19,9 +17,7 @@ run_pytest:
 lint:
   stage: test
   tags:
-    - docker
-    - linux
-    - internal
+    - x86_64-linux-kvm-docker-internalnetwork
   script:
     - pacman -Sy --noconfirm --needed python-pip
     - python -m venv --system-site-packages venv
@@ -32,9 +28,7 @@ lint:
 mypy:
   stage: test
   tags:
-    - docker
-    - linux
-    - internal
+    - x86_64-linux-kvm-docker-internalnetwork
   script:
     - pacman -Sy --noconfirm --needed python-pip python-pyalsa
     - python -m venv --system-site-packages venv
