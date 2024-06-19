@@ -4,6 +4,7 @@
 #
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
+import glob
 import io
 import json
 import os
@@ -17,6 +18,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
 
 from .. import always_raise, awaitable, StringIO
+from .. import open_shim  # NOQA: F401
 
 
 @pytest.fixture
@@ -151,3 +153,108 @@ async def test_invalid_mesa(monkeypatch, staging_file) -> None:
     value = json.load(staging_file)
 
     assert 'mesa' not in value
+
+
+@pytest.mark.asyncio
+async def test_proc_scan_nothing(monkeypatch, open_shim, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/proc/345/comm'])
+
+    open_shim('steam')
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert 'appid' not in value
+
+
+@pytest.mark.asyncio
+async def test_proc_scan(monkeypatch, open_shim, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/proc/345/comm'])
+
+    open_shim('reaper')
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert value['appid'] == 789
+
+
+@pytest.mark.asyncio
+async def test_proc_scan_disappearing(monkeypatch, open_shim, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/proc/345/comm'])
+
+    open_shim.enoent()
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert 'appid' not in value
+
+
+@pytest.mark.asyncio
+async def test_proc_scan_second_reaper(monkeypatch, open_shim, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789 if pid == 346 else None)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/proc/345/comm', '/proc/346/comm'])
+
+    open_shim('reaper')
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert value['appid'] == 789
+
+
+@pytest.mark.asyncio
+async def test_proc_scan_invalid(monkeypatch, open_shim, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', always_raise(subprocess.SubprocessError))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/proc/self/comm'])
+
+    open_shim('reaper')
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert 'appid' not in value

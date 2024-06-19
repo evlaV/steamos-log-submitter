@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import glob
 import importlib.machinery
 import json
 import logging
@@ -47,6 +48,23 @@ async def run() -> None:
         appid = sls.util.get_appid(pid)
         if appid is not None:
             log['appid'] = appid
+    else:
+        for fcomm in glob.glob('/proc/*/comm'):
+            try:
+                with open(fcomm) as f:
+                    comm = f.read()
+            except OSError:
+                continue
+            if comm.rstrip() == 'reaper':
+                try:
+                    pid = int(fcomm.split('/')[2])
+                except (ValueError, IndexError):
+                    # This should never happen, but error checking is cheap
+                    continue
+                appid = sls.util.get_appid(pid)
+                if appid is not None:
+                    log['appid'] = appid
+                    break
     try:
         executable = os.path.basename(os.readlink(f'/proc/{pid}/exe'))
         log['executable'] = executable
