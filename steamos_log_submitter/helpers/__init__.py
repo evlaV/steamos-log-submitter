@@ -292,3 +292,34 @@ class StagingFile:
     def __exit__(self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]) -> bool:
         self.close()
         return not exc_type
+
+
+class TransientError(dbus.errors.DBusError):
+    def __init__(self, text: Optional[str] = None):
+        text = text or 'A transient error occurred'
+        super().__init__(f'{DBUS_NAME}.Error.TransientError', text)
+
+
+class PermanentError(dbus.errors.DBusError):
+    def __init__(self, text: Optional[str] = None):
+        text = text or 'A permanent error occurred'
+        super().__init__(f'{DBUS_NAME}.Error.PermanentError', text)
+
+
+class ClassError(dbus.errors.DBusError):
+    def __init__(self, text: Optional[str] = None):
+        text = text or 'A classwide error occurred'
+        super().__init__(f'{DBUS_NAME}.Error.ClassError', text)
+
+
+def raise_dbus_error(result: HelperResult) -> None:
+    if result == HelperResult.OK:
+        return
+    if result == HelperResult.TRANSIENT_ERROR:
+        raise TransientError()
+    if result == HelperResult.PERMANENT_ERROR:
+        raise PermanentError()
+    if result == HelperResult.CLASS_ERROR:
+        raise ClassError()
+    else:  # pragma: no cover
+        assert False, 'Unknown error type'

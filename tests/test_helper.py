@@ -206,3 +206,25 @@ async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_conf
     assert time.time() - typing.cast(int, await props['LastCollected']) <= 1
 
     await daemon.shutdown()
+
+
+def test_helper_exceptions():
+    try:
+        helpers.raise_dbus_error(helpers.HelperResult.OK)
+    except Exception:
+        assert False
+    try:
+        helpers.raise_dbus_error(helpers.HelperResult.TRANSIENT_ERROR)
+        assert False
+    except helpers.TransientError:
+        pass
+    try:
+        helpers.raise_dbus_error(helpers.HelperResult.PERMANENT_ERROR)
+        assert False
+    except helpers.PermanentError:
+        pass
+    try:
+        helpers.raise_dbus_error(helpers.HelperResult.CLASS_ERROR)
+        assert False
+    except helpers.ClassError:
+        pass
