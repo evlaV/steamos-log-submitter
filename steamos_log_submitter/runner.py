@@ -7,6 +7,7 @@ import asyncio
 import logging
 import os
 from collections.abc import Iterable
+from typing import Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
@@ -15,7 +16,7 @@ from steamos_log_submitter.lockfile import LockHeldError
 logger = logging.getLogger(__name__)
 
 
-async def collect_category(helper: sls.helpers.Helper) -> list[str]:
+async def collect_category(helper: Type[sls.helpers.Helper]) -> list[str]:
     logger.info(f'Collecting logs for {helper.name}')
     try:
         with helper.lock():
@@ -42,7 +43,7 @@ async def collect() -> list[str]:
         if not helper.enabled() or not helper.collect_enabled():
             continue
 
-        async def collect_fn(helper: sls.helpers.Helper) -> list[str]:
+        async def collect_fn(helper: Type[sls.helpers.Helper]) -> list[str]:
             collected = await collect_category(helper)
             return [f'{helper.name}/{log}' for log in collected]
 
@@ -55,7 +56,7 @@ async def collect() -> list[str]:
     return logs
 
 
-async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
+async def submit_category(helper: Type[sls.helpers.Helper], logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
     submitted: dict[str, sls.helpers.HelperResult | Exception] = {}
     try:
         with helper.lock():
@@ -110,7 +111,7 @@ async def submit() -> dict[str, sls.helpers.HelperResult | Exception]:
             logger.info('No logs found, skipping')
             continue
 
-        async def submit_fn(helper: sls.helpers.Helper, logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
+        async def submit_fn(helper: Type[sls.helpers.Helper], logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
             submitted = await submit_category(helper, logs)
             return {f'{helper.name}/{log}': result for log, result in submitted.items()}
 

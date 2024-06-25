@@ -246,7 +246,7 @@ class Helper(abc.ABC):
             return ()
 
 
-def create_helper(category: str) -> Optional[Helper]:
+def create_helper(category: str) -> Optional[Type[Helper]]:
     try:
         helper = importlib.import_module(f'steamos_log_submitter.helpers.{category}')
     except ModuleNotFoundError:
@@ -257,7 +257,7 @@ def create_helper(category: str) -> Optional[Helper]:
         return None
     helper.helper._setup()
     assert issubclass(helper.helper, Helper)
-    return typing.cast(Helper, helper.helper)
+    return typing.cast(Type[Helper], helper.helper)
 
 
 def list_helpers() -> Iterable[str]:
