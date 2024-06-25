@@ -259,5 +259,5 @@ async def test_list(helper_directory, online, patch_module, count_hits):
     count_hits.ret = helpers.HelperResult.OK
 
     patch_module.submit = awaitable(count_hits)
-    assert await submit() == ['test/log']
+    assert await submit() == {'test/log': helpers.HelperResult.OK}
     assert count_hits.hits == 1

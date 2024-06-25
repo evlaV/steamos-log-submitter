@@ -55,25 +55,29 @@ async def collect() -> list[str]:
     return logs
 
 
-async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> list[str]:
-    submitted = []
+async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
+    submitted: dict[str, sls.helpers.HelperResult | Exception] = {}
     try:
         with helper.lock():
             for log in logs:
                 if log.startswith('.'):
                     continue
                 logger.debug(f'Found log {helper.name}/{log}')
-                result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
-                if result == sls.helpers.HelperResult.OK:
-                    logger.debug(f'Succeeded in submitting {helper.name}/{log}')
-                    submitted.append(log)
-                    os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
-                else:
-                    logger.warning(f'Failed to submit log {helper.name}/{log} with code {result}')
-                if result == sls.helpers.HelperResult.PERMANENT_ERROR:
-                    os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
-                elif result == sls.helpers.HelperResult.CLASS_ERROR:
-                    break
+                try:
+                    result = await helper.submit(f'{sls.pending}/{helper.name}/{log}')
+                    submitted[log] = result
+                    if result == sls.helpers.HelperResult.OK:
+                        logger.debug(f'Succeeded in submitting {helper.name}/{log}')
+                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.uploaded}/{helper.name}/{log}')
+                    else:
+                        logger.warning(f'Failed to submit log {helper.name}/{log} with code {result}')
+                    if result == sls.helpers.HelperResult.PERMANENT_ERROR:
+                        os.replace(f'{sls.pending}/{helper.name}/{log}', f'{sls.failed}/{helper.name}/{log}')
+                    elif result == sls.helpers.HelperResult.CLASS_ERROR:
+                        break
+                except Exception as e:
+                    logger.error(f'Encountered error submitting log {helper.name}/{log}', exc_info=e)
+                    submitted[log] = e
     except LockHeldError:
         # Another process is currently working on this directory
         logger.warning(f'Lock already held trying to submit logs for {helper.name}')
@@ -82,16 +86,16 @@ async def submit_category(helper: sls.helpers.Helper, logs: Iterable[str]) -> li
     return submitted
 
 
-async def submit() -> list[str]:
+async def submit() -> dict[str, sls.helpers.HelperResult | Exception]:
     if sls.base_config.get('submit', 'on') != 'on':
-        return []
+        return {}
     logger.info('Starting log submission')
     if not sls.util.check_network():
         logger.info('Network is offline, bailing out')
-        return []
+        return {}
 
     tasks = []
-    submitted = []
+    submitted: dict[str, sls.helpers.HelperResult | Exception] = {}
     for category in sls.helpers.list_helpers():
         helper = sls.helpers.create_helper(category)
         if not helper:
@@ -106,22 +110,22 @@ async def submit() -> list[str]:
             logger.info('No logs found, skipping')
             continue
 
-        async def submit_fn(helper: sls.helpers.Helper, logs: Iterable[str]) -> list[str]:
+        async def submit_fn(helper: sls.helpers.Helper, logs: Iterable[str]) -> dict[str, sls.helpers.HelperResult | Exception]:
             submitted = await submit_category(helper, logs)
-            return [f'{helper.name}/{log}' for log in submitted]
+            return {f'{helper.name}/{log}': result for log, result in submitted.items()}
 
         tasks.append(asyncio.create_task(submit_fn(helper, logs)))
     if tasks:
         done, _ = await asyncio.wait(tasks)
         for task in done:
-            submitted.extend(task.result())
+            submitted.update(task.result())
     logger.info('Finished log submission')
     return submitted
 
 
-async def trigger() -> tuple[list[str], list[str]]:
+async def trigger() -> tuple[list[str], dict[str, sls.helpers.HelperResult | Exception]]:
     collected = []
-    submitted = []
+    submitted: dict[str, sls.helpers.HelperResult | Exception] = {}
     if sls.base_config['enable'] == 'on':
         logger.info('Routine collection/submission triggered')
         try:
