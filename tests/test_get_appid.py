@@ -139,3 +139,11 @@ def test_environ_invalid_appid(build_proc_chain):
     }
     build_proc_chain(procs)
     assert sls.util.get_appid(2) is None
+
+
+def test_environ_nonsteam_appid(build_proc_chain):
+    procs: ProcChain = {
+        2:  (1, ['hl2.exe'], {'SteamGameId': '3000000000'}),
+    }
+    build_proc_chain(procs)
+    assert sls.util.get_appid(2) is None

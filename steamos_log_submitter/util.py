@@ -64,7 +64,8 @@ def get_appid(pid: int) -> Optional[int]:
                 env = {kv.split('=')[0]: kv.split('=', 1)[1] for kv in f.read().split('\0') if '=' in kv}
                 if env:
                     try:
-                        return int(env['SteamGameId'])
+                        appid = int(env['SteamGameId'])
+                        break
                     except (KeyError, ValueError):
                         pass
         except PermissionError:
