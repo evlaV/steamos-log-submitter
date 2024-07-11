@@ -105,19 +105,38 @@ def get_appid(pid: int) -> Optional[int]:
     return appid
 
 
-def get_build_id(f: Optional[io.TextIOBase] = None) -> Optional[str]:
+def get_file_key(key: str, f: io.TextIOBase) -> Optional[str]:
     try:
-        if not f:
-            f = open('/etc/os-release')
         for line in f:
             if '=' not in line:
                 continue
             name, val = line.split('=', 1)
-            if name == 'BUILD_ID':
-                return val.strip()
+            if name == key:
+                val = val.strip()
+                if len(val) >= 2 and val[0] == val[-1] == '"':
+                    val = val.strip('"')
+                return val
     except OSError:
         pass
     return None
+
+
+def get_version_id(f: Optional[io.TextIOBase] = None) -> Optional[str]:
+    try:
+        if not f:
+            f = open('/etc/os-release')
+        return get_file_key('VERSION_ID', f)
+    except OSError:
+        return None
+
+
+def get_build_id(f: Optional[io.TextIOBase] = None) -> Optional[str]:
+    try:
+        if not f:
+            f = open('/etc/os-release')
+        return get_file_key('BUILD_ID', f)
+    except OSError:
+        return None
 
 
 def check_network() -> bool:
