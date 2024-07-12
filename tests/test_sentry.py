@@ -10,6 +10,7 @@ import json
 import steamos_log_submitter as sls
 import steamos_log_submitter.aggregators.sentry as sentry
 from . import mock_config, open_shim  # NOQA: F401
+from . import unreachable
 
 
 @pytest.mark.asyncio
@@ -60,6 +61,40 @@ async def test_id_tags(mock_config, monkeypatch, open_shim):
 
     open_shim.enoent()
     monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: '1234')
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    assert await event.send()
+
+
+@pytest.mark.asyncio
+async def test_steamos_tags(mock_config, monkeypatch, open_shim):
+    async def fake_response(self, url, json, **kwargs):
+        assert json.get('tags') == {'os_build': '20220202.202'}
+        assert json.get('release') == '3.4'
+        return httpx.Response(200)
+
+    open_shim.enoent()
+    monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: None)
+    monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20220202.202')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'rel')
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    assert await event.send()
+
+
+@pytest.mark.asyncio
+async def test_non_steamos_tags(mock_config, monkeypatch, open_shim):
+    async def fake_response(self, url, json, **kwargs):
+        assert not json.get('tags')
+        assert json.get('version') is None
+        return httpx.Response(200)
+
+    open_shim.enoent()
+    monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: None)
+    monkeypatch.setattr(sls.util, 'get_build_id', unreachable)
+    monkeypatch.setattr(sls.util, 'get_version_id', unreachable)
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')
     assert await event.send()

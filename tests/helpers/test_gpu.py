@@ -4,7 +4,6 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import pytest
-import steamos_log_submitter as sls
 import steamos_log_submitter.aggregators.sentry as sentry
 from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.gpu import GPUHelper as helper
@@ -38,7 +37,6 @@ async def test_no_timestamp(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -56,7 +54,6 @@ async def test_bad_timestamp(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"timestamp":"fake"}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -74,7 +71,6 @@ async def test_timestamp(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"timestamp":1234.0}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -93,7 +89,6 @@ async def test_no_appid(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -112,7 +107,6 @@ async def test_bad_appid(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"appid":null}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -131,7 +125,6 @@ async def test_appid(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"appid":1234}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -151,7 +144,6 @@ async def test_exe(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"executable":"hl2.exe"}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -171,7 +163,6 @@ async def test_comm(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"comm":"hl2"}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -190,7 +181,6 @@ async def test_kernel(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"kernel":"4.20.69-valve1"}')
 
     assert await helper.submit('fake.json') == HelperResult.OK
@@ -209,7 +199,6 @@ async def test_mesa(monkeypatch, open_shim):
         return True
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
-    monkeypatch.setattr(sls.util, 'get_build_id', lambda: None)
     open_shim(b'{"mesa":"23.1.3.170235.radeonsi_3.5.1-1"}')
 
     assert await helper.submit('fake.json') == HelperResult.OK

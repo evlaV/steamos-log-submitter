@@ -40,7 +40,8 @@ class SentryEvent(aggregators.AggregatorEvent):
         self.timestamp: Optional[float] = None
         self.environment: Optional[str] = sls.util.get_steamos_branch()
         self.message: Optional[str] = None
-        self.build_id: Optional[str] = sls.util.get_build_id()
+        self.os_build: Optional[str] = sls.util.get_build_id() if self.environment is not None else None
+        self.version: Optional[str] = sls.util.get_version_id() if self.environment is not None else None
 
     def add_attachment(self, *attachments: dict[str, str | bytes]) -> None:
         self.attachments.extend(attachments)
@@ -72,8 +73,8 @@ class SentryEvent(aggregators.AggregatorEvent):
         self._initialize()
         assert self._envelope
 
-        if self.build_id:
-            self._event['release'] = self.build_id
+        if self.version:
+            self._event['release'] = self.version
 
         if self.message:
             self._event['message'] = self.message
@@ -89,6 +90,9 @@ class SentryEvent(aggregators.AggregatorEvent):
             if f'appid:{self.appid}' not in fingerprint:
                 fingerprint.append(f'appid:{self.appid}')
             tags['appid'] = self.appid
+
+        if self.os_build:
+            tags['os_build'] = self.os_build
 
         unit_id = sls.util.telemetry_unit_id()
         if unit_id:

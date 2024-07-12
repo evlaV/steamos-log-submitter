@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
@@ -482,13 +482,15 @@ async def test_collect_filesystems_clean(fake_async_subprocess):
 async def test_collect_system(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', '1024000 kB')))
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'vram': '1024 MB',
         'mem': '14400000 kB',
@@ -500,13 +502,15 @@ async def test_collect_system(monkeypatch):
 async def test_collect_system_no_vram(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: None))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', '1024000 kB')))
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'mem': '14400000 kB',
         'swap': '1024000 kB',
@@ -517,13 +521,15 @@ async def test_collect_system_no_vram(monkeypatch):
 async def test_collect_system_no_mem(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: (None, '1024000 kB')))
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'vram': '1024 MB',
         'swap': '1024000 kB',
@@ -534,13 +540,15 @@ async def test_collect_system_no_mem(monkeypatch):
 async def test_collect_system_no_swap(monkeypatch):
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'vram': '1024 MB',
         'mem': '14400000 kB',
@@ -560,6 +568,7 @@ async def test_collect_system_board(monkeypatch, open_shim):
 
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
@@ -567,7 +576,8 @@ async def test_collect_system_board(monkeypatch, open_shim):
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'vram': '1024 MB',
         'mem': '14400000 kB',
@@ -585,6 +595,7 @@ async def test_collect_system_board_3rd_party(monkeypatch, open_shim):
 
     monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20230704')
+    monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(os, 'access', lambda x, y: True)
     monkeypatch.setattr(SystemType, 'get_vram', awaitable(lambda: '1024 MB'))
     monkeypatch.setattr(SystemType, 'get_ram', awaitable(lambda: ('14400000 kB', None)))
@@ -592,7 +603,8 @@ async def test_collect_system_board_3rd_party(monkeypatch, open_shim):
 
     assert dict(await SystemType.list()) == {
         'branch': 'main',
-        'release': '20230704',
+        'version': '3.4',
+        'build': '20230704',
         'devmode': True,
         'vram': '1024 MB',
         'mem': '14400000 kB',

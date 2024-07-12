@@ -381,7 +381,8 @@ async def test_submit_multiple_timestamp(monkeypatch):
 @pytest.mark.asyncio
 async def test_submit_build_info(monkeypatch):
     async def check_now(self) -> bool:
-        assert self.build_id == '20230927.1000'
+        assert self.os_build == '20230927.1000'
+        assert self.version == '3.6'
         assert self.tags['kernel'] == '6.1.52-valve2-1-neptune-61'
         return True
 

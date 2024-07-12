@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import calendar
 import io
@@ -182,8 +182,10 @@ class KdumpHelper(Helper):
                             event.tags['kernel'] = data.decode().strip()
                         zf.seek(0)
                         if zname.startswith('build'):
-                            with io.TextIOWrapper(zf) as build:
-                                event.build_id = sls.util.get_build_id(build)
+                            with io.StringIO(data.decode(errors='replace')) as build:
+                                event.os_build = sls.util.get_build_id(build)
+                            with io.StringIO(data.decode(errors='replace')) as build:
+                                event.version = sls.util.get_version_id(build)
                         if zname.startswith('dmesg'):
                             with io.TextIOWrapper(zf) as dmesg:
                                 event.message, stack, event.extra = cls.get_summaries(dmesg)

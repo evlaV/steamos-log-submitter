@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
@@ -380,7 +380,8 @@ class SystemType(SysinfoType):
     async def list(cls) -> dict[str, JSON]:
         sysinfo: dict[str, JSON] = {
             'branch': sls.util.get_steamos_branch(),
-            'release': sls.util.get_build_id(),
+            'build': sls.util.get_build_id(),
+            'version': sls.util.get_version_id(),
         }
 
         try:

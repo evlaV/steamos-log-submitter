@@ -24,11 +24,13 @@ async def test_submit_metadata(monkeypatch, open_shim):
         assert data.get('tags', {}).get('unit_id') == 'unit'
         assert data.get('tags', {}).get('appid') == 456
         assert data.get('tags', {}).get('product') == 'Valve'
-        assert data.get('release') == '20220202.202'
+        assert data.get('tags', {}).get('os_build') == '20220202.202'
+        assert data.get('release') == '3.4'
         assert data.get('environment') == 'rel'
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: '20220202.202')
+    monkeypatch.setattr(util, 'get_version_id', lambda: '3.4')
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: 'unit')
     monkeypatch.setattr(util, 'get_steamos_branch', lambda: 'rel')
     monkeypatch.setattr(util, 'read_file', lambda _: 'Valve')
@@ -53,6 +55,7 @@ async def test_no_metadata(monkeypatch, open_shim):
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(util, 'get_version_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(util, 'get_steamos_branch', lambda: None)
     monkeypatch.setattr(util, 'read_file', lambda _: None)
@@ -73,6 +76,7 @@ async def test_no_xattrs(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(util, 'get_version_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
 
@@ -96,6 +100,7 @@ async def test_partial_xattrs(monkeypatch):
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(util, 'get_version_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
 
@@ -113,6 +118,7 @@ async def test_400_corrupted(monkeypatch, open_shim):
         return httpx.Response(400, content=b'{"detail":"invalid minidump"}')
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(util, 'get_version_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(util, 'read_file', lambda _: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
@@ -127,6 +133,7 @@ async def test_400_not_corrupted(monkeypatch, open_shim):
         return httpx.Response(400)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
+    monkeypatch.setattr(util, 'get_version_id', lambda: None)
     monkeypatch.setattr(util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(util, 'read_file', lambda _: None)
     monkeypatch.setattr(httpx.AsyncClient, 'post', post)
