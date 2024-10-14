@@ -5,11 +5,11 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.types import JSONEncodable
-from typing import ClassVar, Optional, Self, Type
+from typing import ClassVar, Optional, Type
 
 
 class Error(RuntimeError):
-    map: ClassVar[dict[str, Type[Self]]] = {}
+    map: ClassVar[dict[str, Type['Error']]] = {}
     name: ClassVar[str]
 
     @classmethod
