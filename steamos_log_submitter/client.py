@@ -56,7 +56,7 @@ class Client:
         async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> OptionalDBusT:
             await self._connect()
             try:
-                return await fn(self, *args)
+                return await fn(self, *args, **kwargs)
             except Exception as e:
                 self._rethrow(e)
 
