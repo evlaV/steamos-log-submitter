@@ -9,8 +9,10 @@ import minidump.common_structs  # type: ignore[import-untyped]
 from minidump.exceptions import (  # type: ignore[import-untyped]
     MinidumpException, MinidumpHeaderSignatureMismatchException, MinidumpHeaderFlagsException)
 from typing import Final
-from steamos_log_submitter.aggregators.sentry import MinidumpEvent
 from . import Helper, HelperResult
+
+from steamos_log_submitter.aggregators.sentry import MinidumpEvent
+import steamos_log_submitter as sls
 
 # Extra stream types
 # Breakpad extensions (Gg)
@@ -59,7 +61,12 @@ class MinidumpHelper(Helper):
                 await mf.file_handle.seek(mf.header.StreamDirectoryRva + i * 12, os.SEEK_SET)
                 type = await mf.file_handle.read(4)
                 type_value = int.from_bytes(type, byteorder='little', signed=False)
-                if type_value == MD_LINUX_ENVIRON:
+                if type_value == MD_LINUX_CMD_LINE:
+                    loc = await minidump.common_structs.MINIDUMP_LOCATION_DESCRIPTOR.aparse(mf.file_handle)
+                    await mf.file_handle.seek(loc.Rva)
+                    cmdline = await mf.file_handle.read(loc.DataSize)
+                    event.extra['cmdline'] = [arg.decode(errors='replace') for arg in cmdline.split(b'\0')]
+                elif type_value == MD_LINUX_ENVIRON:
                     loc = await minidump.common_structs.MINIDUMP_LOCATION_DESCRIPTOR.aparse(mf.file_handle)
                     await mf.file_handle.seek(loc.Rva)
                     environ = await mf.file_handle.read(loc.DataSize)
@@ -75,6 +82,22 @@ class MinidumpHelper(Helper):
                                 continue
                             ev[key.decode(errors='replace')] = value.decode(errors='replace')
                         event.extra['environ'] = ev
+                elif type_value == MD_LINUX_MAPS:
+                    loc = await minidump.common_structs.MINIDUMP_LOCATION_DESCRIPTOR.aparse(mf.file_handle)
+                    await mf.file_handle.seek(loc.Rva)
+                    maps = await mf.file_handle.read(loc.DataSize)
+                    packages = {}
+                    for line in maps.decode(errors='replace').split('\n'):
+                        mapped = line.split(maxsplit=5)
+                        if len(mapped) < 6:
+                            continue
+                        mapped_file = mapped[5]
+                        package = sls.util.get_path_package(mapped_file)
+                        if package is None:
+                            continue
+                        packages[package[0]] = package[1]
+                    if packages:
+                        event.extra['packages'] = packages
         except (MinidumpException, MinidumpHeaderSignatureMismatchException, MinidumpHeaderFlagsException) as e:
             cls.logger.warning(f"Couldn't parse minidump, skipping extra data: {e}")
 
