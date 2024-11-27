@@ -25,7 +25,8 @@ logger = logging.getLogger(__loader__.name)
 
 
 async def run() -> bool:
-    driver_blocklist = ('amdgpu',)  # amdgpu is handled by the gpu hook
+    driver_blocklist = ('amdgpu',  # amdgpu is handled by the gpu hook
+                        'ath11k_pci', )  # ath11k_pci is handled by steamos-manager
 
     ts = time.time_ns()
     dumpdir = sys.argv[1]
