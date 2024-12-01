@@ -264,3 +264,82 @@ async def test_proc_scan_invalid(monkeypatch, open_shim, staging_file) -> None:
     value = json.load(staging_file)
 
     assert 'appid' not in value
+
+
+@pytest.mark.asyncio
+async def test_umr(monkeypatch, open_shim, staging_file) -> None:
+    def fn(*args, **kwargs) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
+        if args[0][0] != 'umr':
+            raise subprocess.SubprocessError
+        assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
+        ret.stdout = 'stdout'
+        ret.stderr = 'stderr'
+        return ret
+
+    journal = [
+        {'MESSAGE': '[drm:gfx_v10_0_priv_reg_irq [amdgpu]] *ERROR* Illegal register access in command stream'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* ring gfx_0.0.0 timeout, signaled seq=363661, emitted seq=363662'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* Process information: process amdgpu_test pid 5366 thread amdgpu_test pid 5366'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset begin!'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: MODE2 reset'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset succeeded, trying to resume'},
+    ]
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456', 'NAME': 'hl2', 'ID_PATH': 'pci-0000:04:00.0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', fn)
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (journal, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: [])
+
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert value['umr'] == {
+        'stdout': 'stdout',
+        'stderr': 'stderr',
+    }
+
+
+@pytest.mark.asyncio
+async def test_umr_no_stderr(monkeypatch, open_shim, staging_file) -> None:
+    def fn(*args, **kwargs) -> subprocess.CompletedProcess:
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
+        if args[0][0] != 'umr':
+            raise subprocess.SubprocessError
+        assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
+        ret.stdout = 'stdout'
+        ret.stderr = ''
+        return ret
+
+    journal = [
+        {'MESSAGE': '[drm:gfx_v10_0_priv_reg_irq [amdgpu]] *ERROR* Illegal register access in command stream'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* ring gfx_0.0.0 timeout, signaled seq=363661, emitted seq=363662'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* Process information: process amdgpu_test pid 5366 thread amdgpu_test pid 5366'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset begin!'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: MODE2 reset'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset succeeded, trying to resume'},
+    ]
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456', 'NAME': 'hl2', 'ID_PATH': 'pci-0000:04:00.0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', fn)
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (journal, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: [])
+
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert value['umr'] == {
+        'stdout': 'stdout',
+    }

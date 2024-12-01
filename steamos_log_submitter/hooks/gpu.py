@@ -10,6 +10,7 @@ import importlib.machinery
 import json
 import logging
 import os
+import re
 import subprocess
 import time
 import typing
@@ -35,12 +36,15 @@ async def run() -> None:
         'branch': sls.util.get_steamos_branch(),
     }
     pid = None
+    pci_path = None
     for key, val in os.environ.items():
         if key == 'PID':
             try:
                 pid = int(val)
             except ValueError:
                 pass
+        if key == 'ID_PATH' and val.startswith('pci-'):
+            pci_path = val[4:]
         env[key] = val
     log['env'] = env
     if pid:
@@ -85,14 +89,31 @@ async def run() -> None:
         logger.warning('Failed to get vulkan-radeon version', exc_info=e)
         pass
     journal, _ = await sls.util.read_journal('kernel', current_boot=True, start_ago_ms=15000)
+    ring = None
     if journal:
+        ring_re = re.compile(r'\*ERROR\* ring ([^ ]+) timeout')
         relevant: list[str] = []
         for line in journal:
             for context in ('amdgpu', 'drm', 'i915', 'nouveau'):
-                if context in typing.cast(str, line.get('MESSAGE', '')):
-                    relevant.append(typing.cast(str, line['MESSAGE']))
+                message = typing.cast(str, line.get('MESSAGE', ''))
+                if context in message:
+                    relevant.append(message)
+                    if context == 'amdgpu':
+                        match = ring_re.search(message)
+                        if match:
+                            ring = match.group(1)
                     break
         log['journal'] = relevant
+    if pci_path is not None and ring is not None:
+        try:
+            umr = subprocess.run(['umr', '--by-pci', pci_path, '-O', 'bits,halt_waves', '-go', '0', '-wa', ring, '-go', '1'], capture_output=True, errors='replace', check=True)
+            umr_log = {'stdout': umr.stdout}
+            if umr.stderr:
+                umr_log['stderr'] = umr.stderr
+            log['umr'] = umr_log
+        except (OSError, subprocess.SubprocessError) as e:
+            logger.warning('Failed to get wave information via umr', exc_info=e)
+            pass
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
 
