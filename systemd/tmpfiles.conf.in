@@ -14,9 +14,6 @@ d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded	0750	steamos-log-submitter	
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed  	0750	steamos-log-submitter	steamos-log-submitter	-	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/data	0750	steamos-log-submitter	steamos-log-submitter	-	-
 
-z	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
-z	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
-z	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/*/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
 z	@LOCALSTATEDIR@/lib/steamos-log-submitter/data/*	0640	steamos-log-submitter	steamos-log-submitter	-	-
 
 # Clean up submissions after 2 weeks, or 1 week if it's already been uploaded
