@@ -75,7 +75,8 @@ async def run() -> None:
     try:
         mesa = subprocess.run(['pacman', '-Q', 'mesa'], capture_output=True, errors='replace', check=True)
         log['mesa'] = mesa.stdout.strip().split(' ')[1]
-    except (OSError, subprocess.SubprocessError):
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.warning('Failed to get mesa version', exc_info=e)
         pass
     journal, _ = await sls.util.read_journal('kernel', current_boot=True, start_ago_ms=15000)
     if journal:
