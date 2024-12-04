@@ -78,6 +78,12 @@ async def run() -> None:
     except (OSError, subprocess.SubprocessError) as e:
         logger.warning('Failed to get mesa version', exc_info=e)
         pass
+    try:
+        radv = subprocess.run(['pacman', '-Q', 'vulkan-radeon'], capture_output=True, errors='replace', check=True)
+        log['radv'] = radv.stdout.strip().split(' ')[1]
+    except (OSError, subprocess.SubprocessError) as e:
+        logger.warning('Failed to get vulkan-radeon version', exc_info=e)
+        pass
     journal, _ = await sls.util.read_journal('kernel', current_boot=True, start_ago_ms=15000)
     if journal:
         relevant: list[str] = []
