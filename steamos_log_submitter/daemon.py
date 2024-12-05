@@ -50,6 +50,7 @@ class Daemon:
     STARTUP: float = 20
     INTERVAL: float = 3600
     WAKEUP_DELAY: float = 10
+    APPLIST_UPDATE_INTERVAL: float = 3600 * 24
 
     def __init__(self, *, exit_on_shutdown: bool = False):
         self._exit_on_shutdown = exit_on_shutdown
@@ -67,6 +68,19 @@ class Daemon:
         if next_interval > 0:
             logger.debug(f'Sleeping for {next_interval:.3f} seconds')
             await asyncio.sleep(next_interval)
+
+        last_applist_update = 0.0
+        entry = config.get('last_applist_update')
+        if entry is not None:
+            try:
+                last_applist_update = float(entry)
+            except ValueError:
+                logger.debug(f'Last app list update timestamp was invalid: {entry}')
+                pass
+        if last_applist_update + self.APPLIST_UPDATE_INTERVAL <= time.time():
+            await sls.util.update_app_list()
+            config['last_applist_update'] = time.time()
+            sls.config.write_config()
 
         if not self._serving:
             return

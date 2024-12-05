@@ -302,6 +302,7 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     start = time.time()
     daemon, bus = await dbus_daemon
@@ -327,6 +328,7 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.06)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     mock_config.add_section('daemon')
     start = time.time()
@@ -352,6 +354,7 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     mock_config.add_section('daemon')
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
@@ -379,6 +382,7 @@ async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mo
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.2)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'on')
@@ -402,6 +406,7 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.08)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     start = time.time()
     daemon, bus = await dbus_daemon
@@ -432,6 +437,7 @@ async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.04)
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
     start = time.time()
     daemon, bus = await dbus_daemon
     await daemon.enable(True)
@@ -787,6 +793,7 @@ async def test_suspend_reschedule_early(count_hits, mock_dbus, mock_config, monk
     daemon = sls.daemon.Daemon()
     count_hits.ret = [], []
     monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
     monkeypatch.setattr(time, 'time', lambda: 100000)
     daemon.WAKEUP_DELAY = 0.01
     daemon.INTERVAL = 5
@@ -818,6 +825,7 @@ async def test_suspend_reschedule_late(count_hits, mock_dbus, mock_config, monke
     daemon = sls.daemon.Daemon()
     count_hits.ret = [], []
     monkeypatch.setattr(daemon, 'trigger', awaitable(count_hits))
+    monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
     monkeypatch.setattr(time, 'time', lambda: 100000)
     daemon.WAKEUP_DELAY = 0.01
     daemon.STARTUP = 0.06
