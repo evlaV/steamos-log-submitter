@@ -23,6 +23,7 @@ d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/journal    	0750	steamos-log
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/kdump      	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/minidump   	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/sysinfo    	0750	steamos-log-submitter	steamos-log-submitter	14d	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/sysreport  	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/pending/trace      	0750	steamos-log-submitter	steamos-log-submitter	14d	-
 
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/devcoredump	0750	steamos-log-submitter	steamos-log-submitter	7d	-
@@ -31,6 +32,7 @@ d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/journal    	0750	steamos-lo
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/kdump      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/minidump   	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/sysinfo    	0750	steamos-log-submitter	steamos-log-submitter	7d	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/sysreport  	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/uploaded/trace      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/devcoredump	0750	steamos-log-submitter	steamos-log-submitter	7d	-
@@ -39,4 +41,5 @@ d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/journal    	0750	steamos-log-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/kdump      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/minidump   	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/sysinfo    	0750	steamos-log-submitter	steamos-log-submitter	7d	-
+d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/sysreport  	0750	steamos-log-submitter	steamos-log-submitter	7d	-
 d	@LOCALSTATEDIR@/lib/steamos-log-submitter/failed/trace      	0750	steamos-log-submitter	steamos-log-submitter	7d	-
