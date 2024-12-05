@@ -13,6 +13,7 @@ import io
 import os
 import pwd
 import re
+import sqlite3
 import subprocess
 import time
 import typing
@@ -20,6 +21,7 @@ from elftools.elf.elffile import ELFFile
 from types import TracebackType
 from typing import Optional, Type, Union
 
+import steamos_log_submitter as sls
 from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
@@ -321,3 +323,62 @@ def get_path_package(path: str) -> Optional[tuple[str, str]]:
     except (OSError, subprocess.SubprocessError) as e:
         logger.warning('Failed to get package', exc_info=e)
     return None
+
+
+async def update_app_list() -> bool:
+    ua_string = f'SteamOS Log Submitter/{sls.__version__}'
+
+    logger.debug('Updating app list')
+    async with httpx.AsyncClient() as client:
+        try:
+            get = await client.get('https://api.steampowered.com/ISteamApps/GetAppList/v2/?format=json', headers={
+                'User-Agent': ua_string
+            })
+        except httpx.HTTPError as e:
+            logger.warning('Exception occurred while fetching app list', exc_info=e)
+            return False
+
+        if get.status_code != 200:
+            logger.warning(f'Failed to fetch app list with status code {get.status_code}')
+            return False
+
+        try:
+            applist_raw = get.json()["applist"]["apps"]
+        except (KeyError, json.decoder.JSONDecodeError) as e:
+            logger.warning('Failed to parse app list', exc_info=e)
+            return False
+
+    db = sqlite3.connect(f'{sls.data.data_root}/applist.sqlite3')
+    cursor = db.cursor()
+
+    cursor.execute('''CREATE TABLE IF NOT EXISTS applist (
+        appid INTEGER,
+        name TEXT,
+        PRIMARY KEY (appid)
+    )''')
+
+    for app in applist_raw:
+        cursor.execute('INSERT OR REPLACE INTO applist (appid, name) VALUES (:appid, :name)', app)
+    db.commit()
+
+    cursor.execute('VACUUM')
+    logger.info('App list updated')
+    return True
+
+
+def get_app_name(appid: int) -> Optional[str]:
+    try:
+        db = sqlite3.connect(f'{sls.data.data_root}/applist.sqlite3')
+    except sqlite3.OperationalError as e:
+        logger.warning(f'Failed to open app list database: {e}')
+        return None
+
+    cursor = db.cursor()
+    try:
+        cursor.execute('SELECT name FROM applist WHERE appid = :appid', {'appid': appid})
+    except sqlite3.OperationalError:
+        return None
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return typing.cast(str, row[0])
