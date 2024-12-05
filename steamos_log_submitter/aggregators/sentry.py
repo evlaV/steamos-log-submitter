@@ -90,6 +90,7 @@ class SentryEvent(aggregators.AggregatorEvent):
             if f'appid:{self.appid}' not in fingerprint:
                 fingerprint.append(f'appid:{self.appid}')
             tags['appid'] = self.appid
+            extra['app.name'] = sls.util.get_app_name(self.appid)
 
         if self.os_build:
             tags['os_build'] = self.os_build

@@ -151,6 +151,22 @@ async def test_appid(mock_config, monkeypatch, open_shim):
 
 
 @pytest.mark.asyncio
+async def test_app_list(mock_config, monkeypatch, open_shim):
+    async def fake_response(self, url, json, **kwargs):
+        assert json.get('fingerprint') == ['appid:1234']
+        assert json.get('tags') == {'appid': 1234}
+        assert json.get('extra') == {'sls.version': sls.__version__, 'app.name': 'Half-Life 2'}
+        return httpx.Response(200)
+
+    open_shim.enoent()
+    monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
+    monkeypatch.setattr(sls.util, 'get_app_name', lambda _: 'Half-Life 2')
+    event = sentry.SentryEvent('https://fake@dsn/0')
+    event.appid = 1234
+    assert await event.send()
+
+
+@pytest.mark.asyncio
 async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
