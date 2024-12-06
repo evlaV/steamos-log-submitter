@@ -80,6 +80,9 @@ class MinidumpHelper(Helper):
                             except ValueError:
                                 cls.logger.warning(f'Got invalid environment variable: {envvar}')
                                 continue
+                            if key in (b'SteamAppUser',):
+                                # Scrub sensitive environment variables
+                                continue
                             ev[key.decode(errors='replace')] = value.decode(errors='replace')
                         event.extra['environ'] = ev
                 elif type_value == MD_LINUX_MAPS:
