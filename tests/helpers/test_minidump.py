@@ -72,7 +72,6 @@ async def test_no_xattrs(monkeypatch):
         assert data.get('tags', {}).get('executable') == 'exe'
         assert data.get('tags', {}).get('comm') == 'comm'
         assert data.get('tags', {}).get('path') == '/fake/exe'
-        assert data.get('fingerprint') == ['executable:exe']
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)
@@ -96,7 +95,6 @@ async def test_partial_xattrs(monkeypatch):
         assert data.get('tags', {}).get('executable') == 'exe'
         assert 'comm' not in data.get('tags', {})
         assert data.get('tags', {}).get('path') == '/fake/exe'
-        assert data.get('fingerprint') == ['executable:exe']
         return httpx.Response(200)
 
     monkeypatch.setattr(util, 'get_build_id', lambda: None)

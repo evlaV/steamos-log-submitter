@@ -51,9 +51,6 @@ class MinidumpHelper(Helper):
             except OSError:
                 cls.logger.warning(f'Failed to get {attr} xattr on minidump.')
 
-        if 'executable' in event.tags:
-            event.fingerprint.append(f'executable:{event.tags["executable"]}')
-
         try:
             mf = await minidump.aminidumpfile.AMinidumpFile.parse(fname)
 
