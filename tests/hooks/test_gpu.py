@@ -34,17 +34,21 @@ def staging_file(monkeypatch):
 
 
 @pytest.fixture
-def fake_mesa(monkeypatch):
+def fake_pacman(monkeypatch):
     def fn(*args, **kwargs) -> subprocess.CompletedProcess:
         ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
-        ret.stdout = 'mesa 23.2.34-1\n'
+        if args[0][0] == 'pacman':
+            if args[0][2] == 'mesa':
+                ret.stdout = 'mesa 23.2.34-1\n'
+            elif args[0][2] == 'vulkan-radeon':
+                ret.stdout = 'vulkan-radeon 24.3.0_devel.197194.steamos_24.11.0-2.1\n'
         return ret
 
     monkeypatch.setattr(subprocess, 'run', fn)
 
 
 @pytest.mark.asyncio
-async def test_basic(monkeypatch, fake_mesa) -> None:
+async def test_basic(monkeypatch, fake_pacman) -> None:
     blob = StringIO()
 
     def staging_file(category: str, name: str, mode: str) -> io.StringIO:
@@ -76,13 +80,14 @@ async def test_basic(monkeypatch, fake_mesa) -> None:
     assert value['comm'] == 'hl2'
     assert value['kernel'] == '3'
     assert value['mesa'] == '23.2.34-1'
+    assert value['radv'] == '24.3.0_devel.197194.steamos_24.11.0-2.1'
     assert value['pid'] == 456
     assert value['timestamp'] == 0.123456789
     assert value['journal'] == ['amdgpu: a', 'drm: b']
 
 
 @pytest.mark.asyncio
-async def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
+async def test_invalid_pid(monkeypatch, fake_pacman, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': 'foo'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
@@ -101,7 +106,7 @@ async def test_invalid_pid(monkeypatch, fake_mesa, staging_file) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
+async def test_invalid_appid(monkeypatch, fake_pacman, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
@@ -119,7 +124,7 @@ async def test_invalid_appid(monkeypatch, fake_mesa, staging_file) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
+async def test_invalid_exe(monkeypatch, fake_pacman, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', always_raise(FileNotFoundError))
@@ -137,7 +142,7 @@ async def test_invalid_exe(monkeypatch, fake_mesa, staging_file) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_mesa(monkeypatch, staging_file) -> None:
+async def test_invalid_pacman(monkeypatch, staging_file) -> None:
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
     monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456'})
     monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
@@ -153,6 +158,7 @@ async def test_invalid_mesa(monkeypatch, staging_file) -> None:
     value = json.load(staging_file)
 
     assert 'mesa' not in value
+    assert 'radv' not in value
 
 
 @pytest.mark.asyncio
