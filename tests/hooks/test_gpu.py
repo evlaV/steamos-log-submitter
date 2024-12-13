@@ -18,7 +18,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
 
 from .. import always_raise, awaitable, StringIO
-from .. import open_shim  # NOQA: F401
+from .. import count_hits, open_shim  # NOQA: F401
 
 
 @pytest.fixture
@@ -267,14 +267,22 @@ async def test_proc_scan_invalid(monkeypatch, open_shim, staging_file) -> None:
 
 
 @pytest.mark.asyncio
-async def test_umr(monkeypatch, open_shim, staging_file) -> None:
+async def test_umr(count_hits, monkeypatch, open_shim, staging_file) -> None:
     def fn(*args, **kwargs) -> subprocess.CompletedProcess:
-        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         if args[0][0] != 'umr':
             raise subprocess.SubprocessError
-        assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
-        ret.stdout = 'stdout'
-        ret.stderr = 'stderr'
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
+        count_hits()
+        if count_hits.hits == 1:
+            assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
+            ret.stdout = 'wave stdout'
+            ret.stderr = 'wave stderr'
+        elif count_hits.hits == 2:
+            assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-RS', 'gfx_0.0.0']
+            ret.stdout = 'ring stdout'
+            ret.stderr = 'ring stderr'
+        else:
+            assert False
         return ret
 
     journal = [
@@ -301,20 +309,34 @@ async def test_umr(monkeypatch, open_shim, staging_file) -> None:
     value = json.load(staging_file)
 
     assert value['umr'] == {
-        'stdout': 'stdout',
-        'stderr': 'stderr',
+        'wave': {
+            'stdout': 'wave stdout',
+            'stderr': 'wave stderr',
+        },
+        'ring': {
+            'stdout': 'ring stdout',
+            'stderr': 'ring stderr',
+        }
     }
 
 
 @pytest.mark.asyncio
-async def test_umr_no_stderr(monkeypatch, open_shim, staging_file) -> None:
+async def test_umr_no_stderr(count_hits, monkeypatch, open_shim, staging_file) -> None:
     def fn(*args, **kwargs) -> subprocess.CompletedProcess:
-        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
         if args[0][0] != 'umr':
             raise subprocess.SubprocessError
-        assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
-        ret.stdout = 'stdout'
-        ret.stderr = ''
+        ret: subprocess.CompletedProcess = subprocess.CompletedProcess(args[0], 0)
+        count_hits()
+        if count_hits.hits == 1:
+            assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
+            ret.stdout = 'wave stdout'
+            ret.stderr = ''
+        elif count_hits.hits == 2:
+            assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-RS', 'gfx_0.0.0']
+            ret.stdout = 'ring stdout'
+            ret.stderr = ''
+        else:
+            assert False
         return ret
 
     journal = [
@@ -341,5 +363,49 @@ async def test_umr_no_stderr(monkeypatch, open_shim, staging_file) -> None:
     value = json.load(staging_file)
 
     assert value['umr'] == {
-        'stdout': 'stdout',
+        'wave': {
+            'stdout': 'wave stdout',
+        },
+        'ring': {
+            'stdout': 'ring stdout',
+        }
     }
+
+
+@pytest.mark.asyncio
+async def test_no_umr(count_hits, monkeypatch, open_shim, staging_file) -> None:
+    def fn(*args, **kwargs) -> subprocess.CompletedProcess:
+        if args[0][0] == 'umr':
+            count_hits()
+            if count_hits.hits == 1:
+                assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-O', 'bits,halt_waves', '-go', '0', '-wa', 'gfx_0.0.0', '-go', '1']
+            elif count_hits.hits == 2:
+                assert args[0] == ['umr', '--by-pci', '0000:04:00.0', '-RS', 'gfx_0.0.0']
+            else:
+                assert False
+        raise subprocess.SubprocessError
+
+    journal = [
+        {'MESSAGE': '[drm:gfx_v10_0_priv_reg_irq [amdgpu]] *ERROR* Illegal register access in command stream'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* ring gfx_0.0.0 timeout, signaled seq=363661, emitted seq=363662'},
+        {'MESSAGE': '[drm:amdgpu_job_timedout [amdgpu]] *ERROR* Process information: process amdgpu_test pid 5366 thread amdgpu_test pid 5366'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset begin!'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: MODE2 reset'},
+        {'MESSAGE': 'amdgpu 0000:04:00.0: amdgpu: GPU reset succeeded, trying to resume'},
+    ]
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {'ABC': '123', 'PID': '456', 'NAME': 'hl2', 'ID_PATH': 'pci-0000:04:00.0'})
+    monkeypatch.setattr(os, 'readlink', lambda _: 'hl2.exe')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(subprocess, 'run', fn)
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: 789)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (journal, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: [])
+
+    await hook.run()
+
+    staging_file.seek(0)
+    value = json.load(staging_file)
+
+    assert 'umr' not in value

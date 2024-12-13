@@ -105,15 +105,25 @@ async def run() -> None:
                     break
         log['journal'] = relevant
     if pci_path is not None and ring is not None:
+        umr_log = {}
         try:
             umr = subprocess.run(['umr', '--by-pci', pci_path, '-O', 'bits,halt_waves', '-go', '0', '-wa', ring, '-go', '1'], capture_output=True, errors='replace', check=True)
-            umr_log = {'stdout': umr.stdout}
+            umr_log['wave'] = {'stdout': umr.stdout}
             if umr.stderr:
-                umr_log['stderr'] = umr.stderr
-            log['umr'] = umr_log
+                umr_log['wave']['stderr'] = umr.stderr
         except (OSError, subprocess.SubprocessError) as e:
             logger.warning('Failed to get wave information via umr', exc_info=e)
             pass
+        try:
+            umr = subprocess.run(['umr', '--by-pci', pci_path, '-RS', 'gfx_0.0.0'], capture_output=True, errors='replace', check=True)
+            umr_log['ring'] = {'stdout': umr.stdout}
+            if umr.stderr:
+                umr_log['ring']['stderr'] = umr.stderr
+        except (OSError, subprocess.SubprocessError) as e:
+            logger.warning('Failed to get ring information via umr', exc_info=e)
+            pass
+        if umr_log:
+            log['umr'] = umr_log
     with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
         json.dump(log, f)
 
