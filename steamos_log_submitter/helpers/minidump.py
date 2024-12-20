@@ -33,6 +33,21 @@ MD_CRASHPAD_INFO_STREAM: Final[int] = 0x43500001
 class MinidumpHelper(Helper):
     valid_extensions = frozenset({'.md', '.dmp'})
 
+    @staticmethod
+    def sanitize_environ(env: dict[str, str]) -> None:
+        if 'SteamAppUser' in env:
+            del env['SteamAppUser']
+        home = env.get('HOME')
+        user = env.get('USER')
+        if home:
+            del env['HOME']
+            for key, value in env.items():
+                env[key] = value.replace(home, '${HOME}')
+        if user:
+            del env['USER']
+            for key, value in env.items():
+                env[key] = value.replace(user, '${USER}')
+
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
         name, _ = os.path.splitext(os.path.basename(fname))
@@ -68,7 +83,7 @@ class MinidumpHelper(Helper):
                     await mf.file_handle.seek(loc.Rva)
                     environ = await mf.file_handle.read(loc.DataSize)
                     if environ:
-                        ev = {}
+                        env = {}
                         for envvar in environ.split(b'\0'):
                             if not envvar:
                                 continue
@@ -77,11 +92,9 @@ class MinidumpHelper(Helper):
                             except ValueError:
                                 cls.logger.warning(f'Got invalid environment variable: {envvar}')
                                 continue
-                            if key in (b'SteamAppUser',):
-                                # Scrub sensitive environment variables
-                                continue
-                            ev[key.decode(errors='replace')] = value.decode(errors='replace')
-                        event.extra['environ'] = ev
+                            env[key.decode(errors='replace')] = value.decode(errors='replace')
+                        cls.sanitize_environ(env)
+                        event.extra['environ'] = env
                 elif type_value == MD_LINUX_MAPS:
                     loc = await minidump.common_structs.MINIDUMP_LOCATION_DESCRIPTOR.aparse(mf.file_handle)
                     await mf.file_handle.seek(loc.Rva)

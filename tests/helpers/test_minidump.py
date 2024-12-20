@@ -138,3 +138,22 @@ async def test_400_not_corrupted(monkeypatch, open_shim):
     open_shim(b'MDMP')
 
     assert await helper.submit('fake.dmp') == HelperResult.TRANSIENT_ERROR
+
+
+@pytest.mark.asyncio
+async def test_environ_sanitization():
+    env = {
+        'USER': 'gordon',
+        'SteamAppUser': 'mitgrad',
+        'HOME': '/home/gordon',
+        'PWD': '/home/gordon/Downloads',
+        'MAIL': '/var/spool/mail/gordon',
+        'PAGER': 'less',
+    }
+
+    helper.sanitize_environ(env)
+    assert env == {
+        'PWD': '${HOME}/Downloads',
+        'MAIL': '/var/spool/mail/${USER}',
+        'PAGER': 'less',
+    }
