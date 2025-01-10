@@ -27,9 +27,23 @@ __all__ = [
     'Daemon',
 ]
 
+
+class WrappedLogRecord(logging.LogRecord):
+    _created = 0.0
+
+    @property
+    def created(self) -> float:
+        return getattr(self, "custom_created", None) or self._created
+
+    @created.setter
+    def created(self, value: float) -> None:
+        self._created = value
+
+
 __loader__: importlib.machinery.SourceFileLoader
 config = sls.config.get_config(__loader__.name)
 logger = logging.getLogger(__loader__.name)
+logging.setLogRecordFactory(WrappedLogRecord)
 
 
 class Daemon:
@@ -415,12 +429,7 @@ class DaemonInterface(dbus.service.ServiceInterface):
         if not sls.logging.valid_level(level):
             raise sls.exceptions.InvalidArgumentsError({'level': level})
         logger = logging.getLogger(module)
-        real_time = time.time
-        time.time = lambda: typing.cast(float, timestamp)
-        try:
-            logger.log(level, message)
-        finally:
-            time.time = real_time
+        logger.log(level, message, extra={"custom_created": typing.cast(float, timestamp)})
 
 
 if __name__ == '__main__':  # pragma: no cover
