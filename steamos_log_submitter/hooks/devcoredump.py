@@ -25,7 +25,11 @@ logger = logging.getLogger(__loader__.name)
 
 
 async def run() -> bool:
-    driver_blocklist = ('amdgpu',)  # amdgpu is handled by the gpu hook
+    driver_blocklist = ['amdgpu']  # amdgpu is handled by the gpu hook
+    try:
+        driver_blocklist.extend(driver for driver in os.listdir(f'{sls.data.data_root}/devcd-block') if not driver.startswith('.'))
+    except OSError:
+        pass
 
     ts = time.time_ns()
     dumpdir = sys.argv[1]

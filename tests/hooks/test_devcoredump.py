@@ -18,6 +18,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.devcoredump as hook
 
 from .. import BytesIO
+from .. import data_directory  # NOQA: F401
 
 
 @pytest.fixture
@@ -69,3 +70,25 @@ async def test_basic(dump_dir, monkeypatch, staging_file):
 
     with zf.open('dump') as zff:
         assert zff.read() == b'\x7FELF'
+
+
+@pytest.mark.asyncio
+async def test_blocking(dump_dir, monkeypatch, data_directory, staging_file):
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'uname', lambda: posix.uname_result(('1', '2', '3', '4', '5')))
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sys, 'argv', ['python', dump_dir])
+
+    with open(f'{dump_dir}/data', 'wb') as f:
+        f.write(b'\x7FELF')
+    os.makedirs(f'{data_directory}/devcd-block', exist_ok=True)
+    with open(f'{data_directory}/devcd-block/amspec', 'w') as f:
+        pass
+
+    assert await hook.run() is False
+    assert not staging_file.getvalue()
+
+    os.unlink(f'{data_directory}/devcd-block/amspec')
+
+    assert await hook.run() is True
+    assert staging_file.getvalue()
