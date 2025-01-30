@@ -100,6 +100,12 @@ async def do_list_logs(client: sls.client.Client, type: str, args: argparse.Name
 
 
 @command
+async def do_unit_id(client: sls.client.Client, args: argparse.Namespace) -> None:
+    unit_id = await client.unit_id()
+    print(unit_id)
+
+
+@command
 async def do_log_level(client: sls.client.Client, args: argparse.Namespace) -> None:
     if args.level is None:
         print(logging.getLevelName(await client.log_level()))
@@ -201,6 +207,11 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                                            help='Disable helper modules')
     disable_helper.add_argument('helper', nargs='+')
     disable_helper.set_defaults(func=lambda args: set_helper_enabled(args.helper, False))
+
+    unit_id = subparsers.add_parser('unit-id',
+                                    description='Get the unique, anonymized unit ID of this device.',
+                                    help='Get unit ID')
+    unit_id.set_defaults(func=do_unit_id)
 
     log_level = subparsers.add_parser('log-level',
                                       description='''Set or get the log level. If no argument is passed,

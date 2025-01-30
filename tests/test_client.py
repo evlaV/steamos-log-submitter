@@ -364,3 +364,14 @@ async def test_version(dbus_client, mock_config):
     daemon, client = await dbus_client
 
     assert await client.version() == sls.__version__
+
+
+@pytest.mark.asyncio
+async def test_unit_id(dbus_client, monkeypatch):
+    daemon, client = await dbus_client
+
+    monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: "foo")
+    assert await client.unit_id() == "foo"
+
+    monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: None)
+    assert not await client.unit_id()

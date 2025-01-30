@@ -147,6 +147,10 @@ class Client:
         return await self._properties.set('LogLevel', level)
 
     @command
+    async def unit_id(self) -> str:
+        return str(await self._properties['UnitId'])
+
+    @command
     async def shutdown(self) -> None:
         assert self._iface
         await self._iface.shutdown()

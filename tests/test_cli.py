@@ -432,3 +432,27 @@ async def test_version(capsys, cli_wrapper, mock_config):
 
     assert capsys.readouterr().out.strip() == f'Client {sls.__version__}\nDaemon {sls.__version__}'
     await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_unit_id(capsys, cli_wrapper, monkeypatch):
+    daemon, client = await cli_wrapper
+
+    monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: "foo")
+
+    await cli.amain(['unit-id'])
+
+    assert capsys.readouterr().out.strip() == 'foo'
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_unit_id_none(capsys, cli_wrapper, monkeypatch):
+    daemon, client = await cli_wrapper
+
+    monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: None)
+
+    await cli.amain(['unit-id'])
+
+    assert capsys.readouterr().out.strip() == ''
+    await daemon.shutdown()
