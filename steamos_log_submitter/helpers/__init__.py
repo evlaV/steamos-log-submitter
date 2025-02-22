@@ -283,7 +283,7 @@ class StagingFile:
             shutil.chown(self.name, user='steamos-log-submitter')
         os.rename(self.name, self._final_name)
 
-    def __getattr__(self, attr: str) -> Any:  # type: ignore[misc]
+    def __getattr__(self, attr: str) -> Any:  # type: ignore[explicit-any]
         return getattr(self._tempfile, attr)
 
     def __enter__(self) -> 'StagingFile':

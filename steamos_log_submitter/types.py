@@ -16,7 +16,7 @@ DBusT = TypeVar('DBusT', bound=DBusEncodable, contravariant=True)
 OptionalDBusT = TypeVar('OptionalDBusT', bound=Optional[DBusEncodable], contravariant=True)
 
 # I don't think current Python typing semantics allow this to be defined properly
-DBusCallback: TypeAlias = Callable[..., None]  # type: ignore[misc]
+DBusCallback: TypeAlias = Callable[..., None]  # type: ignore[explicit-any]
 
 
 class DBusCallableAsync(Protocol):  # pragma: no cover
