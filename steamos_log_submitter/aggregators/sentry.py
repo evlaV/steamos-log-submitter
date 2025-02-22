@@ -102,12 +102,9 @@ class SentryEvent(aggregators.AggregatorEvent):
                 'id': unit_id
             }
 
-        sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
-        if sys_vendor == 'Valve':
-            product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
-            if product_name:
-                assert isinstance(product_name, str)
-                tags['product'] = product_name
+        dmi_info = sls.util.get_dmi_info()
+        if 'product' in dmi_info:
+            tags['product'] = dmi_info['product']
 
         if tags:
             self._event['tags'] = tags

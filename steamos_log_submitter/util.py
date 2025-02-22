@@ -382,3 +382,43 @@ def get_app_name(appid: int) -> Optional[str]:
     if row is None:
         return None
     return typing.cast(str, row[0])
+
+
+def get_dmi_info() -> dict[str, str]:
+    products: dict[str, dict[str, str]] = {
+        'ASUSTeK COMPUTER INC.': {
+            'RC71L': 'ROG Ally',
+            'RC72LA': 'ROG Ally X',
+        },
+        'LENOVO': {
+            '83E1': 'Legion Go',
+            '83L3': 'Legion Go S',
+            '83N6': 'Legion Go S',
+            '83Q2': 'Legion Go S',
+            '83Q3': 'Legion Go S',
+        },
+    }
+    info: dict[str, str] = {}
+    sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
+    board_name = sls.util.read_file('/sys/class/dmi/id/board_name')
+    product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
+    assert sys_vendor is None or isinstance(sys_vendor, str)
+    assert board_name is None or isinstance(board_name, str)
+    assert product_name is None or isinstance(product_name, str)
+    if sys_vendor == 'Valve':
+        bios_version = sls.util.read_file('/sys/class/dmi/id/bios_version')
+        assert bios_version is None or isinstance(bios_version, str)
+        info['vendor'] = sys_vendor
+        if bios_version:
+            info['bios'] = bios_version
+        if product_name:
+            info['product'] = product_name
+    elif sys_vendor == 'LENOVO' and product_name:
+        if product_name in products[sys_vendor]:
+            info['vendor'] = sys_vendor
+            info['product'] = products[sys_vendor][product_name]
+    elif sys_vendor == 'ASUSTeK COMPUTER INC.' and board_name:
+        if board_name in products[sys_vendor]:
+            info['vendor'] = sys_vendor
+            info['product'] = products[sys_vendor][board_name]
+    return info

@@ -399,16 +399,7 @@ class SystemType(SysinfoType):
         if swap:
             sysinfo['swap'] = swap
 
-        sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
-        if sys_vendor == 'Valve':
-            bios_version = sls.util.read_file('/sys/class/dmi/id/bios_version')
-            if bios_version:
-                assert isinstance(bios_version, str)
-                sysinfo['bios'] = bios_version
-            product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
-            if product_name:
-                assert isinstance(product_name, str)
-                sysinfo['product'] = product_name
+        sysinfo.update(sls.util.get_dmi_info())
 
         return sysinfo
 
