@@ -38,10 +38,8 @@ class JournalHelper(Helper):
         'steamos-manager.service',
         'steamos-mkvarboot.service',
         'steamos-offload.target',
+        'steamos-post-update.service',
         'steamos-settings-importer.service',
-        'steamos-update-os-plymouth.service',
-        'steamos-update-os.service',
-        'steamos-update-os.target',
         'vpower.service',
     ]
 
