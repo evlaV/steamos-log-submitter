@@ -1,8 +1,8 @@
 #  SPDX-License-Identifier: LGPL-2.1-or-later
 #
-#  Copyright (c) 2022-2023 Valve Software
+#  Copyright (c) 2022-2025 Valve Software
 #  Author: Vicki Pfau <vi@endrift.com>
 #
 # If a GPU crash occurs, log it
-ACTION=="change", ENV{DEVNAME}=="/dev/dri/card0", ENV{RESET}=="1", RUN+="/usr/bin/python -m steamos_log_submitter.hooks.gpu"
+ACTION=="change", DRIVERS=="amdgpu", ENV{DEVNAME}=="/dev/dri/card*", ENV{RESET}=="1", RUN+="/usr/bin/python -m steamos_log_submitter.hooks.gpu"
 ACTION=="add", SUBSYSTEM=="devcoredump", RUN+="/usr/bin/python -m steamos_log_submitter.hooks.devcoredump /sys%E{DEVPATH}"
