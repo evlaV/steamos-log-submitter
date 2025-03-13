@@ -397,6 +397,9 @@ def get_dmi_info() -> dict[str, str]:
             '83Q2': 'Legion Go S',
             '83Q3': 'Legion Go S',
         },
+        'ZOTAC': {
+            'G0A1W': 'ZONE',
+        },
     }
     info: dict[str, str] = {}
     sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
@@ -417,7 +420,7 @@ def get_dmi_info() -> dict[str, str]:
         if product_name in products[sys_vendor]:
             info['vendor'] = sys_vendor
             info['product'] = products[sys_vendor][product_name]
-    elif sys_vendor == 'ASUSTeK COMPUTER INC.' and board_name:
+    elif sys_vendor in ('ASUSTeK COMPUTER INC.', 'ZOTAC') and board_name:
         if board_name in products[sys_vendor]:
             info['vendor'] = sys_vendor
             info['product'] = products[sys_vendor][board_name]

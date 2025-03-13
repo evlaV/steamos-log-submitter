@@ -150,6 +150,45 @@ def test_other_lenovo_sysinfo(monkeypatch, open_shim):
     assert not info
 
 
+def test_zotac_zone_sysinfo(monkeypatch, open_shim):
+    def fake_dmi(fname):
+        if fname.endswith('/sys_vendor'):
+            return 'ZOTAC\n'
+        if fname.endswith('/bios_version'):
+            return '2\n'
+        if fname.endswith('/product_name'):
+            return 'ZOTAC GAMING ZONE\n'
+        if fname.endswith('/board_name'):
+            return 'G0A1W\n'
+        assert False
+
+    open_shim.cb(fake_dmi)
+
+    info = sls.util.get_dmi_info()
+    assert info == {
+        'vendor': 'ZOTAC',
+        'product': 'ZONE',
+    }
+
+
+def test_other_zotac_sysinfo(monkeypatch, open_shim):
+    def fake_dmi(fname):
+        if fname.endswith('/sys_vendor'):
+            return 'ZOTAC\n'
+        if fname.endswith('/bios_version'):
+            return '2\n'
+        if fname.endswith('/product_name'):
+            return 'ZOTAC GAMING REGION\n'
+        if fname.endswith('/board_name'):
+            return 'G0Z1W\n'
+        assert False
+
+    open_shim.cb(fake_dmi)
+
+    info = sls.util.get_dmi_info()
+    assert not info
+
+
 def test_other_vendor_sysinfo(monkeypatch, open_shim):
     def fake_dmi(fname):
         if fname.endswith('/sys_vendor'):
