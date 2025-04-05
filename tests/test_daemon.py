@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import dbus_next as dbus
+import io
 import json
 import logging
 import os
@@ -17,6 +18,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
+from steamos_log_submitter.types import DBusEncodable
 
 from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig
 from . import count_hits, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
@@ -171,6 +173,41 @@ async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, 
     assert mock_config.get('helpers.test', 'submit') == 'on'
     await daemon.trigger(wait=True)
     assert count_hits.hits == 1
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
+async def test_helper_extract(dbus_daemon, helper_directory):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': 'abc'})
+
+    daemon, bus = await dbus_daemon
+    helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
+    iface = await helper.interface(f'{sls.constants.DBUS_NAME}.Helper')
+
+    f: typing.Optional[io.BufferedReader | DBusEncodable]
+    try:
+        f = await iface.extract('log', 'failed')
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    try:
+        f = await iface.extract('log', 'uploaded')
+        assert False
+    except dbus.errors.DBusError:
+        pass
+
+    fd = await iface.extract('log', '')
+    assert isinstance(fd, int)
+    with os.fdopen(fd, 'rb') as f:
+        assert f.read() == b'abc'
+
+    fd = await iface.extract('log', 'pending')
+    assert isinstance(fd, int)
+    with os.fdopen(fd, 'rb') as f:
+        assert f.read() == b'abc'
 
     await daemon.shutdown()
 

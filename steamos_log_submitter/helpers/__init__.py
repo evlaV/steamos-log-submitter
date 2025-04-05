@@ -87,6 +87,34 @@ class HelperInterface(dbus.service.ServiceInterface):
     def ListUploaded(self) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         return list(self.helper.list_uploaded())
 
+    @dbus.service.method()
+    async def Extract(self, filename: 's', type: 's') -> 'h':  # type: ignore[name-defined] # NOQA: F821
+        if filename[0] == '.' or '..' in filename:
+            raise PermanentError('Invalid filename')
+
+        if not type or type == 'pending':
+            fd = self.extract_path(f'{sls.pending}/{self.helper.name}/{filename}')
+            if fd is not None:
+                return fd
+        if not type or type == 'failed':
+            fd = self.extract_path(f'{sls.failed}/{self.helper.name}/{filename}')
+            if fd is not None:
+                return fd
+        if not type or type == 'uploaded':
+            fd = self.extract_path(f'{sls.uploaded}/{self.helper.name}/{filename}')
+            if fd is not None:
+                return fd
+        raise PermanentError('Could not open file')
+
+    def extract_path(self, path: str) -> Optional[int]:
+        try:
+            return os.open(path, os.O_RDONLY)
+        except FileNotFoundError:
+            return None
+        except OSError as e:
+            logger.error(f'Encountered error dumping log for {path}: {e}')
+            raise
+
     @dbus.service.signal()
     def NewLogs(self, logs: list[str]) -> 'as':  # type: ignore[valid-type] # NOQA: F821, F722
         pending = set(self.helper.list_pending())

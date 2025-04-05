@@ -9,7 +9,7 @@ import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
 from types import TracebackType
-from typing import ClassVar, Concatenate, Optional, ParamSpec, Type
+from typing import BinaryIO, ClassVar, Concatenate, Optional, ParamSpec, Type
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
@@ -97,6 +97,38 @@ async def do_list_logs(client: sls.client.Client, type: str, args: argparse.Name
         logs = await client.list_type(type)
     if logs:
         print(*logs, sep='\n')
+
+
+@command
+async def do_extract(client: sls.client.Client, args: argparse.Namespace) -> None:
+    type = ''
+    if args.pending:
+        type = 'pending'
+    elif args.failed:
+        type = 'failed'
+    elif args.uploaded:
+        type = 'uploaded'
+    parts = args.log.split('/', 1)
+    if len(parts) != 2:
+        print('extract requires a path of the form [helper]/[log]', file=sys.stderr)
+        return
+    out: BinaryIO
+    if args.out:
+        out = open(args.out, 'wb')
+    else:
+        out = sys.stdout.buffer
+    assert out
+    f = await client.extract(parts[0], parts[1], type)
+    if f is None:
+        return
+    with f:
+        while True:
+            buffer = f.read(4096)
+            if not buffer:
+                break
+            out.write(buffer)
+    if args.out:
+        out.close()
 
 
 @command
@@ -195,6 +227,17 @@ def amain(args: Sequence[str] = sys.argv[1:]) -> Coroutine:
                                                     a common method of collection and submission.''',
                                      help='List helper modules')
     list_cmd.set_defaults(func=do_list)
+
+    extract = subparsers.add_parser('extract',
+                                    description='''Extract a named log file.''',
+                                    help='Extract a log file')
+    extract.add_argument('log')
+    extract.add_argument('-o', '--out', help='Output to a file instead of stdout')
+    log_type = extract.add_mutually_exclusive_group(required=False)
+    log_type.add_argument('-f', '--failed', action='store_true', help='Only search failed logs')
+    log_type.add_argument('-p', '--pending', action='store_true', help='Only search pending logs')
+    log_type.add_argument('-u', '--uploaded', action='store_true', help='Only search uploaded logs')
+    extract.set_defaults(func=do_extract)
 
     enable_helper = subparsers.add_parser('enable-helper',
                                           description='Enable one or more specific helper modules.',

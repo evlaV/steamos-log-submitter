@@ -342,6 +342,35 @@ async def test_list_failed(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
+async def test_extract(capsys, cli_wrapper, helper_directory, mock_config):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': 'abc'})
+    daemon, client = await cli_wrapper
+
+    await cli.amain(['extract', 'test/log'])
+    assert capsys.readouterr().out == 'abc'
+
+    await cli.amain(['extract', '--pending', 'test/log'])
+    assert capsys.readouterr().out == 'abc'
+
+    await cli.amain(['extract', '--failed', 'test/log'])
+    outerr = capsys.readouterr()
+    assert not outerr.out
+    assert outerr.err
+
+    await cli.amain(['extract', '--uploaded', 'test/log'])
+    outerr = capsys.readouterr()
+    assert not outerr.out
+    assert outerr.err
+
+    await cli.amain(['extract', '-o', f'{helper_directory}/out', 'test/log'])
+    with open(f'{helper_directory}/out') as f:
+        assert f.read() == 'abc'
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
     count_hits.ret = [], []
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))

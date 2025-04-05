@@ -4,22 +4,25 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import dbus_next as dbus
+import io
 import json
 import logging
+import os
 import time
 import typing
 from collections.abc import AsyncIterator, Callable, Coroutine, Iterable, Sequence
-from typing import Concatenate, NoReturn, Optional, ParamSpec
+from typing import Concatenate, NoReturn, Optional, ParamSpec, TypeVar
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.exceptions
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
-from steamos_log_submitter.types import DBusEncodable, OptionalDBusT
+from steamos_log_submitter.types import DBusEncodable
 
 logger = logging.getLogger(__name__)
 
 P = ParamSpec('P')
+T = TypeVar('T')
 
 
 class Client:
@@ -52,8 +55,8 @@ class Client:
         raise exc
 
     @staticmethod
-    def command(fn: Callable[Concatenate['Client', P], Coroutine[None, None, OptionalDBusT]]) -> Callable[Concatenate['Client', P], Coroutine[None, None, OptionalDBusT]]:
-        async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> OptionalDBusT:
+    def command(fn: Callable[Concatenate['Client', P], Coroutine[None, None, T]]) -> Callable[Concatenate['Client', P], Coroutine[None, None, T]]:
+        async def wrapped(self: 'Client', *args: P.args, **kwargs: P.kwargs) -> T:
             await self._connect()
             try:
                 return await fn(self, *args, **kwargs)
@@ -145,6 +148,23 @@ class Client:
     @command
     async def set_log_level(self, level: int) -> None:
         return await self._properties.set('LogLevel', level)
+
+    @command
+    async def extract(self, helper: str, filename: str, type: Optional[str] = None) -> Optional[io.BufferedReader]:
+        if type is None:
+            type = ''
+        dbus_object = None
+        async for _, object in self._helper_objects([helper]):
+            dbus_object = object
+        if dbus_object is None:
+            return None
+        iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
+        try:
+            fd = await iface.extract(filename, type)
+            assert isinstance(fd, int)
+            return os.fdopen(fd, 'rb')
+        except dbus.errors.DBusError:
+            return None
 
     @command
     async def unit_id(self) -> str:

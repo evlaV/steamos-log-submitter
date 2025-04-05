@@ -23,7 +23,7 @@ async def connect() -> None:
     if connected:
         return
 
-    system_bus = dbus.aio.MessageBus(bus_type=dbus.BusType.SYSTEM)
+    system_bus = dbus.aio.MessageBus(bus_type=dbus.BusType.SYSTEM, negotiate_unix_fd=True)
 
     await system_bus.connect()
     connected = True

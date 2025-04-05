@@ -316,6 +316,24 @@ async def test_list_failed(dbus_client, helper_directory, patch_module):
 
 
 @pytest.mark.asyncio
+async def test_extract(dbus_client, helper_directory):
+    setup_categories(['test'])
+    setup_logs(helper_directory, {'test/log': 'abc'})
+    daemon, client = await dbus_client
+
+    assert await client.extract('test', 'log', 'failed') is None
+    assert await client.extract('test', 'log', 'uploaded') is None
+
+    with await client.extract('test', 'log') as f:
+        assert f.read() == b'abc'
+
+    with await client.extract('test', 'log', 'pending') as f:
+        assert f.read() == b'abc'
+
+    await daemon.shutdown()
+
+
+@pytest.mark.asyncio
 async def test_collect(dbus_client, helper_directory, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
