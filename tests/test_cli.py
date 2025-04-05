@@ -432,7 +432,6 @@ async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
     expected_level = 'WARNING'
 
     def expect_level(level=None):
-        nonlocal expected_level
         count_hits()
         assert level == expected_level
 

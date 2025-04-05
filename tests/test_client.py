@@ -59,7 +59,6 @@ async def test_subscribe_enable(count_hits, dbus_client, mock_config):
     expected = True
 
     async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
-        nonlocal expected
         assert iface == f'{DBUS_NAME}.Manager'
         assert prop == 'Enabled'
         assert value is expected
@@ -213,7 +212,6 @@ async def test_subscribe_enable_helper(count_hits, dbus_client, helper_directory
     expected = True
 
     async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
-        nonlocal expected
         assert iface == f'{DBUS_NAME}.Helper'
         assert prop == 'Enabled'
         assert value is expected

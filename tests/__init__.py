@@ -148,8 +148,7 @@ def helper_directory(monkeypatch, patch_module):
     monkeypatch.setattr(sls, 'failed', failed)
 
     def list_helpers():
-        nonlocal d
-        return list(os.listdir(f'{d.name}/pending'))
+        return list(os.listdir(f'{d.name}/pending'))  # NOQA: F821 # flake8 bug
     monkeypatch.setattr(steamos_log_submitter.helpers, 'list_helpers', list_helpers)
 
     yield d.name

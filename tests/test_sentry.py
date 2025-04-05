@@ -234,10 +234,7 @@ async def test_envelope(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_envelope_multiple_attachments(monkeypatch):
-    event_id = None
-
     async def fake_response(self, url, **kwargs):
-        nonlocal event_id
         if url == 'https://fake@dsn/api/0/store/':
             pass
         elif url == 'https://fake@dsn/api/0/envelope/':
