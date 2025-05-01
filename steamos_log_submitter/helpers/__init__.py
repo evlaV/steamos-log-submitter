@@ -143,10 +143,12 @@ class Helper(abc.ABC):
     extra_ifaces: list[dbus.service.ServiceInterface]
     child_services: dict[str, dbus.service.ServiceInterface]
     logger: logging.Logger
+    is_setup: bool
 
     @classmethod
     def __init_subclass__(cls) -> None:
         module = cls.__module__
+        cls.is_setup = False
         cls.logger = logging.getLogger(module)
         cls.iface = None
         cls.extra_ifaces = []
@@ -156,16 +158,19 @@ class Helper(abc.ABC):
         sys.modules[module].helper = cls  # type: ignore[attr-defined]
 
     @classmethod
-    def _setup(cls) -> None:
+    def _setup(cls) -> bool:
+        if cls.is_setup:
+            return True
         module = cls.__module__
         if module == __name__:
-            return
+            return False
         cls.extra_ifaces = []
         cls.child_services = {}
         cls.name = module.split('.', 2)[2]
         cls.config = sls.config.get_config(module)
         cls.data = sls.data.get_data(module, defaults=cls.defaults)
         cls.iface = HelperInterface(cls)
+        return True
 
     @classmethod
     async def collect(cls) -> list[str]:
@@ -283,7 +288,8 @@ def create_helper(category: str) -> Optional[Type[Helper]]:
     if not hasattr(helper, 'helper'):
         logger.error(f'Helper module {category} does not contain helper class')
         return None
-    helper.helper._setup()
+    if not helper.helper.is_setup:
+        helper.helper.is_setup = helper.helper._setup()
     assert issubclass(helper.helper, Helper)
     return typing.cast(Type[Helper], helper.helper)
 

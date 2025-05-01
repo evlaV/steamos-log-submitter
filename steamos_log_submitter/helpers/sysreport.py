@@ -23,9 +23,11 @@ class SysreportHelper(Helper):
     alphabet = '34679ABEHJKLMNPSTUWXYZ'
 
     @classmethod
-    def _setup(cls) -> None:
-        super()._setup()
+    def _setup(cls) -> bool:
+        if not super()._setup():
+            return False
         cls.extra_ifaces.append(SysreportInterface())
+        return True
 
     @classmethod
     def make_id(cls) -> str:

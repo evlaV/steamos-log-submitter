@@ -67,9 +67,11 @@ class TraceHelper(Helper):
     }
 
     @classmethod
-    def _setup(cls) -> None:
-        super()._setup()
+    def _setup(cls) -> bool:
+        if not super()._setup():
+            return False
         cls.extra_ifaces.append(TraceInterface())
+        return True
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:

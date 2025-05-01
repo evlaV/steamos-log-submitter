@@ -61,9 +61,11 @@ class SysinfoHelper(Helper):
     device_types: dict[str, Type[SysinfoType]] = {}
 
     @classmethod
-    def _setup(cls) -> None:
-        super()._setup()
-        cls.child_services = {device_type.name: SysinfoInterface(device_type) for device_type in cls.device_types.values()}
+    def _setup(cls) -> bool:
+        if not super()._setup():
+            return False
+        cls.child_services.update({device_type.name: SysinfoInterface(device_type) for device_type in cls.device_types.values()})
+        return True
 
     @classmethod
     def register_type(cls, type: Type[SysinfoType]) -> None:
