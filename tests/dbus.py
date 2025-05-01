@@ -189,7 +189,6 @@ def mock_dbus(monkeypatch):
     return bus
 
 
-@pytest.fixture
 async def real_dbus(monkeypatch):
     real_connect = sls.dbus.DBusObject._connect
 

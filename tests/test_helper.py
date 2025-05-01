@@ -15,8 +15,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers as helpers
 
 from . import count_hits, helper_directory, mock_config, patch_module, setup_categories  # NOQA: F401
-from .daemon import dbus_daemon  # NOQA: F401
-from .dbus import real_dbus  # NOQA: F401
+from .daemon import dbus_daemon
 
 
 def test_staging_file_rename(helper_directory, monkeypatch):
@@ -117,7 +116,7 @@ async def test_collect_new_logs(helper_directory, mock_config, patch_module):
 
 
 @pytest.mark.asyncio
-async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, mock_config, patch_module):
+async def test_subscribe_new_logs(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     patch_module.valid_extensions = {'.bin'}
     os.mkdir(f'{sls.pending}/test')
     collected: list[str] = []
@@ -133,7 +132,7 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
         collected_prefixed = new_logs
         count_hits()
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     await helper.subscribe(f'{sls.constants.DBUS_NAME}.Helper', 'NewLogs', cb)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
@@ -186,11 +185,11 @@ async def test_subscribe_new_logs(count_hits, dbus_daemon, helper_directory, moc
 
 
 @pytest.mark.asyncio
-async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_config, patch_module):
+async def test_last_collected_timestamp(helper_directory, mock_config, monkeypatch, patch_module):
     patch_module.valid_extensions = {'.bin'}
     os.mkdir(f'{sls.pending}/test')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     props = helper.properties(f'{sls.constants.DBUS_NAME}.Helper')
 

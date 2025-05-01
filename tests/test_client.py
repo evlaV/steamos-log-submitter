@@ -19,13 +19,14 @@ from steamos_log_submitter.types import DBusEncodable
 
 from . import awaitable, setup_categories, setup_logs
 from . import count_hits, helper_directory, mock_config, patch_module  # NOQA: F401
-from .daemon import dbus_client, dbus_daemon  # NOQA: F401
-from .dbus import mock_dbus, real_dbus  # NOQA: F401
+from .daemon import dbus_client
+from .dbus import mock_dbus  # NOQA: F401
+from .dbus import real_dbus
 
 
 @pytest.mark.asyncio
-async def test_inactive(real_dbus):
-    bus = await real_dbus
+async def test_inactive(monkeypatch):
+    bus = await real_dbus(monkeypatch)
     client = sls.client.Client(bus=bus)
     try:
         await client._connect()
@@ -35,8 +36,8 @@ async def test_inactive(real_dbus):
 
 
 @pytest.mark.asyncio
-async def test_shutdown(dbus_client):
-    daemon, client = await dbus_client
+async def test_shutdown(monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     await client.shutdown()
     assert not daemon._serving
     assert daemon._periodic_task is None
@@ -44,8 +45,8 @@ async def test_shutdown(dbus_client):
 
 
 @pytest.mark.asyncio
-async def test_client_status(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_client_status(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     assert not await client.status()
     await client.enable()
     assert await client.status()
@@ -55,7 +56,7 @@ async def test_client_status(dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_subscribe_enable(count_hits, dbus_client, mock_config):
+async def test_subscribe_enable(count_hits, mock_config, monkeypatch):
     expected = True
 
     async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
@@ -64,7 +65,7 @@ async def test_subscribe_enable(count_hits, dbus_client, mock_config):
         assert value is expected
         count_hits()
 
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     manager = sls.dbus.DBusObject(client._bus, f'{DBUS_ROOT}/Manager')
     props = manager.properties(f'{DBUS_NAME}.Manager')
     await props.subscribe('Enabled', test_enabled)
@@ -81,25 +82,25 @@ async def test_subscribe_enable(count_hits, dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_client_list(dbus_client, monkeypatch, helper_directory):
+async def test_client_list(helper_directory, monkeypatch):
     setup_categories(['test'])
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     assert await client.list() == ['test']
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_client_get_log_level(dbus_client, mock_config):
+async def test_client_get_log_level(mock_config, monkeypatch):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     assert await client.log_level() == logging.INFO
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_client_set_log_level(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_client_set_log_level(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     assert await client.log_level() != logging.ERROR
     await client.set_log_level(logging.ERROR)
     assert await client.log_level() == logging.ERROR
@@ -110,8 +111,8 @@ async def test_client_set_log_level(dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_client_set_log_level_invalid(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_client_set_log_level_invalid(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     try:
         await client.set_log_level(123)
         assert False
@@ -122,10 +123,10 @@ async def test_client_set_log_level_invalid(dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits):
+async def test_client_trigger(mock_config, monkeypatch, count_hits):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     await client.enable()
     await client.trigger()
     assert count_hits.hits == 1
@@ -133,13 +134,13 @@ async def test_client_trigger(dbus_client, mock_config, monkeypatch, count_hits)
 
 
 @pytest.mark.asyncio
-async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
+async def test_client_trigger_wait(mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
         return [], []
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     await client.enable()
 
     start = time.time()
@@ -155,13 +156,13 @@ async def test_client_trigger_wait(dbus_client, mock_config, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_client_trigger_wait2(dbus_client, mock_config, monkeypatch):
+async def test_client_trigger_wait2(mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
         return [], []
 
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     await client.enable()
 
     start = time.time()
@@ -177,9 +178,9 @@ async def test_client_trigger_wait2(dbus_client, mock_config, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_helper_status(dbus_client, helper_directory):
+async def test_helper_status(helper_directory, monkeypatch):
     setup_categories(['test'])
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     assert await client.helper_status() == {'test': {'enabled': True, 'collection': True, 'submission': True}}
     assert await client.helper_status(['test']) == {'test': {'enabled': True, 'collection': True, 'submission': True}}
     try:
@@ -191,11 +192,11 @@ async def test_helper_status(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_enable_helpers(mock_config, dbus_client, helper_directory):
+async def test_enable_helpers(helper_directory, mock_config, monkeypatch):
     mock_config.add_section('helpers.test')
     mock_config.set('helpers.test', 'enable', 'off')
     setup_categories(['test'])
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     assert (await client.helper_status(['test']))['test']['enabled'] is False
     await client.enable_helpers(['test'])
     assert (await client.helper_status(['test']))['test']['enabled'] is True
@@ -208,7 +209,7 @@ async def test_enable_helpers(mock_config, dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_subscribe_enable_helper(count_hits, dbus_client, helper_directory, mock_config):
+async def test_subscribe_enable_helper(count_hits, helper_directory, mock_config, monkeypatch):
     expected = True
 
     async def test_enabled(iface: str, prop: str, value: DBusEncodable) -> None:
@@ -221,7 +222,7 @@ async def test_subscribe_enable_helper(count_hits, dbus_client, helper_directory
     mock_config.set('helpers.test', 'enable', 'off')
     setup_categories(['test'])
 
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
     manager = sls.dbus.DBusObject(client._bus, f'{DBUS_ROOT}/helpers/Test')
     props = manager.properties(f'{DBUS_NAME}.Helper')
     await props.subscribe('Enabled', test_enabled)
@@ -238,10 +239,10 @@ async def test_subscribe_enable_helper(count_hits, dbus_client, helper_directory
 
 
 @pytest.mark.asyncio
-async def test_list_pending(dbus_client, helper_directory):
+async def test_list_pending(helper_directory, monkeypatch):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
 
     assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
     assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
@@ -252,11 +253,11 @@ async def test_list_pending(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_list_uploaded(dbus_client, helper_directory, patch_module):
+async def test_list_uploaded(helper_directory, monkeypatch, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
     patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult.OK)
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
 
     assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
     assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
@@ -283,11 +284,11 @@ async def test_list_uploaded(dbus_client, helper_directory, patch_module):
 
 
 @pytest.mark.asyncio
-async def test_list_failed(dbus_client, helper_directory, patch_module):
+async def test_list_failed(helper_directory, monkeypatch, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
     patch_module.submit = awaitable(lambda *args: sls.helpers.HelperResult.PERMANENT_ERROR)
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
 
     assert set(await client.list_pending()) == {'test/a', 'test/b', 'test2/c'}
     assert set(await client.list_pending(['test'])) == {'test/a', 'test/b'}
@@ -314,10 +315,10 @@ async def test_list_failed(dbus_client, helper_directory, patch_module):
 
 
 @pytest.mark.asyncio
-async def test_extract(dbus_client, helper_directory):
+async def test_extract(helper_directory, monkeypatch):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': 'abc'})
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
 
     assert await client.extract('test', 'log', 'failed') is None
     assert await client.extract('test', 'log', 'uploaded') is None
@@ -332,10 +333,10 @@ async def test_extract(dbus_client, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_collect(dbus_client, helper_directory, patch_module):
+async def test_collect(helper_directory, monkeypatch, patch_module):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
-    daemon, client = await dbus_client
+    daemon, client = await dbus_client(monkeypatch)
 
     assert set(await client.collect(['test'])) == {'test/a', 'test/b'}
     assert set(await client.collect(['test2'])) == {'test2/c'}
@@ -347,8 +348,8 @@ async def test_collect(dbus_client, helper_directory, patch_module):
 
 
 @pytest.mark.asyncio
-async def test_log_passthru(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_log_passthru(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     tmpdir = tempfile.TemporaryDirectory(prefix='sls-')
     sls.logging.reconfigure_logging(f'{tmpdir.name}/log')
 
@@ -365,8 +366,8 @@ async def test_log_passthru(dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_log_invalid_level(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_log_invalid_level(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     try:
         await client.log('steamos_log_submitter.test', 123, 'foo')
     except sls.exceptions.InvalidArgumentsError as e:
@@ -376,15 +377,15 @@ async def test_log_invalid_level(dbus_client, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_version(dbus_client, mock_config):
-    daemon, client = await dbus_client
+async def test_version(mock_config, monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
 
     assert await client.version() == sls.__version__
 
 
 @pytest.mark.asyncio
-async def test_unit_id(dbus_client, monkeypatch):
-    daemon, client = await dbus_client
+async def test_unit_id(monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
 
     monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: "foo")
     assert await client.unit_id() == "foo"

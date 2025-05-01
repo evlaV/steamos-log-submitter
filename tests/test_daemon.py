@@ -22,16 +22,16 @@ from steamos_log_submitter.types import DBusEncodable
 
 from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig
 from . import count_hits, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
-from .daemon import dbus_daemon  # NOQA: F401
+from .daemon import dbus_daemon
 from .dbus import MockDBusObject, MockDBusProperties
-from .dbus import mock_dbus, real_dbus  # NOQA: F401
+from .dbus import mock_dbus  # NOQA: F401
 
 pytest_plugins = ('pytest_asyncio',)
 
 
 @pytest.mark.asyncio
-async def test_dbus(dbus_daemon):
-    daemon, bus = await dbus_daemon
+async def test_dbus(monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     dbemon = sls.dbus.DBusObject(bus, sls.constants.DBUS_ROOT)
     assert {child for child in await dbemon.list_children()} == {
         f'{sls.constants.DBUS_ROOT}/Manager',
@@ -41,8 +41,8 @@ async def test_dbus(dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_shutdown(dbus_daemon):
-    daemon, bus = await dbus_daemon
+async def test_shutdown(monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.shutdown()
     assert not daemon._serving
     assert daemon._periodic_task is None
@@ -50,8 +50,8 @@ async def test_shutdown(dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_shutdown_dbus(dbus_daemon):
-    daemon, bus = await dbus_daemon
+async def test_shutdown_dbus(monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     await iface.shutdown()
@@ -70,8 +70,8 @@ async def test_shutdown_dbus(dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_list(dbus_daemon, patch_module, monkeypatch):
-    daemon, bus = await dbus_daemon
+async def test_list(monkeypatch, patch_module):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers')
     assert {child for child in await manager.list_children()} == {
         f'{sls.constants.DBUS_ROOT}/helpers/Test',
@@ -80,8 +80,8 @@ async def test_list(dbus_daemon, patch_module, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_enabled(dbus_daemon, mock_config):
-    daemon, bus = await dbus_daemon
+async def test_enabled(mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     assert await props['Enabled'] is False
@@ -93,13 +93,13 @@ async def test_enabled(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_helper_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+async def test_helper_enabled(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
     patch_module.collect = awaitable(count_hits)
     patch_module.submit = awaitable(count_hits)
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
@@ -121,12 +121,12 @@ async def test_helper_enabled(count_hits, dbus_daemon, helper_directory, patch_m
 
 
 @pytest.mark.asyncio
-async def test_helper_collect_enabled(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+async def test_helper_collect_enabled(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
     patch_module.collect = awaitable(count_hits)
     patch_module.submit = awaitable(unreachable)
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
@@ -149,13 +149,13 @@ async def test_helper_collect_enabled(count_hits, dbus_daemon, helper_directory,
 
 
 @pytest.mark.asyncio
-async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, monkeypatch, patch_module, mock_config):
+async def test_helper_submit_enabled(count_hits, helper_directory, mock_config, patch_module, monkeypatch):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
     monkeypatch.setattr(patch_module, 'collect', awaitable(lambda: False))
     monkeypatch.setattr(patch_module, 'submit', awaitable(count_hits))
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Helper')
     assert await props['Enabled'] is True
@@ -178,11 +178,11 @@ async def test_helper_submit_enabled(count_hits, dbus_daemon, helper_directory, 
 
 
 @pytest.mark.asyncio
-async def test_helper_extract(dbus_daemon, helper_directory):
+async def test_helper_extract(helper_directory, monkeypatch):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': 'abc'})
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     helper = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     iface = await helper.interface(f'{sls.constants.DBUS_NAME}.Helper')
 
@@ -213,7 +213,7 @@ async def test_helper_extract(dbus_daemon, helper_directory):
 
 
 @pytest.mark.asyncio
-async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+async def test_helper_child_services(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
 
     class PortalIface(dbus.service.ServiceInterface):
@@ -229,7 +229,7 @@ async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, 
         'Portal': PortalIface()
     }
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     portal = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test/Portal')
     iface = await portal.interface('com.aperture.Portal')
 
@@ -241,7 +241,7 @@ async def test_helper_child_services(count_hits, dbus_daemon, helper_directory, 
 
 
 @pytest.mark.asyncio
-async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, patch_module, mock_config):
+async def test_helper_extra_ifaces(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
 
     class MoondustIface(dbus.service.ServiceInterface):
@@ -255,7 +255,7 @@ async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, pa
 
     patch_module.extra_ifaces = [MoondustIface()]
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     portal = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Test')
     iface = await portal.interface('com.aperture.MoonDust')
 
@@ -267,8 +267,8 @@ async def test_helper_extra_ifaces(count_hits, dbus_daemon, helper_directory, pa
 
 
 @pytest.mark.asyncio
-async def test_inhibited(dbus_daemon, mock_config):
-    daemon, bus = await dbus_daemon
+async def test_inhibited(mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     assert await props['Inhibited'] is False
@@ -280,11 +280,11 @@ async def test_inhibited(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_get_log_level(dbus_daemon, mock_config):
+async def test_get_log_level(mock_config, monkeypatch):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -293,11 +293,11 @@ async def test_get_log_level(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_set_log_level(dbus_daemon, mock_config):
+async def test_set_log_level(mock_config, monkeypatch):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'INFO')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -307,7 +307,7 @@ async def test_set_log_level(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
+async def test_set_log_level_migrate(monkeypatch):
     custom_config = CustomConfig(monkeypatch)
     custom_config.user.add_section('logging')
     custom_config.user.set('logging', 'level', 'WARNING')
@@ -320,7 +320,7 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
     assert sls.config.config.get('logging', 'level') == 'WARNING'
     assert not sls.config.local_config.has_section('logging')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
     await props.set('LogLevel', logging.WARNING)
@@ -334,7 +334,7 @@ async def test_set_log_level_migrate(dbus_daemon, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_periodic(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
@@ -342,7 +342,7 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
     monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     start = time.time()
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
 
     assert count_hits.hits == 0
@@ -360,7 +360,7 @@ async def test_periodic(dbus_daemon, monkeypatch, count_hits, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_periodic_after_startup(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
@@ -370,7 +370,7 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
     mock_config.add_section('daemon')
     start = time.time()
     mock_config.set('daemon', 'last_trigger', str(start + 0.05))
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
 
     assert count_hits.hits == 0
@@ -386,7 +386,7 @@ async def test_periodic_after_startup(dbus_daemon, monkeypatch, count_hits, mock
 
 
 @pytest.mark.asyncio
-async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_periodic_before_startup(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
@@ -397,7 +397,7 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
 
     start = time.time()
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
 
     assert count_hits.hits == 0
@@ -414,7 +414,7 @@ async def test_periodic_before_startup(dbus_daemon, monkeypatch, count_hits, moc
 
 
 @pytest.mark.asyncio
-async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_periodic_before_startup2(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.08)
@@ -427,7 +427,7 @@ async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mo
     mock_config.set('daemon', 'last_trigger', str(time.time() - 0.2))
 
     start = time.time()
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     assert count_hits.hits == 0
     await asyncio.sleep(0.09)
     assert count_hits.hits == 1
@@ -438,7 +438,7 @@ async def test_periodic_before_startup2(dbus_daemon, monkeypatch, count_hits, mo
 
 
 @pytest.mark.asyncio
-async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_periodic_delay(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
@@ -446,7 +446,7 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
     monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
 
     start = time.time()
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
 
     assert count_hits.hits == 0
@@ -469,14 +469,14 @@ async def test_periodic_delay(dbus_daemon, monkeypatch, count_hits, mock_config)
 
 
 @pytest.mark.asyncio
-async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
+async def test_inhibit(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(sls.runner, 'trigger', awaitable(count_hits))
     monkeypatch.setattr(sls.daemon.Daemon, 'STARTUP', 0.05)
     monkeypatch.setattr(sls.daemon.Daemon, 'INTERVAL', 0.04)
     monkeypatch.setattr(sls.util, 'update_app_list', awaitable(lambda: None))
     start = time.time()
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
 
     assert count_hits.hits == 0
@@ -510,11 +510,11 @@ async def test_inhibit(dbus_daemon, monkeypatch, count_hits, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_trigger_collect(dbus_daemon, helper_directory, monkeypatch, count_hits, mock_config, patch_module):
+async def test_trigger_collect(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
     patch_module.collect = awaitable(count_hits)
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -534,12 +534,12 @@ async def test_trigger_collect(dbus_daemon, helper_directory, monkeypatch, count
 
 
 @pytest.mark.asyncio
-async def test_trigger_submit(dbus_daemon, helper_directory, monkeypatch, count_hits, mock_config, patch_module):
+async def test_trigger_submit(count_hits, helper_directory, mock_config, monkeypatch, patch_module):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': ''})
     patch_module.submit = awaitable(count_hits)
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -559,8 +559,8 @@ async def test_trigger_submit(dbus_daemon, helper_directory, monkeypatch, count_
 
 
 @pytest.mark.asyncio
-async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config):
-    daemon, bus = await dbus_daemon
+async def test_trigger_called(count_hits, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     monkeypatch.setattr(sls.runner, 'collect', awaitable(count_hits))
@@ -573,13 +573,13 @@ async def test_trigger_called(dbus_daemon, monkeypatch, count_hits, mock_config)
 
 
 @pytest.mark.asyncio
-async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
+async def test_trigger_wait(count_hits, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
         count_hits()
         return [], []
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
@@ -599,13 +599,13 @@ async def test_trigger_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
 
 
 @pytest.mark.asyncio
-async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
+async def test_trigger_dedup(count_hits, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.1)
         count_hits()
         return [], []
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     await daemon.enable(True)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
@@ -629,8 +629,8 @@ async def test_trigger_dedup(dbus_daemon, monkeypatch, mock_config, count_hits):
 
 
 @pytest.mark.asyncio
-async def test_trigger_dedup_slow(dbus_daemon, monkeypatch, mock_config, count_hits):
-    daemon, bus = await dbus_daemon
+async def test_trigger_dedup_slow(count_hits, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     original_trigger = daemon._trigger
@@ -661,8 +661,8 @@ async def test_trigger_dedup_slow(dbus_daemon, monkeypatch, mock_config, count_h
 
 
 @pytest.mark.asyncio
-async def test_trigger_dedup_slow_wait(dbus_daemon, monkeypatch, mock_config, count_hits):
-    daemon, bus = await dbus_daemon
+async def test_trigger_dedup_slow_wait(count_hits, mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
     original_trigger = daemon._trigger
@@ -693,13 +693,13 @@ async def test_trigger_dedup_slow_wait(dbus_daemon, monkeypatch, mock_config, co
 
 
 @pytest.mark.asyncio
-async def test_trigger_then_disable(count_hits, dbus_daemon, mock_config, monkeypatch):
+async def test_trigger_then_disable(count_hits, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.05)
         count_hits()
         return [], []
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
 
     await daemon.enable(True)
@@ -720,13 +720,13 @@ async def test_trigger_then_disable(count_hits, dbus_daemon, mock_config, monkey
 
 
 @pytest.mark.asyncio
-async def test_trigger_then_inhibit(count_hits, dbus_daemon, mock_config, monkeypatch):
+async def test_trigger_then_inhibit(count_hits, mock_config, monkeypatch):
     async def trigger():
         await asyncio.sleep(0.05)
         count_hits()
         return [], []
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     monkeypatch.setattr(sls.runner, 'trigger', trigger)
 
     await daemon.enable(True)
@@ -890,8 +890,8 @@ async def test_suspend_reschedule_late(count_hits, mock_dbus, mock_config, monke
 
 
 @pytest.mark.asyncio
-async def test_log_passthru(dbus_daemon, mock_config):
-    daemon, bus = await dbus_daemon
+async def test_log_passthru(mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -912,8 +912,8 @@ async def test_log_passthru(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_log_invalid_level(dbus_daemon, mock_config):
-    daemon, bus = await dbus_daemon
+async def test_log_invalid_level(mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     iface = await manager.interface(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -927,8 +927,8 @@ async def test_log_invalid_level(dbus_daemon, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_telemetry_ids(dbus_daemon, mock_config, open_shim):
-    daemon, bus = await dbus_daemon
+async def test_telemetry_ids(mock_config, monkeypatch, open_shim):
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 
@@ -950,11 +950,11 @@ async def test_telemetry_ids(dbus_daemon, mock_config, open_shim):
 
 
 @pytest.mark.asyncio
-async def test_last_collected_timestamp(dbus_daemon, helper_directory, mock_config, patch_module):
+async def test_last_collected_timestamp(helper_directory, mock_config, monkeypatch, patch_module):
     patch_module.valid_extensions = {'.bin'}
     os.mkdir(f'{sls.pending}/test')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     manager = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/Manager')
     props = manager.properties(f'{sls.constants.DBUS_NAME}.Manager')
 

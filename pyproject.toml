@@ -5,3 +5,7 @@ requires = ["setuptools"]
 warn_unused_configs = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"

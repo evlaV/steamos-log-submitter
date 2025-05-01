@@ -22,8 +22,8 @@ from steamos_log_submitter.helpers.sysinfo import \
 
 from .. import always_raise, awaitable, setup_categories, unreachable
 from .. import data_directory, fake_async_subprocess, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
-from ..daemon import dbus_daemon  # NOQA: F401
-from ..dbus import mock_dbus, real_dbus, MockDBusObject  # NOQA: F401
+from ..daemon import dbus_daemon
+from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 
 def make_usb_devs(monkeypatch, devs):
@@ -1267,10 +1267,10 @@ async def test_collect_new_section(monkeypatch, data_directory, helper_directory
 
 
 @pytest.mark.asyncio
-async def test_dbus_get_json(monkeypatch, dbus_daemon):
+async def test_dbus_get_json(monkeypatch):
     monkeypatch.setattr(UsbType, 'list', awaitable(lambda: [collections.OrderedDict([('vid', '1234'), ('pid', '5678')])]))
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysinfo/Usb')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysinfo')
     blob = json.loads(typing.cast(str, await iface.get_json()))
@@ -1279,8 +1279,8 @@ async def test_dbus_get_json(monkeypatch, dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_dbus_disable_type(mock_config, dbus_daemon):
-    daemon, bus = await dbus_daemon
+async def test_dbus_disable_type(mock_config, monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysinfo/Usb')
     props = usb.properties(f'{sls.constants.DBUS_NAME}.Sysinfo')
     assert await props['Enabled'] is True

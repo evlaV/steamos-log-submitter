@@ -11,20 +11,19 @@ import steamos_log_submitter.helpers as helpers
 import steamos_log_submitter.runner as runner
 from . import awaitable, setup_categories, setup_logs
 from . import count_hits, drop_root, helper_directory, mock_config, open_shim, patch_module  # NOQA: F401
-from .daemon import dbus_client, dbus_daemon  # NOQA: F401
-from .dbus import real_dbus  # NOQA: F401
+from .daemon import dbus_client
+from .dbus import real_dbus
 
 
-@pytest.fixture
-async def cli_wrapper(dbus_client, monkeypatch):
-    daemon, client = await dbus_client
+async def cli_wrapper(monkeypatch):
+    daemon, client = await dbus_client(monkeypatch)
     monkeypatch.setattr(cli.ClientWrapper, 'bus', client._bus)
     return daemon, client
 
 
 @pytest.mark.asyncio
-async def test_no_daemon(monkeypatch, real_dbus):
-    bus = await real_dbus
+async def test_no_daemon(monkeypatch):
+    bus = await real_dbus(monkeypatch)
     monkeypatch.setattr(cli.ClientWrapper, 'bus', bus)
 
     async with cli.ClientWrapper() as client:
@@ -32,16 +31,16 @@ async def test_no_daemon(monkeypatch, real_dbus):
 
 
 @pytest.mark.asyncio
-async def test_no_daemon_message(monkeypatch, real_dbus, capsys):
-    bus = await real_dbus
+async def test_no_daemon_message(monkeypatch, capsys):
+    bus = await real_dbus(monkeypatch)
     monkeypatch.setattr(cli.ClientWrapper, 'bus', bus)
     await cli.amain(['status'])
     assert "Can't connect to daemon." in capsys.readouterr().err.strip()
 
 
 @pytest.mark.asyncio
-async def test_status(capsys, mock_config, cli_wrapper):
-    daemon, client = await cli_wrapper
+async def test_status(capsys, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
 
     mock_config.add_section('sls')
     mock_config.set('sls', 'enable', 'off')
@@ -61,9 +60,9 @@ async def test_status(capsys, mock_config, cli_wrapper):
 
 
 @pytest.mark.asyncio
-async def test_status_helpers(capsys, mock_config, monkeypatch, patch_module, cli_wrapper):
+async def test_status_helpers(capsys, mock_config, monkeypatch, patch_module):
     mock_config.add_section('helpers.test')
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['status'])
     assert len(capsys.readouterr().out.strip().split('\n')) == 1
@@ -114,36 +113,36 @@ async def test_status_helpers(capsys, mock_config, monkeypatch, patch_module, cl
 
 
 @pytest.mark.asyncio
-async def test_list(capsys, monkeypatch, cli_wrapper, patch_module):
-    daemon, client = await cli_wrapper
+async def test_list(capsys, monkeypatch, patch_module):
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['list'])
     assert capsys.readouterr().out.strip() == 'test'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_log_level(capsys, mock_config, monkeypatch, cli_wrapper):
+async def test_log_level(capsys, mock_config, monkeypatch):
     mock_config.add_section('logging')
     mock_config.set('logging', 'level', 'ERROR')
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['log-level'])
     assert capsys.readouterr().out.strip() == 'ERROR'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_set_log_level(mock_config, monkeypatch, cli_wrapper):
+async def test_set_log_level(mock_config, monkeypatch):
     mock_config.add_section('logging')
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['log-level', 'error'])
     assert mock_config.get('logging', 'level') == 'ERROR'
     await daemon.shutdown()
 
 
 @pytest.mark.asyncio
-async def test_invalid_log_level(capsys, mock_config, monkeypatch, cli_wrapper):
+async def test_invalid_log_level(capsys, mock_config, monkeypatch):
     mock_config.add_section('logging')
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     capsys.readouterr()
     await cli.amain(['log-level', 'foo'])
     assert capsys.readouterr().err.strip() == 'Please specify a valid log level'
@@ -151,8 +150,8 @@ async def test_invalid_log_level(capsys, mock_config, monkeypatch, cli_wrapper):
 
 
 @pytest.mark.asyncio
-async def test_enable(cli_wrapper, mock_config):
-    daemon, client = await cli_wrapper
+async def test_enable(mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
     assert await client.status() is False
 
     await cli.amain(['enable'])
@@ -161,8 +160,8 @@ async def test_enable(cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_disable(cli_wrapper, mock_config):
-    daemon, client = await cli_wrapper
+async def test_disable(mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
     await client.enable()
     assert await client.status() is True
 
@@ -172,8 +171,8 @@ async def test_disable(cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_enable_helper(mock_config, monkeypatch, cli_wrapper, patch_module):
-    daemon, client = await cli_wrapper
+async def test_enable_helper(mock_config, monkeypatch, patch_module):
+    daemon, client = await cli_wrapper(monkeypatch)
     await client.disable_helpers(['test'])
     assert mock_config.has_section('helpers.test')
     assert mock_config.get('helpers.test', 'enable') == 'off'
@@ -184,8 +183,8 @@ async def test_enable_helper(mock_config, monkeypatch, cli_wrapper, patch_module
 
 
 @pytest.mark.asyncio
-async def test_disable_helper(mock_config, monkeypatch, cli_wrapper, patch_module):
-    daemon, client = await cli_wrapper
+async def test_disable_helper(mock_config, monkeypatch, patch_module):
+    daemon, client = await cli_wrapper(monkeypatch)
     await client.enable_helpers(['test'])
     assert mock_config.has_section('helpers.test')
     assert mock_config.get('helpers.test', 'enable') == 'on'
@@ -196,9 +195,9 @@ async def test_disable_helper(mock_config, monkeypatch, cli_wrapper, patch_modul
 
 
 @pytest.mark.asyncio
-async def test_enable_helpers(mock_config, monkeypatch, cli_wrapper, patch_module):
+async def test_enable_helpers(mock_config, monkeypatch, patch_module):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     await client.disable_helpers(['test', 'test2'])
     assert mock_config.has_section('helpers.test')
     assert mock_config.get('helpers.test', 'enable') == 'off'
@@ -211,8 +210,8 @@ async def test_enable_helpers(mock_config, monkeypatch, cli_wrapper, patch_modul
 
 
 @pytest.mark.asyncio
-async def test_enable_invalid_helper(capsys, mock_config, monkeypatch, cli_wrapper, patch_module):
-    daemon, client = await cli_wrapper
+async def test_enable_invalid_helper(capsys, mock_config, monkeypatch, patch_module):
+    daemon, client = await cli_wrapper(monkeypatch)
     capsys.readouterr()
     await cli.amain(['enable-helper', 'test2'])
     assert not mock_config.has_section('helpers.test2')
@@ -221,9 +220,9 @@ async def test_enable_invalid_helper(capsys, mock_config, monkeypatch, cli_wrapp
 
 
 @pytest.mark.asyncio
-async def test_disable_helpers(mock_config, monkeypatch, cli_wrapper, patch_module):
+async def test_disable_helpers(mock_config, monkeypatch, patch_module):
     monkeypatch.setattr(helpers, 'list_helpers', lambda: ['test', 'test2'])
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     await client.enable_helpers(['test', 'test2'])
     assert mock_config.has_section('helpers.test')
     assert mock_config.get('helpers.test', 'enable') == 'on'
@@ -236,10 +235,10 @@ async def test_disable_helpers(mock_config, monkeypatch, cli_wrapper, patch_modu
 
 
 @pytest.mark.asyncio
-async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
+async def test_list_pending(capsys, helper_directory, mock_config, monkeypatch):
     setup_categories(['test', 'test2', 'test3'])
     setup_logs(helper_directory, {'test/a': '', 'test/b': '', 'test2/c': ''})
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['pending'])
     assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
@@ -270,12 +269,12 @@ async def test_list_pending(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_list_uploaded(capsys, cli_wrapper, helper_directory, mock_config):
+async def test_list_uploaded(capsys, helper_directory, mock_config, monkeypatch):
     setup_categories(['test', 'test2', 'test3'])
     for fname in ('test/a', 'test/b', 'test2/c'):
         with open(f'{sls.uploaded}/{fname}', 'w'):
             pass
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['uploaded'])
     assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
@@ -306,12 +305,12 @@ async def test_list_uploaded(capsys, cli_wrapper, helper_directory, mock_config)
 
 
 @pytest.mark.asyncio
-async def test_list_failed(capsys, cli_wrapper, helper_directory, mock_config):
+async def test_list_failed(capsys, helper_directory, mock_config, monkeypatch):
     setup_categories(['test', 'test2', 'test3'])
     for fname in ('test/a', 'test/b', 'test2/c'):
         with open(f'{sls.failed}/{fname}', 'w'):
             pass
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['failed'])
     assert capsys.readouterr().out.strip().split('\n') == ['test/a', 'test/b', 'test2/c']
@@ -342,10 +341,10 @@ async def test_list_failed(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_extract(capsys, cli_wrapper, helper_directory, mock_config):
+async def test_extract(capsys, helper_directory, mock_config, monkeypatch):
     setup_categories(['test'])
     setup_logs(helper_directory, {'test/log': 'abc'})
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['extract', 'test/log'])
     assert capsys.readouterr().out == 'abc'
@@ -371,10 +370,10 @@ async def test_extract(capsys, cli_wrapper, helper_directory, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
+async def test_trigger(count_hits, mock_config, monkeypatch):
     count_hits.ret = [], []
     monkeypatch.setattr(runner, 'trigger', awaitable(count_hits))
-    daemon, client = await cli_wrapper
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['enable'])
     await cli.amain(['trigger'])
     await asyncio.sleep(0.01)
@@ -383,8 +382,8 @@ async def test_trigger(count_hits, monkeypatch, cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
-    daemon, client = await cli_wrapper
+async def test_trigger_wait(count_hits, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['enable'])
 
     async def trigger():
@@ -405,8 +404,8 @@ async def test_trigger_wait(count_hits, monkeypatch, cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
-    daemon, client = await cli_wrapper
+async def test_trigger_wait2(count_hits, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
     await cli.amain(['enable'])
 
     async def trigger():
@@ -427,8 +426,8 @@ async def test_trigger_wait2(count_hits, monkeypatch, cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
-    daemon, client = await cli_wrapper
+async def test_logging(count_hits, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
     expected_level = 'WARNING'
 
     def expect_level(level=None):
@@ -453,8 +452,8 @@ async def test_logging(cli_wrapper, count_hits, mock_config, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_version(capsys, cli_wrapper, mock_config):
-    daemon, client = await cli_wrapper
+async def test_version(capsys, mock_config, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
 
     await cli.amain(['version'])
 
@@ -463,8 +462,8 @@ async def test_version(capsys, cli_wrapper, mock_config):
 
 
 @pytest.mark.asyncio
-async def test_unit_id(capsys, cli_wrapper, monkeypatch):
-    daemon, client = await cli_wrapper
+async def test_unit_id(capsys, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
 
     monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: "foo")
 
@@ -475,8 +474,8 @@ async def test_unit_id(capsys, cli_wrapper, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_unit_id_none(capsys, cli_wrapper, monkeypatch):
-    daemon, client = await cli_wrapper
+async def test_unit_id_none(capsys, monkeypatch):
+    daemon, client = await cli_wrapper(monkeypatch)
 
     monkeypatch.setattr(sls.util, "telemetry_unit_id", lambda: None)
 

@@ -13,8 +13,8 @@ from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.sysreport import SysreportHelper as helper
 from .. import awaitable, always_raise, custom_dsn, setup_categories
 from .. import helper_directory, mock_config, patch_module  # NOQA: F401
-from ..daemon import dbus_daemon  # NOQA: F401
-from ..dbus import mock_dbus, real_dbus, MockDBusObject  # NOQA: F401
+from ..daemon import dbus_daemon
+from ..dbus import mock_dbus, MockDBusObject  # NOQA: F401
 
 dsn = custom_dsn('helpers.sysreport')
 
@@ -48,8 +48,8 @@ async def test_move_failed(helper_directory, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_submit_missing_file(dbus_daemon):
-    daemon, bus = await dbus_daemon
+async def test_submit_missing_file(monkeypatch):
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysreport')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysreport')
     try:
@@ -62,7 +62,7 @@ async def test_submit_missing_file(dbus_daemon):
 
 
 @pytest.mark.asyncio
-async def test_transient_error(dbus_daemon, helper_directory, monkeypatch):
+async def test_transient_error(helper_directory, monkeypatch):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'alphabet', 'X')
     monkeypatch.setattr(helper, 'submit', awaitable(lambda _: HelperResult.TRANSIENT_ERROR))
@@ -70,7 +70,7 @@ async def test_transient_error(dbus_daemon, helper_directory, monkeypatch):
 
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysreport')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysreport')
 
@@ -85,7 +85,7 @@ async def test_transient_error(dbus_daemon, helper_directory, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_permanent_error(dbus_daemon, helper_directory, monkeypatch):
+async def test_permanent_error(helper_directory, monkeypatch):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'alphabet', 'X')
     monkeypatch.setattr(helper, 'submit', awaitable(lambda _: HelperResult.PERMANENT_ERROR))
@@ -93,7 +93,7 @@ async def test_permanent_error(dbus_daemon, helper_directory, monkeypatch):
 
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysreport')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysreport')
 
@@ -108,7 +108,7 @@ async def test_permanent_error(dbus_daemon, helper_directory, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_other_error(dbus_daemon, helper_directory, monkeypatch):
+async def test_other_error(helper_directory, monkeypatch):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'alphabet', 'X')
     monkeypatch.setattr(helper, 'submit', awaitable(always_raise(RuntimeError())))
@@ -116,7 +116,7 @@ async def test_other_error(dbus_daemon, helper_directory, monkeypatch):
 
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysreport')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysreport')
 
@@ -131,7 +131,7 @@ async def test_other_error(dbus_daemon, helper_directory, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_ok(dbus_daemon, helper_directory, monkeypatch):
+async def test_ok(helper_directory, monkeypatch):
     monkeypatch.setattr(sls, 'base', helper_directory)
     monkeypatch.setattr(helper, 'alphabet', 'X')
     monkeypatch.setattr(helper, 'submit', awaitable(lambda _: HelperResult.OK))
@@ -139,7 +139,7 @@ async def test_ok(dbus_daemon, helper_directory, monkeypatch):
 
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
 
-    daemon, bus = await dbus_daemon
+    daemon, bus = await dbus_daemon(monkeypatch)
     usb = sls.dbus.DBusObject(bus, f'{sls.constants.DBUS_ROOT}/helpers/Sysreport')
     iface = await usb.interface(f'{sls.constants.DBUS_NAME}.Sysreport')
 
