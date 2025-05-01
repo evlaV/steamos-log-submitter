@@ -1,0 +1,50 @@
+<1>[ 3666.123483] BUG: unable to handle page fault for address: ffffffffa14017c1
+<1>[ 3666.123493] #PF: supervisor write access in kernel mode
+<1>[ 3666.123496] #PF: error_code(0x0003) - permissions violation
+<6>[ 3666.123499] PGD 361613067 P4D 361613067 PUD 361614063 PMD 3606001e1 
+<4>[ 3666.123504] Oops: 0003 [#1] PREEMPT SMP NOPTI
+<4>[ 3666.123508] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 6.1.52-valve17-1-neptune-61 #1 d9f36434487d1aac8fd7a949c70bd773a802b030
+<4>[ 3666.123513] Hardware name: Valve Jupiter/Jupiter, BIOS F7A0121 12/14/2023
+<4>[ 3666.123515] RIP: 0010:common_interrupt+0x3/0xa0
+<4>[ 3666.123524] Code: 73 f6 4a ff eb 93 48 c7 c7 19 45 ca a1 e8 55 a1 49 ff 0f 0b 4c 89 ef 48 83 e7 f7 e8 f7 37 44 ff eb a1 0f 1f 44 00 00 66 0b 1f <00> 41 54 55 48 89 f5 53 48 89 fb e8 fd 2d 00 00 41 89 c4 65 c6 05
+<4>[ 3666.123527] RSP: 0018:ffffffffa2403d90 EFLAGS: 00010046
+<4>[ 3666.123530] RAX: ffffffffa2403d98 RBX: 0000000000000000 RCX: ffffffffa140176d
+<4>[ 3666.123532] RDX: 0000000000000000 RSI: 0000000000000044 RDI: ffffffffa2403d98
+<4>[ 3666.123535] RBP: 0000000000000000 R08: 0000000000000000 R09: 0000000000000000
+<4>[ 3666.123536] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000000
+<4>[ 3666.123538] R13: 0000000000000000 R14: 0000000000000000 R15: 0000000000000000
+<4>[ 3666.123540] FS:  0000000000000000(0000) GS:ffff9b3ab1c00000(0000) knlGS:0000000000000000
+<4>[ 3666.123542] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[ 3666.123545] CR2: ffffffffa14017c1 CR3: 000000015571c000 CR4: 0000000000350ef0
+<4>[ 3666.123547] Call Trace:
+<4>[ 3666.123550]  <TASK>
+<4>[ 3666.123553]  ? __die_body.cold+0x1a/0x1f
+<4>[ 3666.123558]  ? native_irq_return_ldt+0x52/0xc1
+<4>[ 3666.123562]  ? page_fault_oops+0x15a/0x2d0
+<4>[ 3666.123569]  ? native_irq_return_ldt+0x52/0xc1
+<4>[ 3666.123572]  ? exc_page_fault+0x148/0x150
+<4>[ 3666.123576]  ? asm_exc_page_fault+0x26/0x30
+<4>[ 3666.123579]  ? restore_regs_and_return_to_kernel+0x22/0x22
+<4>[ 3666.123584]  ? common_interrupt+0x3/0xa0
+<4>[ 3666.123587]  asm_common_interrupt+0x26/0x40
+<4>[ 3666.123590] RIP: 0010:cpuidle_enter_state+0xdc/0x410
+<4>[ 3666.123596] Code: 49 89 c5 0f 1f 44 00 00 31 ff e8 0f f0 7d ff 45 84 ff 74 12 9c 58 f6 c4 02 0f 85 20 03 00 00 31 ff e8 98 a9 84 ff fb 45 85 f6 <0f> 88 85 01 00 00 49 63 d6 48 8d 04 52 48 8d 04 82 49 8d 0c c4 48
+<4>[ 3666.123598] RSP: 0018:ffffffffa2403e40 EFLAGS: 00000202
+<4>[ 3666.123601] RAX: ffff9b3ab1c31b40 RBX: ffff9b3840b12400 RCX: 0000000000000000
+<4>[ 3666.123602] RDX: 0000000000000000 RSI: fffffffe52c082d6 RDI: 0000000000000000
+<4>[ 3666.123604] RBP: 0000000000000002 R08: 0000000000000002 R09: 000000002db6d614
+<4>[ 3666.123606] R10: ffff9b3ab1c30644 R11: 000000000000011a R12: ffffffffa254c140
+<4>[ 3666.123608] R13: 0000035595fcc965 R14: 0000000000000002 R15: 0000000000000000
+<4>[ 3666.123614]  cpuidle_enter+0x2d/0x40
+<4>[ 3666.123618]  do_idle+0x1df/0x260
+<4>[ 3666.123624]  cpu_startup_entry+0x1d/0x20
+<4>[ 3666.123628]  rest_init+0xc8/0xd0
+<4>[ 3666.123631]  arch_call_rest_init+0xe/0x1c
+<4>[ 3666.123639]  start_kernel+0x95d/0x986
+<4>[ 3666.123644]  secondary_startup_64_no_verify+0xe5/0xeb
+<4>[ 3666.123651]  </TASK>
+<4>[ 3666.123652] Modules linked in: mmc_block hid_nintendo hidp tls uinput snd_seq_dummy snd_hrtimer snd_seq snd_seq_device nft_fib_inet nft_fib_ipv4 nft_fib_ipv6 nft_fib nft_reject_inet nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_ct nft_chain_nat nf_tables ip6table_nat ip6table_mangle ccm ip6table_raw algif_aead ip6table_security cbc iptable_nat nf_nat des_generic libdes nf_conntrack ecb nf_defrag_ipv6 nf_defrag_ipv4 iptable_mangle iptable_raw md4 iptable_security nfnetlink ip6table_filter ip6_tables iptable_filter cmac algif_hash algif_skcipher af_alg bnep ramoops reed_solomon intel_rapl_msr rtw88_8822ce intel_rapl_common rtw88_8822c rtw88_pci edac_mce_amd kvm_amd snd_acp5x_pcm_dma snd_acp5x_i2s snd_soc_acp5x_mach rtw88_core snd_sof_amd_vangogh kvm amdgpu snd_sof_amd_acp irqbypass crct10dif_pclmul crc32_pclmul snd_sof_pci polyval_clmulni btusb polyval_generic snd_sof_xtensa_dsp hid_multitouch gf128mul snd_hda_codec_hdmi btrtl mac80211 snd_sof btbcm ghash_clmulni_intel btintel sha512_ssse3
+<4>[ 3666.123723]  snd_sof_utils libarc4 snd_hda_intel amdgpu_xcp_drv aesni_intel snd_soc_cs35l41_spi drm_buddy snd_soc_cs35l41 crypto_simd snd_intel_dspcfg atkbd btmtk gpu_sched cryptd cfg80211 drm_ttm_helper snd_intel_sdw_acpi snd_soc_wm_adsp snd_pci_acp5x bluetooth libps2 snd_hda_codec ttm snd_acp_config sp5100_tco cs_dsp snd_soc_cs35l41_lib snd_soc_nau8821 rapl wdat_wdt vivaldi_fmap pcspkr snd_soc_core tpm_crb ecdh_generic i2c_piix4 snd_soc_acpi cdc_acm snd_compress snd_hda_core drm_display_helper ac97_bus video i2c_hid_acpi snd_hwdep tpm_tis snd_pcm_dmaengine cec ccp rfkill wmi tpm_tis_core i2c_hid opt3001 ltrf216a snd_pcm snd_timer industrialio snd mousedev hid_steam 8250_dw soundcore joydev ff_memless acpi_cpufreq mac_hid pkcs8_key_parser crypto_user fuse dm_mod loop zram bpf_preload tpm ip_tables x_tables overlay ext4 crc16 mbcache jbd2 usbhid vfat fat btrfs blake2b_generic libcrc32c crc32c_generic xor raid6_pq sdhci_pci nvme extcon_steamdeck serio_raw leds_steamdeck steamdeck_hwmon
+<4>[ 3666.123808]  cqhci sdhci nvme_core i8042 xhci_pci crc32c_intel mmc_core xhci_pci_renesas nvme_common serio steamdeck spi_amd
+<4>[ 3666.123824] CR2: ffffffffa14017c1
+<4>[ 3666.123827] ---[ end trace 0000000000000000 ]---

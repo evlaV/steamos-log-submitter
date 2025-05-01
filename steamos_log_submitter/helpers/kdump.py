@@ -24,6 +24,8 @@ class KdumpHelper(Helper):
     frame_re = re.compile(r'(?P<q>\? )?(?:[0-9a-f]{4}:)?(?P<symbol>[_a-zA-Z][_a-zA-Z0-9.]*)\+(?P<offset>0x[0-9a-f]+)/(?P<size>0x[0-9a-f]+)(?: \[(?P<module>[_a-zA-Z0-9]+)(?: [0-9a-f]+)?\])?')
     rsp_re = re.compile(r'RSP: [0-9a-f]{4}:([0-9a-f]{16})')
     registers_re = re.compile(r'\b([A-Z0-9]{2,3}): *([0-9a-f]{4,16})')
+    module_strip_re = re.compile(r'\[[^]]*\]')
+    last_unloaded_module_re = re.compile(r'\[last unloaded: ([^]]+)]*\]')
 
     @classmethod
     def get_summaries(cls, dmesg: TextIO) -> tuple[str, list[dict[str, JSONEncodable]], dict[str, JSONEncodable]]:
@@ -38,6 +40,7 @@ class KdumpHelper(Helper):
             'BUG: unable to handle page fault for address',
             'PREEMPT SMP NOPTI',
             'general protection fault',
+            'BUG: kernel NULL pointer dereference, address',
         )
 
         trace_types = ('TASK', 'IRQ')
@@ -79,7 +82,11 @@ class KdumpHelper(Helper):
                 if line.startswith('---') or line.startswith('Unloaded tainted modules:') or line.startswith('CR2:'):
                     getting_modules = False
                     continue
-                typing.cast(list, metadata['kernel.modules']).extend(line.strip().split(' '))
+                last_unloaded = cls.last_unloaded_module_re.findall(line)
+                if last_unloaded:
+                    metadata['kernel.last_unloaded_modules'] = last_unloaded
+                line = cls.module_strip_re.sub('', line).strip()
+                typing.cast(list, metadata['kernel.modules']).extend(line.split(' '))
 
         crash_summary = ''.join(cls.strip_re.sub('', line) for line in crash_summary_list)
 
