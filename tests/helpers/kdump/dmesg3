@@ -1,3 +1,6 @@
+<6>[   51.417731] remove
+<6>[   51.417736] Unbind all
+<6>[   51.417737] fw_attr_remove
 <1>[   51.417741] BUG: kernel NULL pointer dereference, address: 0000000000000000
 <1>[   51.417745] #PF: supervisor read access in kernel mode
 <1>[   51.417748] #PF: error_code(0x0000) - not-present page
@@ -74,3 +77,84 @@
 <4>[   51.418267]  pcspkr drm_display_helper ucsi_acpi snd_rn_pci_acp3x amd_pmf snd_timer k10temp snd_acp_config cfg80211 ideapad_laptop typec_ucsi amdtee snd_soc_acpi snd i2c_piix4 cec sparse_keymap video i2c_smbus thunderbolt amd_sfh ccp snd_pci_acp3x rfkill soundcore typec platform_profile i2c_hid_acpi roles wmi tee i2c_hid amd_pmc acpi_tad mac_hid pkcs8_key_parser hid_playstation led_class_multicolor hid_nintendo ff_memless i2c_dev crypto_user loop dm_mod nfnetlink zram 842_decompress 842_compress lz4hc_compress lz4_compress ip_tables x_tables overlay ext4 crc16 mbcache jbd2 crc32c_generic vfat fat btrfs blake2b_generic xor raid6_pq serio_raw nvme sdhci_pci sdhci_uhs2 sdhci sha256_ssse3 nvme_core cqhci nvme_keyring i8042 mmc_core nvme_auth serio hid_multitouch usbhid [last unloaded: lenovo_wmi_gamezone]
 <4>[   51.418376] CR2: 0000000000000000
 <4>[   51.418380] ---[ end trace 0000000000000000 ]---
+<4>[   51.423427] RIP: 0010:sysfs_remove_group+0x10/0x90
+<4>[   51.423433] Code: 84 00 00 00 00 00 0f 1f 40 00 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 55 48 89 f5 53 <48> 8b 36 48 8b 5f 30 48 85 f6 74 3b 49 89 fc 31 d2 48 89 df e8 b7
+<4>[   51.423436] RSP: 0018:ffffd2f98774fbb0 EFLAGS: 00010246
+<4>[   51.423440] RAX: ffff8df81a388ea0 RBX: ffff8df8a2bb6d28 RCX: 0000000000000027
+<4>[   51.423443] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8df81a388eb8
+<4>[   51.423445] RBP: 0000000000000000 R08: 0000000000000000 R09: ffffd2f98774fa60
+<4>[   51.423447] R10: ffff8dfb5dbfffa8 R11: 0000000000000003 R12: 0000000000000004
+<4>[   51.423450] R13: ffffffffc1ba1120 R14: ffffffffc1ba1120 R15: 0000000000000000
+<4>[   51.423452] FS:  00007f67c3c38740(0000) GS:ffff8dfba6909000(0000) knlGS:0000000000000000
+<4>[   51.423455] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+<4>[   51.423458] CR2: 0000000000000000 CR3: 00000001c934e000 CR4: 0000000000f50ef0
+<4>[   51.423461] PKRU: 55555554
+<0>[   51.423463] Kernel panic - not syncing: Fatal exception
+<4>[   51.423467] NMI backtrace for cpu 4
+<4>[   51.423469] CPU: 4 UID: 0 PID: 2921 Comm: rmmod Tainted: G      D            6.14.0-05883-g0e694a2a7eb5-dirty #23 PREEMPT(full)  b6c0608fbe47274130fe314d2b0c447e138300ef
+<4>[   51.423473] Tainted: [D]=DIE
+<4>[   51.423474] Hardware name: LENOVO 83L3/LNVNB161216, BIOS QCCN16WW 10/10/2024
+<4>[   51.423475] Call Trace:
+<4>[   51.423477]  <TASK>
+<4>[   51.423478]  dump_stack_lvl+0x5d/0x80
+<4>[   51.423483]  nmi_cpu_backtrace.cold+0x19/0x68
+<4>[   51.423486]  ? __pfx_nmi_raise_cpu_backtrace+0x10/0x10
+<4>[   51.423490]  nmi_trigger_cpumask_backtrace+0xed/0x100
+<4>[   51.423494]  panic+0x141/0x2da
+<4>[   51.423500]  oops_end.cold+0x18/0x1a
+<4>[   51.423503]  page_fault_oops.cold+0x259/0x2eb
+<4>[   51.423508]  exc_page_fault+0x81/0x1b0
+<4>[   51.423512]  asm_exc_page_fault+0x26/0x30
+<4>[   51.423514] RIP: 0010:sysfs_remove_group+0x10/0x90
+<4>[   51.423517] Code: 84 00 00 00 00 00 0f 1f 40 00 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 55 48 89 f5 53 <48> 8b 36 48 8b 5f 30 48 85 f6 74 3b 49 89 fc 31 d2 48 89 df e8 b7
+<4>[   51.423518] RSP: 0018:ffffd2f98774fbb0 EFLAGS: 00010246
+<4>[   51.423520] RAX: ffff8df81a388ea0 RBX: ffff8df8a2bb6d28 RCX: 0000000000000027
+<4>[   51.423522] RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8df81a388eb8
+<4>[   51.423523] RBP: 0000000000000000 R08: 0000000000000000 R09: ffffd2f98774fa60
+<4>[   51.423524] R10: ffff8dfb5dbfffa8 R11: 0000000000000003 R12: 0000000000000004
+<4>[   51.423525] R13: ffffffffc1ba1120 R14: ffffffffc1ba1120 R15: 0000000000000000
+<4>[   51.423532]  lwmi_om_master_unbind+0x41/0x80 [lenovo_wmi_other 0f46b98565d812fa2bf06eb7569559ea40d9966a]
+<4>[   51.423536]  component_master_del+0xb7/0xe0
+<4>[   51.423539]  device_release_driver_internal+0x19c/0x200
+<4>[   51.423544]  driver_detach+0x48/0x90
+<4>[   51.423547]  bus_remove_driver+0x6d/0xf0
+<4>[   51.423550]  __do_sys_delete_module+0x1d2/0x310
+<4>[   51.423557]  do_syscall_64+0x82/0x820
+<4>[   51.423560]  ? __call_rcu_common+0xc0/0x6a0
+<4>[   51.423563]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423566]  ? __mod_memcg_lruvec_state+0xa9/0x1a0
+<4>[   51.423569]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423571]  ? mod_objcg_state+0x18a/0x2c0
+<4>[   51.423574]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423576]  ? __call_rcu_common+0xc0/0x6a0
+<4>[   51.423577]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423580]  ? __call_rcu_common+0xc0/0x6a0
+<4>[   51.423581]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423584]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423586]  ? __call_rcu_common+0xc0/0x6a0
+<4>[   51.423589]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423591]  ? __call_rcu_common+0xc0/0x6a0
+<4>[   51.423593]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423596]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423598]  ? kmem_cache_free+0x227/0x430
+<4>[   51.423602]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423605]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423607]  ? syscall_exit_to_user_mode+0x37/0x1c0
+<4>[   51.423611]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423613]  ? do_syscall_64+0x8e/0x820
+<4>[   51.423616]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423618]  ? syscall_exit_to_user_mode+0x37/0x1c0
+<4>[   51.423622]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423624]  ? do_syscall_64+0x8e/0x820
+<4>[   51.423627]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423629]  ? srso_alias_return_thunk+0x5/0xfbef5
+<4>[   51.423632]  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+<4>[   51.423634] RIP: 0033:0x7f67c352946b
+<4>[   51.423644] Code: 73 01 c3 48 8b 0d a5 c8 0c 00 f7 d8 64 89 01 48 83 c8 ff c3 66 2e 0f 1f 84 00 00 00 00 00 90 f3 0f 1e fa b8 b0 00 00 00 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 75 c8 0c 00 f7 d8 64 89 01 48
+<4>[   51.423645] RSP: 002b:00007ffe21f7cd68 EFLAGS: 00000206 ORIG_RAX: 00000000000000b0
+<4>[   51.423647] RAX: ffffffffffffffda RBX: 000055e49121f9c0 RCX: 00007f67c352946b
+<4>[   51.423649] RDX: 0000000000000000 RSI: 0000000000000800 RDI: 000055e49121fa28
+<4>[   51.423650] RBP: 00007ffe21f7cd90 R08: 1999999999999999 R09: 0000000000000000
+<4>[   51.423651] R10: 00007f67c35a5fe0 R11: 0000000000000206 R12: 0000000000000000
+<4>[   51.423652] R13: 00007ffe21f7cff0 R14: 0000000000000000 R15: 00007ffe21f7cff8
+<4>[   51.423657]  </TASK>

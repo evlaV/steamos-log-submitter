@@ -1,10 +1,19 @@
-BUG: kernel NULL pointer dereference, address: 0000000000000000
-#PF: supervisor read access in kernel mode
-#PF: error_code(0x0000) - not-present page
-PGD 0 P4D 0 
-Oops: Oops: 0000 [#1] SMP NOPTI
-CPU: 4 UID: 0 PID: 2921 Comm: rmmod Not tainted 6.14.0-05883-g0e694a2a7eb5-dirty #23 PREEMPT(full)  b6c0608fbe47274130fe314d2b0c447e138300ef
+Kernel panic - not syncing: Fatal exception
+NMI backtrace for cpu 4
+CPU: 4 UID: 0 PID: 2921 Comm: rmmod Tainted: G      D            6.14.0-05883-g0e694a2a7eb5-dirty #23 PREEMPT(full)  b6c0608fbe47274130fe314d2b0c447e138300ef
+Tainted: [D]=DIE
 Hardware name: LENOVO 83L3/LNVNB161216, BIOS QCCN16WW 10/10/2024
+Call Trace:
+ <TASK>
+ dump_stack_lvl+0x5d/0x80
+ nmi_cpu_backtrace.cold+0x19/0x68
+ ? __pfx_nmi_raise_cpu_backtrace+0x10/0x10
+ nmi_trigger_cpumask_backtrace+0xed/0x100
+ panic+0x141/0x2da
+ oops_end.cold+0x18/0x1a
+ page_fault_oops.cold+0x259/0x2eb
+ exc_page_fault+0x81/0x1b0
+ asm_exc_page_fault+0x26/0x30
 RIP: 0010:sysfs_remove_group+0x10/0x90
 Code: 84 00 00 00 00 00 0f 1f 40 00 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 55 48 89 f5 53 <48> 8b 36 48 8b 5f 30 48 85 f6 74 3b 49 89 fc 31 d2 48 89 df e8 b7
 RSP: 0018:ffffd2f98774fbb0 EFLAGS: 00010246
@@ -13,17 +22,6 @@ RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8df81a388eb8
 RBP: 0000000000000000 R08: 0000000000000000 R09: ffffd2f98774fa60
 R10: ffff8dfb5dbfffa8 R11: 0000000000000003 R12: 0000000000000004
 R13: ffffffffc1ba1120 R14: ffffffffc1ba1120 R15: 0000000000000000
-FS:  00007f67c3c38740(0000) GS:ffff8dfba6909000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000000 CR3: 00000001c934e000 CR4: 0000000000f50ef0
-PKRU: 55555554
-Call Trace:
- <TASK>
- ? __die_body.cold+0x19/0x29
- ? page_fault_oops+0x15a/0x2d0
- ? exc_page_fault+0x81/0x1b0
- ? asm_exc_page_fault+0x26/0x30
- ? sysfs_remove_group+0x10/0x90
  lwmi_om_master_unbind+0x41/0x80 [lenovo_wmi_other 0f46b98565d812fa2bf06eb7569559ea40d9966a]
  component_master_del+0xb7/0xe0
  device_release_driver_internal+0x19c/0x200
@@ -69,8 +67,3 @@ RBP: 00007ffe21f7cd90 R08: 1999999999999999 R09: 0000000000000000
 R10: 00007f67c35a5fe0 R11: 0000000000000206 R12: 0000000000000000
 R13: 00007ffe21f7cff0 R14: 0000000000000000 R15: 00007ffe21f7cff8
  </TASK>
-Modules linked in: lenovo_wmi_other(-) lenovo_wmi_helpers lenovo_wmi_capdata01 firmware_attributes_class snd_seq_dummy snd_hrtimer rfcomm snd_seq snd_seq_device hid_steam uhid ccm algif_aead crypto_null des3_ede_x86_64 cbc des_generic libdes md4 nft_fib_inet nft_fib_ipv4 nft_fib_ipv6 nft_fib nft_reject_inet nf_reject_ipv4 nf_reject_ipv6 nft_reject nft_ct nft_chain_nat ip6table_nat ip6table_mangle ip6table_raw ip6table_security iptable_nat nf_nat nf_conntrack nf_defrag_ipv6 nf_defrag_ipv4 iptable_mangle iptable_raw iptable_security nf_tables ip6table_filter ip6_tables iptable_filter hid_sensor_gyro_3d hid_sensor_als hid_sensor_accel_3d hid_sensor_trigger hid_logitech_hidpp industrialio_triggered_buffer kfifo_buf hid_sensor_iio_common industrialio cmac algif_hash algif_skcipher af_alg bnep ramoops reed_solomon snd_soc_acp6x_mach snd_soc_dmic snd_acp6x_pdm_dma snd_sof_amd_acp70 snd_sof_amd_acp63 snd_sof_amd_vangogh snd_sof_amd_rembrandt btusb btrtl snd_sof_amd_renoir btintel snd_sof_amd_acp btbcm snd_sof_pci
- btmtk mousedev snd_sof_xtensa_dsp hid_sensor_hub amd_atl hid_logitech_dj bluetooth intel_rapl_msr joydev intel_rapl_common snd_sof snd_sof_utils snd_pci_ps snd_soc_acpi_amd_match snd_amd_sdw_acpi amdgpu soundwire_amd soundwire_generic_allocation snd_ctl_led soundwire_bus kvm_amd snd_hda_codec_realtek mt7921e snd_soc_sdca xpad snd_hda_codec_generic mt7921_common kvm spd5118 snd_hda_codec_hdmi snd_hda_scodec_component snd_soc_core mt792x_lib polyval_clmulni mt76_connac_lib polyval_generic snd_compress ghash_clmulni_intel ac97_bus amdxcp snd_hda_intel snd_pcm_dmaengine gpu_sched snd_intel_dspcfg mt76 drm_panel_backlight_quirks snd_intel_sdw_acpi sha512_ssse3 drm_buddy snd_rpl_pci_acp6x wmi_bmof lenovo_wmi_events hid_generic snd_acp_pci snd_amd_acpi_mach sha1_ssse3 drm_ttm_helper snd_hda_codec snd_acp_legacy_common mac80211 ttm aesni_intel drm_exec snd_hda_core atkbd crypto_simd snd_pci_acp6x i2c_algo_bit libarc4 libps2 drm_suballoc_helper cryptd snd_hwdep sp5100_tco snd_pci_acp5x snd_pcm rapl vivaldi_fmap
- pcspkr drm_display_helper ucsi_acpi snd_rn_pci_acp3x amd_pmf snd_timer k10temp snd_acp_config cfg80211 ideapad_laptop typec_ucsi amdtee snd_soc_acpi snd i2c_piix4 cec sparse_keymap video i2c_smbus thunderbolt amd_sfh ccp snd_pci_acp3x rfkill soundcore typec platform_profile i2c_hid_acpi roles wmi tee i2c_hid amd_pmc acpi_tad mac_hid pkcs8_key_parser hid_playstation led_class_multicolor hid_nintendo ff_memless i2c_dev crypto_user loop dm_mod nfnetlink zram 842_decompress 842_compress lz4hc_compress lz4_compress ip_tables x_tables overlay ext4 crc16 mbcache jbd2 crc32c_generic vfat fat btrfs blake2b_generic xor raid6_pq serio_raw nvme sdhci_pci sdhci_uhs2 sdhci sha256_ssse3 nvme_core cqhci nvme_keyring i8042 mmc_core nvme_auth serio hid_multitouch usbhid [last unloaded: lenovo_wmi_gamezone]
-CR2: 0000000000000000
----[ end trace 0000000000000000 ]---

@@ -1,8 +1,20 @@
- ? __die_body.cold+0x19/0x29
- ? page_fault_oops+0x15a/0x2d0
- ? exc_page_fault+0x81/0x1b0
- ? asm_exc_page_fault+0x26/0x30
- ? sysfs_remove_group+0x10/0x90
+ dump_stack_lvl+0x5d/0x80
+ nmi_cpu_backtrace.cold+0x19/0x68
+ ? __pfx_nmi_raise_cpu_backtrace+0x10/0x10
+ nmi_trigger_cpumask_backtrace+0xed/0x100
+ panic+0x141/0x2da
+ oops_end.cold+0x18/0x1a
+ page_fault_oops.cold+0x259/0x2eb
+ exc_page_fault+0x81/0x1b0
+ asm_exc_page_fault+0x26/0x30
+RIP: 0010:sysfs_remove_group+0x10/0x90
+Code: 84 00 00 00 00 00 0f 1f 40 00 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 90 f3 0f 1e fa 0f 1f 44 00 00 41 54 55 48 89 f5 53 <48> 8b 36 48 8b 5f 30 48 85 f6 74 3b 49 89 fc 31 d2 48 89 df e8 b7
+RSP: 0018:ffffd2f98774fbb0 EFLAGS: 00010246
+RAX: ffff8df81a388ea0 RBX: ffff8df8a2bb6d28 RCX: 0000000000000027
+RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8df81a388eb8
+RBP: 0000000000000000 R08: 0000000000000000 R09: ffffd2f98774fa60
+R10: ffff8dfb5dbfffa8 R11: 0000000000000003 R12: 0000000000000004
+R13: ffffffffc1ba1120 R14: ffffffffc1ba1120 R15: 0000000000000000
  lwmi_om_master_unbind+0x41/0x80 [lenovo_wmi_other 0f46b98565d812fa2bf06eb7569559ea40d9966a]
  component_master_del+0xb7/0xe0
  device_release_driver_internal+0x19c/0x200
