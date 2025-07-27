@@ -396,6 +396,14 @@ def get_dmi_info() -> dict[str, str]:
             '83N6': 'Legion Go S',
             '83Q2': 'Legion Go S',
             '83Q3': 'Legion Go S',
+            '83N0': 'Legion Go 2',
+            '83N1': 'Legion Go 2',
+        },
+        'Micro-StarInternationalCo.,Ltd.': {
+            'ClawA1M': 'MSI Claw A1M',
+            'Claw7AI+A2VM': 'MSI Claw 7 AI+ A2VM',
+            'Claw8AI+A2VM': 'MSI Claw 8 AI+ A2VM',
+            'ClawA8BZ2EM': 'MSI Claw A8 BZ2EM',
         },
         'ZOTAC': {
             'G0A1W': 'ZONE',
