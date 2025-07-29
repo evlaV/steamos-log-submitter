@@ -427,10 +427,10 @@ def get_dmi_info() -> dict[str, str]:
             'Loki Zero': 'Ayn Loki Zero',
         },
         'GPD': {
-            'G1618-03', 'GPD WIN 3',
-            'G1618-04', 'GPD WIN 4',
-            'G1619-04', 'GPD WIN Max 2',
-            'G1617-01', 'GPD WIN Mini',
+            'G1618-03': 'GPD WIN 3',
+            'G1618-04': 'GPD WIN 4',
+            'G1619-04': 'GPD WIN Max 2',
+            'G1617-01': 'GPD WIN Mini',
         },
         'LENOVO': {
             '83E1': 'Legion Go',
