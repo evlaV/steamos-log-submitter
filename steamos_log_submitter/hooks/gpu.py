@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2024 Valve Software
+# Copyright (c) 2022-2025 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import glob
@@ -14,6 +14,7 @@ import re
 import subprocess
 import time
 import typing
+import zipfile
 from typing import Union
 
 import steamos_log_submitter as sls
@@ -124,8 +125,36 @@ async def run() -> None:
             pass
         if umr_log:
             log['umr'] = umr_log
-    with sls.helpers.StagingFile('gpu', f'{ts}.json', 'w') as f:
-        json.dump(log, f)
+    devpath = env.get('DEVPATH')
+    devcd = None
+    devcd_path = None
+    if devpath is not None:
+        devpath = f'/sys{devpath}'
+        for path in glob.glob('/sys/class/devcoredump/devcd*'):
+            try:
+                failing_dev = os.readlink(f'{path}/failing_device')
+                failing_dev = os.path.abspath(failing_dev)
+                if devpath.startswith(failing_dev):
+                    devcd = open(f'{path}/data', 'rb')
+                devcd_path = f'{path}/data'
+            except OSError:
+                continue
+    with sls.helpers.StagingFile('gpu', f'{ts}.zip', 'wb') as f:
+        with zipfile.ZipFile(f, mode='x', compression=zipfile.ZIP_DEFLATED) as zf:
+            with zf.open('metadata.json', 'w') as zff:
+                zff.write(json.dumps(log).encode())
+            if devcd is not None:
+                with zf.open('devcd', 'w') as zff:
+                    while True:
+                        block = devcd.read(4096)
+                        if not block:
+                            break
+                        zff.write(block)
+                devcd.close()
+
+    if devcd_path:
+        with open(devcd_path, 'wb') as dump:
+            dump.write(b'0\n')
 
 
 if __name__ == '__main__':  # pragma: no cover

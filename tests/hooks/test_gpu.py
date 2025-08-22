@@ -13,19 +13,20 @@ import pytest
 import shutil
 import subprocess
 import time
+import zipfile
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.hooks.gpu as hook
 
-from .. import always_raise, awaitable, StringIO
+from .. import always_raise, awaitable, BytesIO
 from .. import count_hits, open_shim  # NOQA: F401
 
 
 @pytest.fixture
 def staging_file(monkeypatch):
-    blob = StringIO()
+    blob = BytesIO()
 
-    def fn(category: str, name: str, mode: str) -> io.StringIO:
+    def fn(category: str, name: str, mode: str) -> io.BytesIO:
         blob.name = None
         return blob
 
@@ -49,12 +50,12 @@ def fake_pacman(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_basic(monkeypatch, fake_pacman) -> None:
-    blob = StringIO()
+    blob = BytesIO()
 
-    def staging_file(category: str, name: str, mode: str) -> io.StringIO:
+    def staging_file(category: str, name: str, mode: str) -> io.BytesIO:
         blob.name = None
         assert category == 'gpu'
-        assert name == '123456789.json'
+        assert name == '123456789.zip'
         return blob
 
     monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
@@ -70,7 +71,9 @@ async def test_basic(monkeypatch, fake_pacman) -> None:
     await hook.run()
 
     blob.seek(0)
-    value = json.load(blob)
+    with zipfile.ZipFile(blob) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['appid'] == 789
     assert value['branch'] == 'main'
@@ -99,7 +102,9 @@ async def test_invalid_pid(monkeypatch, fake_pacman, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['env']['PID'] == 'foo'
     assert 'pid' not in value
@@ -118,7 +123,9 @@ async def test_invalid_appid(monkeypatch, fake_pacman, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'appid' not in value
 
@@ -136,7 +143,9 @@ async def test_invalid_exe(monkeypatch, fake_pacman, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'executable' not in value
 
@@ -155,7 +164,9 @@ async def test_invalid_pacman(monkeypatch, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'mesa' not in value
     assert 'radv' not in value
@@ -177,7 +188,9 @@ async def test_proc_scan_nothing(monkeypatch, open_shim, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'appid' not in value
 
@@ -198,7 +211,9 @@ async def test_proc_scan(monkeypatch, open_shim, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['appid'] == 789
 
@@ -219,7 +234,9 @@ async def test_proc_scan_disappearing(monkeypatch, open_shim, staging_file) -> N
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'appid' not in value
 
@@ -240,7 +257,9 @@ async def test_proc_scan_second_reaper(monkeypatch, open_shim, staging_file) -> 
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['appid'] == 789
 
@@ -261,7 +280,9 @@ async def test_proc_scan_invalid(monkeypatch, open_shim, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'appid' not in value
 
@@ -306,7 +327,9 @@ async def test_umr(count_hits, monkeypatch, open_shim, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['umr'] == {
         'wave': {
@@ -360,7 +383,9 @@ async def test_umr_no_stderr(count_hits, monkeypatch, open_shim, staging_file) -
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert value['umr'] == {
         'wave': {
@@ -406,6 +431,36 @@ async def test_no_umr(count_hits, monkeypatch, open_shim, staging_file) -> None:
     await hook.run()
 
     staging_file.seek(0)
-    value = json.load(staging_file)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('metadata.json') as zf:
+            value = json.load(zf)
 
     assert 'umr' not in value
+
+
+@pytest.mark.asyncio
+async def test_devcd(monkeypatch, open_shim, fake_pacman, staging_file) -> None:
+    monkeypatch.setattr(time, 'time_ns', lambda: 123456789)
+    monkeypatch.setattr(os, 'environ', {
+        'ABC': '123',
+        'PID': '456',
+        'DEVPATH': '/devices/pci0000:00/0000:00:08.1/0000:04:00.0/drm/card0'
+    })
+    monkeypatch.setattr(os, 'readlink', lambda _: '../../../pci0000:00/0000:00:08.1/0000:04:00.0')
+    monkeypatch.setattr(os.path, 'abspath', lambda _: '/sys/devices/pci0000:00/0000:00:08.1/0000:04:00.0')
+    monkeypatch.setattr(shutil, 'chown', lambda *args, **kwargs: None)
+    monkeypatch.setattr(sls.util, 'get_steamos_branch', lambda: 'main')
+    monkeypatch.setattr(sls.util, 'get_appid', lambda pid: None)
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
+    monkeypatch.setattr(glob, 'glob', lambda _: ['/sys/class/devcoredump/devcd1'])
+
+    open_shim(b'devcd')
+
+    await hook.run()
+
+    staging_file.seek(0)
+    with zipfile.ZipFile(staging_file) as f:
+        with f.open('devcd') as zf:
+            devcd = zf.read()
+
+    assert devcd == b'devcd'

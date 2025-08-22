@@ -1,29 +1,41 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2025 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import json
 import os
+import zipfile
 from steamos_log_submitter.aggregators.sentry import SentryEvent
 from . import Helper, HelperResult
 
 
 class GPUHelper(Helper):
-    valid_extensions = frozenset({'.json'})
+    valid_extensions = frozenset({'.zip'})
 
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
+        tags = {}
+        fingerprint = []
+        event = SentryEvent(cls.config['dsn'])
         try:
+            with zipfile.ZipFile(fname) as f:
+                with f.open('metadata.json') as zf:
+                    metadata = zf.read()
+                    event.add_attachment({
+                        'mime-type': 'application/json',
+                        'filename': 'metadata.json',
+                        'data': metadata
+                    })
             with open(fname, 'rb') as f:
                 attachment = f.read()
+        except zipfile.BadZipFile:
+            return HelperResult.PERMANENT_ERROR
         except OSError:
             return HelperResult.TRANSIENT_ERROR
 
-        tags = {}
-        fingerprint = []
         try:
-            log = json.loads(attachment.decode())
+            log = json.loads(metadata.decode())
         except json.decoder.JSONDecodeError as e:
             cls.logger.error("Couldn't decode GPU log", exc_info=e)
             return HelperResult(HelperResult.PERMANENT_ERROR)
@@ -71,9 +83,8 @@ class GPUHelper(Helper):
             tags['mesa'] = mesa
             fingerprint.append(f'mesa:{mesa}')
 
-        event = SentryEvent(cls.config['dsn'])
         event.add_attachment({
-            'mime-type': 'application/json',
+            'mime-type': 'application/zip',
             'filename': os.path.basename(fname),
             'data': attachment
         })
