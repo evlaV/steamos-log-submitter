@@ -26,8 +26,13 @@ logger = logging.getLogger(__loader__.name)
 
 async def run() -> bool:
     driver_blocklist = ['amdgpu']  # amdgpu is handled by the gpu hook
+    driver_clearlist: list[str] = []
     try:
         driver_blocklist.extend(driver for driver in os.listdir(f'{sls.data.data_root}/devcd-block') if not driver.startswith('.'))
+    except OSError:
+        pass
+    try:
+        driver_clearlist.extend(driver for driver in os.listdir(f'{sls.data.data_root}/devcd-clear') if not driver.startswith('.'))
     except OSError:
         pass
 
@@ -90,6 +95,10 @@ async def run() -> bool:
                         if not block:
                             break
                         zff.write(block)
+
+    if driver in driver_clearlist:
+        with open(f'{dumpdir}/data', 'wb') as dump:
+            dump.write(b'0\n')
 
     return True
 
