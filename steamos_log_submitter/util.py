@@ -386,6 +386,11 @@ def get_app_name(appid: int) -> Optional[str]:
 
 def get_dmi_info() -> dict[str, str]:
     products: dict[str, dict[str, str]] = {
+        'AOKZOE': {
+            'AOKZOE A1 AR07': 'AOKZOE A1',
+            'AOKZOE A1 Pro': 'AOKZOE A1 Pro',
+            'AOKZOE A1X': 'AOKZOE A1X',
+        },
         'ASUSTeK COMPUTER INC.': {
             'RC71L': 'ROG Ally',
             'RC72LA': 'ROG Ally X',
@@ -463,6 +468,18 @@ def get_dmi_info() -> dict[str, str]:
     sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
     board_name = sls.util.read_file('/sys/class/dmi/id/board_name')
     product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
+    lookup_table = {
+        'AOKZOE': product_name,
+        'ASUSTeK COMPUTER INC.': board_name,
+        'AYA NEO': product_name,
+        'AYANEO': product_name,
+        'ayn': product_name,
+        'GPD': product_name,
+        'LENOVO': product_name,
+        'Micro-StarInternationalCo.,Ltd.': product_name,
+        'ONE-NETBOOK': product_name,
+        'ZOTAC': board_name,
+    }
     assert sys_vendor is None or isinstance(sys_vendor, str)
     assert board_name is None or isinstance(board_name, str)
     assert product_name is None or isinstance(product_name, str)
@@ -474,12 +491,16 @@ def get_dmi_info() -> dict[str, str]:
             info['bios'] = bios_version
         if product_name:
             info['product'] = product_name
-    elif sys_vendor == 'LENOVO' and product_name:
-        if product_name in products[sys_vendor]:
+    elif sys_vendor is not None and sys_vendor in products:
+        lookup = lookup_table.get(sys_vendor)
+        if lookup is not None and lookup in products[sys_vendor]:
+            assert isinstance(lookup, str)
+            info['vendor'] = sys_vendor
+            info['product'] = products[sys_vendor][lookup]
+        elif product_name in products[sys_vendor]:
             info['vendor'] = sys_vendor
             info['product'] = products[sys_vendor][product_name]
-    elif sys_vendor in ('ASUSTeK COMPUTER INC.', 'ZOTAC') and board_name:
-        if board_name in products[sys_vendor]:
+        elif board_name in products[sys_vendor]:
             info['vendor'] = sys_vendor
             info['product'] = products[sys_vendor][board_name]
     return info
