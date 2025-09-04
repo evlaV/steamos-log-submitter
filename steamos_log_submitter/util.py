@@ -30,12 +30,21 @@ __all__ = [
     'camel_case',
     'check_network',
     'drop_root',
+    'get_app_name',
     'get_appid',
     'get_build_id',
+    'get_dmi_info',
+    'get_exe_build_id',
+    'get_file_key',
+    'get_path_package',
+    'get_pid_stat',
     'get_steamos_branch',
+    'get_version_id',
+    'read_file',
+    'read_journal',
     'snake_case',
     'telemetry_unit_id',
-    'read_journal',
+    'update_app_list',
 ]
 
 
