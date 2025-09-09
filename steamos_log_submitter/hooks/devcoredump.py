@@ -68,7 +68,7 @@ async def run() -> bool:
         assert driver is not None  # This shouldn't be needed--it appears to be a mypy bug?
         relevant: list[str] = []
         for line in journal:
-            if driver in typing.cast(str, line.get('MESSAGE', '')):
+            if 'MESSAGE' in line:
                 relevant.append(typing.cast(str, line['MESSAGE']))
         metadata['journal'] = relevant
 
