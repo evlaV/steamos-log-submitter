@@ -261,11 +261,14 @@ def snake_case(text: str) -> str:
 
 async def read_journal(unit: str, cursor: Optional[str] = None, *,
                        current_boot: bool = False,
-                       start_ago_ms: Optional[int] = None) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
+                       start_ago_ms: Optional[int] = None,
+                       uid: Optional[int] = None,
+                       allow_system: bool = True,
+                       allow_user: bool = False) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
     cmd = ['journalctl', '-o', 'json']
     if unit == 'kernel':
         cmd.append('-k')
-    else:
+    elif allow_system and not allow_user:
         cmd.extend(['-u', unit])
     if cursor is not None:
         cmd.extend(['--after-cursor', cursor])
@@ -284,8 +287,17 @@ async def read_journal(unit: str, cursor: Optional[str] = None, *,
             if not line:
                 break
             log = json.loads(line.decode())
-            logs.append(log)
             cursor = log['__CURSOR']
+            if uid is not None and log.get('_UID') != str(uid):
+                continue
+            if allow_system:
+                if log.get('_SYSTEMD_UNIT') == unit:
+                    logs.append(log)
+                    continue
+            if allow_user:
+                if log.get('_SYSTEMD_USER_UNIT') == unit:
+                    logs.append(log)
+                    continue
     except OSError as e:
         logger.error('Failed to exec journalctl', exc_info=e)
         return None, None

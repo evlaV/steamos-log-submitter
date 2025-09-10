@@ -51,3 +51,116 @@ async def test_subprocess_failure(monkeypatch, mock_dbus):
     monkeypatch.setattr(asyncio, 'create_subprocess_exec', always_raise(OSError))
 
     assert await sls.util.read_journal('steamos_log_submitter.service') == (None, None)
+
+
+@pytest.mark.asyncio
+async def test_filtering(fake_async_subprocess, monkeypatch):
+    async def test_args(*args, **kwargs):
+        if args == ('journalctl', '-o', 'json', '-u', 'hev.service'):
+            return Process(stdout=b'''
+                {"_SYSTEMD_UNIT":"hev.service","_UID":"0","_MESSAGE":"Vital signs are dropping.","__CURSOR":"1"}
+            '''.strip())
+        else:
+            return Process(stdout=b'''
+                {"_SYSTEMD_UNIT":"hev.service","_UID":"0","_MESSAGE":"Vital signs are dropping.","__CURSOR":"1"}
+                {"_SYSTEMD_USER_UNIT":"hev.service","_UID":"0","_MESSAGE":"Vital signs are dropping.","__CURSOR":"2"}
+                {"_SYSTEMD_UNIT":"hev.service","_UID":"1000","_MESSAGE":"Minor lacerations detected.","__CURSOR":"3"}
+                {"_SYSTEMD_USER_UNIT":"hev.service","_UID":"1000","_MESSAGE":"Minor lacerations detected.","__CURSOR":"4"}
+                {"_SYSTEMD_UNIT":"hev.service","_UID":"1001","_MESSAGE":"Major lacerations detected.","__CURSOR":"5"}
+                {"_SYSTEMD_USER_UNIT":"hev.service","_UID":"1001","_MESSAGE":"Major lacerations detected.","__CURSOR":"6"}
+                {"_SYSTEMD_UNIT":"gman.service","_UID":"0","_MESSAGE":"Wake up and smell the ashes.","__CURSOR":"7"}
+                {"_SYSTEMD_USER_UNIT":"gman.service","_UID":"0","_MESSAGE":"Wake up and smell the ashes.","__CURSOR":"8"}
+                {"_SYSTEMD_UNIT":"gman.service","_UID":"1000","_MESSAGE":"Mister Freeman.","__CURSOR":"9"}
+                {"_SYSTEMD_USER_UNIT":"gman.service","_UID":"1000","_MESSAGE":"Mister Freeman.","__CURSOR":"10"}
+                {"_SYSTEMD_UNIT":"gman.service","_UID":"1001","_MESSAGE":"Mister Freeman.","__CURSOR":"11"}
+                {"_SYSTEMD_USER_UNIT":"gman.service","_UID":"1001","_MESSAGE":"Mister Freeman.","__CURSOR":"12"}
+            '''.strip())
+
+    monkeypatch.setattr(asyncio, 'create_subprocess_exec', test_args)
+
+    assert (await sls.util.read_journal('hev.service', allow_user=False, allow_system=True))[0] == [
+        {
+            "_SYSTEMD_UNIT": "hev.service",
+            "_UID": "0",
+            "_MESSAGE": "Vital signs are dropping.",
+            "__CURSOR": "1"
+        },
+    ]
+
+    assert (await sls.util.read_journal('hev.service', allow_user=True, allow_system=False))[0] == [
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "0",
+            "_MESSAGE": "Vital signs are dropping.",
+            "__CURSOR": "2"
+        },
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1000",
+            "_MESSAGE": "Minor lacerations detected.",
+            "__CURSOR": "4"
+        },
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1001",
+            "_MESSAGE": "Major lacerations detected.",
+            "__CURSOR": "6"
+        },
+    ]
+
+    assert (await sls.util.read_journal('hev.service', allow_user=True, allow_system=True))[0] == [
+        {
+            "_SYSTEMD_UNIT": "hev.service",
+            "_UID": "0",
+            "_MESSAGE": "Vital signs are dropping.",
+            "__CURSOR": "1"
+        },
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "0",
+            "_MESSAGE": "Vital signs are dropping.",
+            "__CURSOR": "2"
+        },
+        {
+            "_SYSTEMD_UNIT": "hev.service",
+            "_UID": "1000",
+            "_MESSAGE": "Minor lacerations detected.",
+            "__CURSOR": "3"
+        },
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1000",
+            "_MESSAGE": "Minor lacerations detected.",
+            "__CURSOR": "4"
+        },
+        {
+            "_SYSTEMD_UNIT": "hev.service",
+            "_UID": "1001",
+            "_MESSAGE": "Major lacerations detected.",
+            "__CURSOR": "5"
+        },
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1001",
+            "_MESSAGE": "Major lacerations detected.",
+            "__CURSOR": "6"
+        },
+    ]
+
+    assert (await sls.util.read_journal('hev.service', allow_user=True, allow_system=False, uid=1000))[0] == [
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1000",
+            "_MESSAGE": "Minor lacerations detected.",
+            "__CURSOR": "4"
+        },
+    ]
+
+    assert (await sls.util.read_journal('hev.service', allow_user=True, allow_system=False, uid=1001))[0] == [
+        {
+            "_SYSTEMD_USER_UNIT": "hev.service",
+            "_UID": "1001",
+            "_MESSAGE": "Major lacerations detected.",
+            "__CURSOR": "6"
+        },
+    ]
