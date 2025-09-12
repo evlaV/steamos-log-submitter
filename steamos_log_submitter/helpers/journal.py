@@ -16,7 +16,7 @@ from . import Helper, HelperResult
 
 class JournalHelper(Helper):
     valid_extensions = frozenset({'.json'})
-    units = {
+    system_units = {
         'gpu-trace.service',
         'jupiter-biosupdate.service',
         'jupiter-controller-update.service',
@@ -41,17 +41,28 @@ class JournalHelper(Helper):
         'vpower.service',
     }
 
+    user_units = {
+        'gamescope-mangoapp.service',
+        'gamescope-session.service',
+        'gamescope-xbindkeys.service',
+        'steam-launcher.service',
+        'steam-notif-daemon.service',
+        'steamos-manager.service',
+        'steamos-powerbuttond.service',
+    }
+
     @classmethod
-    async def read_journal(cls, unit: str, invocations: set[str], cursor: Optional[str] = None) -> tuple[dict[str, list[dict[str, JSONEncodable]]], Optional[str]]:
-        logs, cursor = await sls.util.read_journal(unit, cursor)
+    async def read_journal(cls, unit: str, invocations: set[str], user: bool = False, cursor: Optional[str] = None) -> tuple[dict[str, list[dict[str, JSONEncodable]]], Optional[str]]:
+        logs, cursor = await sls.util.read_journal(unit, cursor, allow_user=user, allow_system=not user)
         if not logs:
             return {}, cursor
 
         invocation_results: dict[str, list[dict[str, JSONEncodable]]] = {}
         for log in logs:
-            invocation = log.get('INVOCATION_ID')
-            if not invocation:
+            if user:
                 invocation = log.get('USER_INVOCATION_ID')
+            else:
+                invocation = log.get('INVOCATION_ID')
             if not invocation:
                 invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
             assert isinstance(invocation, str)
@@ -127,19 +138,31 @@ class JournalHelper(Helper):
         return ''.join(unescaped)
 
     @classmethod
-    async def collect(cls) -> list[str]:
-        cursor = cls.data.get('system_cursor')
-        assert cursor is None or isinstance(cursor, str)
-        failed_units, cursor = await cls.failed_units(False, cursor)
-        cls.data['system_cursor'] = cursor
+    async def collect_inner(cls, user: bool) -> None:
+        if user:
+            cursor_name = 'user_cursor'
+            units = cls.user_units
+        else:
+            cursor_name = 'system_cursor'
+            units = cls.system_units
 
-        for unit in cls.units:
+        cursor = cls.data.get(cursor_name)
+        assert cursor is None or isinstance(cursor, str)
+        failed_units, cursor = await cls.failed_units(user, cursor)
+        cls.data[cursor_name] = cursor
+
+        for unit in units:
             if unit not in failed_units:
                 continue
 
-            cursor = cls.data.get(f'{cls.escape(unit)}.cursor')
+            if user:
+                unit_name = f'user.{cls.escape(unit)}'
+            else:
+                unit_name = cls.escape(unit)
+
+            cursor = cls.data.get(f'{unit_name}.cursor')
             assert cursor is None or isinstance(cursor, str)
-            journal, cursor = await cls.read_journal(unit, failed_units[unit], cursor)
+            journal, cursor = await cls.read_journal(unit, failed_units[unit], user, cursor)
 
             if not journal:
                 cls.logger.error(f'Failed reading journal for unit {unit}')
@@ -148,14 +171,14 @@ class JournalHelper(Helper):
             for invocation, new_logs in journal.items():
                 old_journal = []
                 try:
-                    with open(f'{sls.pending}/journal/{cls.escape(unit)} {invocation}.json', 'rt') as f:
+                    with open(f'{sls.pending}/journal/{unit_name} {invocation}.json', 'rt') as f:
                         old_journal = json.load(f)
                 except FileNotFoundError:
                     pass
                 except json.decoder.JSONDecodeError as e:
-                    cls.logger.warning(f'Failed decoding log pending/journal/{cls.escape(unit)} {invocation}.json', exc_info=e)
+                    cls.logger.warning(f'Failed decoding log pending/journal/{unit_name} {invocation}.json', exc_info=e)
                 except OSError as e:
-                    cls.logger.error(f'Failed loading log pending/journal/{cls.escape(unit)} {invocation}.json: {e}')
+                    cls.logger.error(f'Failed loading log pending/journal/{unit_name} {invocation}.json: {e}')
                     continue
 
                 old_journal.extend(new_logs)
@@ -163,11 +186,16 @@ class JournalHelper(Helper):
                     continue
 
                 try:
-                    with open(f'{sls.pending}/journal/{cls.escape(unit)} {invocation}.json', 'wt') as f:
+                    with open(f'{sls.pending}/journal/{unit_name} {invocation}.json', 'wt') as f:
                         json.dump(old_journal, f)
                 except OSError as e:
-                    cls.logger.error(f'Failed writing log pending/journal/{cls.escape(unit)} {invocation}.json: {e}')
-            cls.data[f'{cls.escape(unit)}.cursor'] = cursor
+                    cls.logger.error(f'Failed writing log pending/journal/{unit_name} {invocation}.json: {e}')
+            cls.data[f'{unit_name}.cursor'] = cursor
+
+    @classmethod
+    async def collect(cls) -> list[str]:
+        await cls.collect_inner(False)
+        await cls.collect_inner(True)
 
         try:
             cls.data.write()

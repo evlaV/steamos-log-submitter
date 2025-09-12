@@ -46,7 +46,8 @@ async def test_failed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_no_failed(monkeypatch):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(helper, 'read_journal', unreachable)
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (
         [{
@@ -62,7 +63,8 @@ async def test_collect_no_failed(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_collect_success(monkeypatch, data_directory, count_hits, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
     count_hits.ret = [{
         "JOB_RESULT": "failed",
@@ -72,7 +74,7 @@ async def test_collect_success(monkeypatch, data_directory, count_hits, helper_d
     os.mkdir(f'{sls.pending}/journal')
 
     assert await helper.collect() == ['unit_2eservice 1234.json']
-    assert count_hits.hits == 2
+    assert count_hits.hits == 3
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor'
@@ -86,8 +88,51 @@ async def test_collect_success(monkeypatch, data_directory, count_hits, helper_d
 
 
 @pytest.mark.asyncio
+async def test_collect_no_failed_user(monkeypatch, data_directory, count_hits, helper_directory):
+    monkeypatch.setattr(helper, 'system_units', [])
+    monkeypatch.setattr(helper, 'user_units', ['unit.service'])
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
+    count_hits.ret = [{
+        "JOB_RESULT": "failed",
+        "INVOCATION_ID": "1234",
+        "UNIT": "unit.service",
+    }], 'cursor'
+    os.mkdir(f'{sls.pending}/journal')
+
+    assert not await helper.collect()
+    assert count_hits.hits == 2
+
+
+@pytest.mark.asyncio
+async def test_collect_success_user(monkeypatch, data_directory, count_hits, helper_directory):
+    monkeypatch.setattr(helper, 'system_units', [])
+    monkeypatch.setattr(helper, 'user_units', ['unit.service'])
+    monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
+    count_hits.ret = [{
+        "JOB_RESULT": "failed",
+        "USER_INVOCATION_ID": "1234",
+        "USER_UNIT": "unit.service",
+    }], 'cursor'
+    os.mkdir(f'{sls.pending}/journal')
+
+    assert await helper.collect() == ['user.unit_2eservice 1234.json']
+    assert count_hits.hits == 3
+    assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
+    assert 'user.unit_2eservice.cursor' in helper.data
+    assert helper.data.get('user.unit_2eservice.cursor') == 'cursor'
+    with open(f'{sls.pending}/journal/user.unit_2eservice 1234.json', 'rt') as f:
+        log = json.load(f)
+    assert log == [{
+        "JOB_RESULT": "failed",
+        "USER_INVOCATION_ID": "1234",
+        "USER_UNIT": "unit.service",
+    }]
+
+
+@pytest.mark.asyncio
 async def test_collect_append(monkeypatch, data_directory, count_hits, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
     count_hits.ret = [{
         "JOB_RESULT": "failed",
@@ -100,7 +145,7 @@ async def test_collect_append(monkeypatch, data_directory, count_hits, helper_di
     with open(f'{sls.pending}/journal/unit_2eservice 1234.json', 'wt') as f:
         json.dump([{'INVOCATION_ID': '1234', 'UNIT': 'unit.service'}], f)
     assert await helper.collect() == ['unit_2eservice 1234.json']
-    assert count_hits.hits == 2
+    assert count_hits.hits == 3
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor2'
@@ -122,7 +167,8 @@ async def test_collect_append(monkeypatch, data_directory, count_hits, helper_di
 
 @pytest.mark.asyncio
 async def test_collect_corrupted(monkeypatch, data_directory, count_hits, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
     count_hits.ret = [{
         "JOB_RESULT": "failed",
@@ -135,7 +181,7 @@ async def test_collect_corrupted(monkeypatch, data_directory, count_hits, helper
     with open(f'{sls.pending}/journal/unit_2eservice 1234.json', 'wt') as f:
         f.write('definitely not json!')
     assert await helper.collect() == ['unit_2eservice 1234.json']
-    assert count_hits.hits == 2
+    assert count_hits.hits == 3
     assert os.access(f'{data_directory}/helpers.journal.json', os.F_OK)
     assert 'unit_2eservice.cursor' in helper.data
     assert helper.data.get('unit_2eservice.cursor') == 'cursor2'
@@ -151,7 +197,8 @@ async def test_collect_corrupted(monkeypatch, data_directory, count_hits, helper
 
 @pytest.mark.asyncio
 async def test_collect_read_error(monkeypatch, data_directory, drop_root, count_hits, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
     count_hits.ret = [{
         "JOB_RESULT": "failed",
@@ -174,7 +221,8 @@ async def test_collect_read_error(monkeypatch, data_directory, drop_root, count_
 
 @pytest.mark.asyncio
 async def test_collect_write_error(count_hits, data_directory, drop_root, helper_directory, mock_config, monkeypatch):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(count_hits))
     count_hits.ret = [{
         "JOB_RESULT": "failed",
@@ -200,7 +248,9 @@ async def test_collect_write_error(count_hits, data_directory, drop_root, helper
 
 @pytest.mark.asyncio
 async def test_journal_error(monkeypatch):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
+    monkeypatch.setattr(helper.data, 'write', lambda *args: None)
     monkeypatch.setattr(sls.util, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
     monkeypatch.setattr(builtins, 'open', unreachable)
 
@@ -209,7 +259,8 @@ async def test_journal_error(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_journal_error_cursor(monkeypatch, data_directory, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(helper, 'failed_units', awaitable(lambda *args: ({'unit.service': set()}, None)))
     monkeypatch.setattr(helper, 'read_journal', awaitable(lambda *args, **kwargs: (None, None)))
 
@@ -224,11 +275,12 @@ async def test_journal_error_cursor(monkeypatch, data_directory, helper_director
 async def test_journal_cursor_read(monkeypatch, data_directory):
     configured_cursor = 'Passport'
 
-    async def check_cursor(unit, invocations, cursor=None):
+    async def check_cursor(unit, invocations, user, cursor=None):
         assert cursor == configured_cursor
         return None, None
 
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(helper, 'failed_units', awaitable(lambda *args: ({'unit.service': set()}, None)))
     monkeypatch.setattr(helper, 'read_journal', check_cursor)
 
@@ -239,7 +291,8 @@ async def test_journal_cursor_read(monkeypatch, data_directory):
 
 @pytest.mark.asyncio
 async def test_journal_cursor_update(fake_async_subprocess, data_directory, helper_directory, monkeypatch):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
     monkeypatch.setattr(helper, 'failed_units', awaitable(lambda *args: ({'unit.service': {'1234'}}, None)))
     lines = [json.dumps({
         '__CURSOR': str(x),
@@ -265,7 +318,8 @@ async def test_journal_cursor_update(fake_async_subprocess, data_directory, help
 
 @pytest.mark.asyncio
 async def test_journal_invocation_prune(fake_async_subprocess, data_directory, helper_directory, monkeypatch):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
 
     lines = []
     for x in range(5):
@@ -299,7 +353,8 @@ async def test_journal_invocation_prune(fake_async_subprocess, data_directory, h
 
 @pytest.mark.asyncio
 async def test_journal_invocation_merge(monkeypatch, data_directory, helper_directory):
-    monkeypatch.setattr(helper, 'units', ['unit.service'])
+    monkeypatch.setattr(helper, 'system_units', ['unit.service'])
+    monkeypatch.setattr(helper, 'user_units', [])
 
     async def fake_subprocess(*args, **kwargs):
         lines = []
