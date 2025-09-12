@@ -1,16 +1,14 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 # vim:ts=4:sw=4:et
 #
-# Copyright (c) 2022-2023 Valve Software
+# Copyright (c) 2022-2025 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_next as dbus
 import json
 import os
 from typing import Optional
 
 import steamos_log_submitter as sls
 from steamos_log_submitter.aggregators.sentry import SentryEvent
-from steamos_log_submitter.dbus import DBusObject
 from steamos_log_submitter.types import JSONEncodable
 
 from . import Helper, HelperResult
@@ -18,7 +16,7 @@ from . import Helper, HelperResult
 
 class JournalHelper(Helper):
     valid_extensions = frozenset({'.json'})
-    units = [
+    units = {
         'gpu-trace.service',
         'jupiter-biosupdate.service',
         'jupiter-controller-update.service',
@@ -41,30 +39,65 @@ class JournalHelper(Helper):
         'steamos-post-update.service',
         'steamos-settings-importer.service',
         'vpower.service',
-    ]
+    }
 
     @classmethod
-    async def read_journal(cls, unit: str, cursor: Optional[str] = None) -> tuple[Optional[list[dict[str, JSONEncodable]]], Optional[str]]:
+    async def read_journal(cls, unit: str, invocations: set[str], cursor: Optional[str] = None) -> tuple[dict[str, list[dict[str, JSONEncodable]]], Optional[str]]:
         logs, cursor = await sls.util.read_journal(unit, cursor)
         if not logs:
-            return None, cursor
+            return {}, cursor
 
-        invocations: dict[str, list] = {}
+        invocation_results: dict[str, list[dict[str, JSONEncodable]]] = {}
         for log in logs:
             invocation = log.get('INVOCATION_ID')
             if not invocation:
+                invocation = log.get('USER_INVOCATION_ID')
+            if not invocation:
                 invocation = log.get('_SYSTEMD_INVOCATION_ID', '')
             assert isinstance(invocation, str)
-            invocation_logs = invocations.get(invocation, [])
+            if invocation not in invocations:
+                continue
+            if '_HOSTNAME' in log:
+                del log['_HOSTNAME']
+            if '_MACHINE_ID' in log:
+                del log['_MACHINE_ID']
+            invocation_logs = invocation_results.get(invocation, [])
             invocation_logs.append(log)
-            invocations[invocation] = invocation_logs
+            invocation_results[invocation] = invocation_logs
 
-        pruned_invocations = []
-        for invocation_logs in invocations.values():
-            if 'UNIT_RESULT' in invocation_logs[-1]:
-                pruned_invocations.extend(invocation_logs)
+        return invocation_results, cursor
 
-        return pruned_invocations, cursor
+    @classmethod
+    async def failed_units(cls, user: bool, cursor: Optional[str] = None) -> tuple[dict[str, set[str]], Optional[str]]:
+        if user:
+            unit = "user@1000.service"
+        else:
+            unit = "init.scope"
+        if cursor is not None:
+            logs, cursor = await sls.util.read_journal(unit, cursor)
+        else:
+            # Limit first run to only 30 days so it doesn't run forever
+            logs, cursor = await sls.util.read_journal(unit, start_ago_ms=2592000000)
+        failed: dict[str, set[str]] = {}
+        if logs:
+            for log in logs:
+                if log.get('UNIT_RESULT') not in ('resources', 'protocol', 'timeout', 'exit-code', 'signal', 'core-dump', 'watchdog') and log.get('JOB_RESULT') != 'failed':
+                    continue
+                if user:
+                    invocation = log.get('USER_INVOCATION_ID')
+                    failed_unit = log.get('USER_UNIT')
+                else:
+                    invocation = log.get('INVOCATION_ID')
+                    failed_unit = log.get('UNIT')
+                if not invocation:
+                    invocation = log.get('_SYSTEMD_INVOCATION_ID')
+                if invocation is not None and failed_unit is not None:
+                    assert isinstance(failed_unit, str)
+                    assert isinstance(invocation, str)
+                    this_unit = failed.get(failed_unit, set())
+                    this_unit.add(invocation)
+                    failed[failed_unit] = this_unit
+        return failed, cursor
 
     @classmethod
     def escape(cls, name: str) -> str:
@@ -95,61 +128,51 @@ class JournalHelper(Helper):
 
     @classmethod
     async def collect(cls) -> list[str]:
-        bus = 'org.freedesktop.systemd1'
-        updated = False
+        cursor = cls.data.get('system_cursor')
+        assert cursor is None or isinstance(cursor, str)
+        failed_units, cursor = await cls.failed_units(False, cursor)
+        cls.data['system_cursor'] = cursor
+
         for unit in cls.units:
-            try:
-                dbus_unit = DBusObject(bus, f'/org/freedesktop/systemd1/unit/{cls.escape(unit)}')
-                props = dbus_unit.properties('org.freedesktop.systemd1.Unit')
-                state = await props['ActiveState']
-            except (dbus.errors.DBusError, KeyError) as e:
-                cls.logger.warning(f'Exception getting state of unit {unit}', exc_info=e)
-                continue
-            if state != 'failed':
+            if unit not in failed_units:
                 continue
 
             cursor = cls.data.get(f'{cls.escape(unit)}.cursor')
             assert cursor is None or isinstance(cursor, str)
-            journal, cursor = await cls.read_journal(unit, cursor)
+            journal, cursor = await cls.read_journal(unit, failed_units[unit], cursor)
 
             if not journal:
                 cls.logger.error(f'Failed reading journal for unit {unit}')
                 continue
 
-            for message in journal:
-                if '_HOSTNAME' in message:
-                    del message['_HOSTNAME']
-                if '_MACHINE_ID' in message:
-                    del message['_MACHINE_ID']
+            for invocation, new_logs in journal.items():
+                old_journal = []
+                try:
+                    with open(f'{sls.pending}/journal/{cls.escape(unit)} {invocation}.json', 'rt') as f:
+                        old_journal = json.load(f)
+                except FileNotFoundError:
+                    pass
+                except json.decoder.JSONDecodeError as e:
+                    cls.logger.warning(f'Failed decoding log pending/journal/{cls.escape(unit)} {invocation}.json', exc_info=e)
+                except OSError as e:
+                    cls.logger.error(f'Failed loading log pending/journal/{cls.escape(unit)} {invocation}.json: {e}')
+                    continue
 
-            old_journal = []
-            try:
-                with open(f'{sls.pending}/journal/{cls.escape(unit)}.json', 'rt') as f:
-                    old_journal = json.load(f)
-            except FileNotFoundError:
-                pass
-            except json.decoder.JSONDecodeError as e:
-                cls.logger.warning(f'Failed decoding log pending/journal/{cls.escape(unit)}.json', exc_info=e)
-            except OSError as e:
-                cls.logger.error(f'Failed loading log pending/journal/{cls.escape(unit)}.json: {e}')
-                continue
+                old_journal.extend(new_logs)
+                if not old_journal:
+                    continue
 
-            old_journal.extend(journal)
-            journal = old_journal
+                try:
+                    with open(f'{sls.pending}/journal/{cls.escape(unit)} {invocation}.json', 'wt') as f:
+                        json.dump(old_journal, f)
+                except OSError as e:
+                    cls.logger.error(f'Failed writing log pending/journal/{cls.escape(unit)} {invocation}.json: {e}')
+            cls.data[f'{cls.escape(unit)}.cursor'] = cursor
 
-            try:
-                with open(f'{sls.pending}/journal/{cls.escape(unit)}.json', 'wt') as f:
-                    json.dump(journal, f)
-                cls.data[f'{cls.escape(unit)}.cursor'] = cursor
-                updated = True
-            except OSError as e:
-                cls.logger.error(f'Failed writing log pending/journal/{cls.escape(unit)}.json: {e}')
-
-        if updated:
-            try:
-                cls.data.write()
-            except OSError as e:
-                cls.logger.error(f'Failed writing updated cursor information: {e}')
+        try:
+            cls.data.write()
+        except OSError as e:
+            cls.logger.error(f'Failed writing updated cursor information: {e}')
 
         return await super().collect()
 
@@ -167,6 +190,7 @@ class JournalHelper(Helper):
         extra: dict[str, JSONEncodable] = {}
         fingerprint = []
 
+        name = name.rsplit(' ', 1)[0]
         unit = cls.unescape(name)
         tags['unit'] = unit
         fingerprint.append(f'unit:{unit}')
@@ -177,8 +201,7 @@ class JournalHelper(Helper):
         message = [unit]
 
         try:
-            with open(fname) as f:
-                log = json.load(f)
+            log = json.loads(attachment)
         except (OSError, json.decoder.JSONDecodeError) as e:
             cls.logger.warning('Failed to parse saved journal JSON', exc_info=e)
 
