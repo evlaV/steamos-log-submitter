@@ -100,15 +100,13 @@ class MinidumpHelper(Helper):
                     await mf.file_handle.seek(loc.Rva)
                     maps = await mf.file_handle.read(loc.DataSize)
                     packages = {}
+                    mapped_files = []
                     for line in maps.decode(errors='replace').split('\n'):
                         mapped = line.split(maxsplit=5)
                         if len(mapped) < 6:
                             continue
-                        mapped_file = mapped[5]
-                        package = sls.util.get_path_package(mapped_file)
-                        if package is None:
-                            continue
-                        packages[package[0]] = package[1]
+                        mapped_files.append(mapped[5])
+                    packages = sls.util.get_paths_packages(mapped_files)
                     if packages:
                         event.extra['packages'] = packages
         except (MinidumpException, MinidumpHeaderSignatureMismatchException, MinidumpHeaderFlagsException) as e:

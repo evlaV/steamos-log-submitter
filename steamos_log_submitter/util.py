@@ -7,6 +7,7 @@ import asyncio
 import grp
 import hashlib
 import httpx
+import itertools
 import json
 import logging
 import io
@@ -19,7 +20,7 @@ import time
 import typing
 from elftools.elf.elffile import ELFFile
 from types import TracebackType
-from typing import Optional, Type, Union
+from typing import Iterable, Optional, Type, Union
 
 import steamos_log_submitter as sls
 from steamos_log_submitter.types import JSONEncodable
@@ -37,6 +38,7 @@ __all__ = [
     'get_exe_build_id',
     'get_file_key',
     'get_path_package',
+    'get_paths_packages',
     'get_pid_stat',
     'get_steamos_branch',
     'get_version_id',
@@ -344,6 +346,20 @@ def get_path_package(path: str) -> Optional[tuple[str, str]]:
     except (OSError, subprocess.SubprocessError) as e:
         logger.warning('Failed to get package', exc_info=e)
     return None
+
+
+def get_paths_packages(paths: Iterable[str]) -> dict[str, str]:
+    paths_split = itertools.batched(paths, 1024)
+    packages = {}
+    for paths in paths_split:
+        package = subprocess.run(['/usr/bin/pacman', '-Qo', *paths], capture_output=True, errors='replace')
+        for line in package.stdout.strip().split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            pkgname, pkgver = line.split(' ')[-2:]
+            packages[pkgname] = pkgver
+    return packages
 
 
 async def update_app_list() -> bool:
