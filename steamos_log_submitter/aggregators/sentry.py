@@ -149,26 +149,30 @@ class SentryEvent(aggregators.AggregatorEvent):
         store_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/store/').geturl()
         envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
 
-        async with httpx.AsyncClient() as client:
-            store_post = await client.post(store_endpoint, json=self._event, headers={
-                'User-Agent': self.ua_string
-            })
-
-            if store_post.status_code != 200:
-                logger.error(f'Failed to submit event: {store_post.content.decode()}')
-                return False
-
-            if self._envelope:
-                assert self._raw_envelope
-                envelope_post = await client.post(envelope_endpoint, content=self._raw_envelope.getvalue(), headers={
-                    'Content-Type': 'application/x-sentry-envelope',
-                    'Content-Encoding': 'gzip',
+        try:
+            async with httpx.AsyncClient() as client:
+                store_post = await client.post(store_endpoint, json=self._event, headers={
                     'User-Agent': self.ua_string
                 })
 
-                if envelope_post.status_code != 200:
-                    logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
+                if store_post.status_code != 200:
+                    logger.error(f'Failed to submit event: {store_post.content.decode()}')
                     return False
+
+                if self._envelope:
+                    assert self._raw_envelope
+                    envelope_post = await client.post(envelope_endpoint, content=self._raw_envelope.getvalue(), headers={
+                        'Content-Type': 'application/x-sentry-envelope',
+                        'Content-Encoding': 'gzip',
+                        'User-Agent': self.ua_string
+                    })
+
+                    if envelope_post.status_code != 200:
+                        logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
+                        return False
+        except httpx.NetworkError:
+            logger.warning('Network error occurred while submitting log')
+            return False
 
         return True
 
@@ -183,8 +187,12 @@ class MinidumpEvent(SentryEvent):
 
         metadata: dict[str, JSONEncodable] = {'sentry': json.dumps(self._event)}
 
-        async with httpx.AsyncClient() as client:
-            post = await client.post(self.dsn, files={'upload_file_minidump': minidump}, data=metadata)
+        try:
+            async with httpx.AsyncClient() as client:
+                post = await client.post(self.dsn, files={'upload_file_minidump': minidump}, data=metadata)
+        except httpx.NetworkError:
+            logger.warning('Network error occurred while submitting log')
+            return False
 
         if post.status_code == 200:
             return True
