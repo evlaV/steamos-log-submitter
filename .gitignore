@@ -2,3 +2,5 @@
 *.pyc
 .hypothesis
 .coverage
+systemd/sysusers.conf
+systemd/tmpfiles.conf
