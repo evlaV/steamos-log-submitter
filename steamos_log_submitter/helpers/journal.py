@@ -234,8 +234,12 @@ class JournalHelper(Helper):
             cls.logger.warning('Failed to parse saved journal JSON', exc_info=e)
 
         for entry in log:
-            if 'MESSAGE' in entry:
-                message.append(entry['MESSAGE'])
+            line = entry.get('MESSAGE')
+            if line is None:
+                continue
+            if isinstance(line, list):
+                line = bytes(line).decode(errors="replace")
+            message.append(line)
 
         event = SentryEvent(cls.config['dsn'])
         event.add_attachment({

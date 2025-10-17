@@ -426,6 +426,48 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_submit_message_bytes(helper_directory, mock_config, monkeypatch):
+    async def fake_submit(self):
+        assert len(self.attachments) == 1
+        assert self.attachments[0]['mime-type'] == 'application/json'
+        assert self.attachments[0]['filename'] == 'abc_5fdef.json'
+        assert self.attachments[0]['data'] == b'[{"MESSAGE":[48,49,50]}]'
+        assert self.tags['unit'] == 'abc_def'
+        assert self.message == 'abc_def\n012'
+        assert 'unit:abc_def' in self.fingerprint
+        return True
+
+    monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
+    mock_config.add_section('helpers.journal')
+    mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
+
+    with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
+        f.write('[{"MESSAGE":[48,49,50]}]')
+    assert await helper.submit(f'{helper_directory}/abc_5fdef.json') == HelperResult.OK
+
+
+@pytest.mark.asyncio
+async def test_submit_message_mixed(helper_directory, mock_config, monkeypatch):
+    async def fake_submit(self):
+        assert len(self.attachments) == 1
+        assert self.attachments[0]['mime-type'] == 'application/json'
+        assert self.attachments[0]['filename'] == 'abc_5fdef.json'
+        assert self.attachments[0]['data'] == b'[{"MESSAGE":"Whoa"},{"MESSAGE":[48,49,50]}]'
+        assert self.tags['unit'] == 'abc_def'
+        assert self.message == 'abc_def\nWhoa\n012'
+        assert 'unit:abc_def' in self.fingerprint
+        return True
+
+    monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
+    mock_config.add_section('helpers.journal')
+    mock_config.set('helpers.journal', 'dsn', 'https://fake@dsn')
+
+    with open(f'{helper_directory}/abc_5fdef.json', 'w') as f:
+        f.write('[{"MESSAGE":"Whoa"},{"MESSAGE":[48,49,50]}]')
+    assert await helper.submit(f'{helper_directory}/abc_5fdef.json') == HelperResult.OK
+
+
+@pytest.mark.asyncio
 async def test_subprocess_failure(monkeypatch, data_directory, helper_directory):
     os.mkdir(f'{sls.pending}/journal')
     monkeypatch.setattr(asyncio, 'create_subprocess_exec', always_raise(OSError))
