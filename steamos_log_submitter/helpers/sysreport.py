@@ -68,13 +68,15 @@ class SysreportHelper(Helper):
         new_path = f'{sls.pending}/{cls.name}/{name}'
         shutil.copyfile(path, new_path)
 
-        result = (await sls.runner.submit_category(cls, [name]))[name]
+        result = (await sls.runner.submit_category(cls, [name])).get(name)
         if isinstance(result, HelperResult) and result == HelperResult.OK:
             return id
         try:
             os.replace(new_path, f'{sls.failed}/{cls.name}/{id}.zip')
-        except OSError:
-            pass
+        except OSError as e:
+            logger.error(f'Encountered error cleaning up sent report {id}: {e}')
+        if result is None:
+            return HelperResult.PERMANENT_ERROR
 
         if isinstance(result, Exception):
             raise result
