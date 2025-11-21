@@ -13,6 +13,8 @@ import steamos_log_submitter.aggregators.sentry as sentry
 from . import mock_config, open_shim  # NOQA: F401
 from . import unreachable
 
+from steamos_log_submitter.helpers import HelperResult
+
 
 class Uname:
     machine: str = 'bmarch'
@@ -30,7 +32,7 @@ async def test_bad_start(monkeypatch):
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('')
-    assert not await event.send()
+    assert await event.send() == HelperResult.TRANSIENT_ERROR
 
 
 @pytest.mark.asyncio

@@ -16,6 +16,7 @@ from typing import IO, Optional
 
 import steamos_log_submitter as sls
 import steamos_log_submitter.aggregators as aggregators
+from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)
@@ -151,7 +152,7 @@ class SentryEvent(aggregators.AggregatorEvent):
             self._envelope = None
             self._raw_envelope = None
 
-    async def send(self) -> bool:
+    async def send(self) -> HelperResult:
         self.seal()
 
         dsn_parsed = urllib.parse.urlparse(self.dsn)
@@ -164,9 +165,13 @@ class SentryEvent(aggregators.AggregatorEvent):
                     'User-Agent': self.ua_string
                 })
 
+                if store_post.status_code == 413:
+                    logger.error('Failed to submit event, too large')
+                    return HelperResult.PERMANENT_ERROR
+
                 if store_post.status_code != 200:
                     logger.error(f'Failed to submit event: {store_post.content.decode()}')
-                    return False
+                    return HelperResult.TRANSIENT_ERROR
 
                 if self._envelope:
                     assert self._raw_envelope
@@ -178,12 +183,12 @@ class SentryEvent(aggregators.AggregatorEvent):
 
                     if envelope_post.status_code != 200:
                         logger.error(f'Failed to submit attachment: {envelope_post.content.decode()}')
-                        return False
+                        return HelperResult.TRANSIENT_ERROR
         except httpx.NetworkError:
             logger.warning('Network error occurred while submitting log')
-            return False
+            return HelperResult.TRANSIENT_ERROR
 
-        return True
+        return HelperResult.OK
 
 
 class MinidumpEvent(SentryEvent):

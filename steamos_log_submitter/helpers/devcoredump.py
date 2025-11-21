@@ -65,4 +65,4 @@ class DevcoredumpHelper(Helper):
         else:
             event.message = 'Unknown device'
 
-        return HelperResult.check(await event.send())
+        return await event.send()

@@ -5,6 +5,8 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import abc
 
+from steamos_log_submitter.helpers import HelperResult
+
 
 class AggregatorEvent(abc.ABC):
     @abc.abstractmethod
@@ -12,5 +14,5 @@ class AggregatorEvent(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    async def send(self) -> bool:  # pragma: no cover
+    async def send(self) -> HelperResult:  # pragma: no cover
         raise NotImplementedError

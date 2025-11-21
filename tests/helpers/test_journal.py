@@ -414,7 +414,7 @@ async def test_submit_params(helper_directory, mock_config, monkeypatch):
         assert self.tags['unit'] == 'abc_def'
         assert self.message == 'abc_def\nWhoa'
         assert 'unit:abc_def' in self.fingerprint
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
     mock_config.add_section('helpers.journal')
@@ -435,7 +435,7 @@ async def test_submit_message_bytes(helper_directory, mock_config, monkeypatch):
         assert self.tags['unit'] == 'abc_def'
         assert self.message == 'abc_def\n012'
         assert 'unit:abc_def' in self.fingerprint
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
     mock_config.add_section('helpers.journal')
@@ -456,7 +456,7 @@ async def test_submit_message_mixed(helper_directory, mock_config, monkeypatch):
         assert self.tags['unit'] == 'abc_def'
         assert self.message == 'abc_def\nWhoa\n012'
         assert 'unit:abc_def' in self.fingerprint
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
     mock_config.add_section('helpers.journal')

@@ -107,7 +107,7 @@ class TraceHelper(Helper):
         else:
             event.message = parsed_log['type']
 
-        return HelperResult.check(await event.send())
+        return await event.send()
 
     @classmethod
     async def prepare_event(cls, line: str, data: dict[str, DBusEncodable]) -> TraceEvent:

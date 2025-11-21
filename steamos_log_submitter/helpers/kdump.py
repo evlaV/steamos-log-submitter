@@ -213,4 +213,4 @@ class KdumpHelper(Helper):
                 'data': attachment
             })
         event.exceptions = [{'stacktrace': frames, 'type': 'PANIC'} for frames in stack]
-        return HelperResult.check(await event.send())
+        return await event.send()

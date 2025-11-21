@@ -56,7 +56,7 @@ class SysreportHelper(Helper):
         })
         event.tags = tags
         event.message = f'System report {id}'
-        return HelperResult.check(await event.send())
+        return await event.send()
 
     @classmethod
     async def send_report(cls, path: str) -> str | HelperResult:

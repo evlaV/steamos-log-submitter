@@ -49,7 +49,7 @@ async def test_submit_params_base(helper_directory, mock_config, monkeypatch):
         assert self.attachments[1]['mime-type'] == 'application/json'
         assert self.attachments[1]['filename'] == 'metadata.json'
         assert self.message == 'Unknown device'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
 
@@ -75,7 +75,7 @@ async def test_submit_params_all(helper_directory, mock_config, monkeypatch):
         assert self.tags['driver'] == 'xen'
         assert self.fingerprint == ['driver:xen']
         assert self.message == 'xen: /pci/hev'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', fake_submit)
 

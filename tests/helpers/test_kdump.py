@@ -608,11 +608,11 @@ async def test_submit_bad_zip(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_submit_multiple_zip(monkeypatch):
-    async def check_now(self) -> bool:
+    async def check_now(self) -> HelperResult:
         assert len(self.attachments) == 3
         with open(f'{file_base}/stack.json') as f:
             assert self.exceptions == [{'stacktrace': frames, 'type': 'PANIC'} for frames in json.load(f)]
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     assert await helper.submit(f'{file_base}/dmesg-202310050102.zip') == HelperResult.OK
@@ -620,9 +620,9 @@ async def test_submit_multiple_zip(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_submit_multiple_timestamp(monkeypatch):
-    async def check_now(self) -> bool:
+    async def check_now(self) -> HelperResult:
         assert self.timestamp == 1696467720
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     assert await helper.submit(f'{file_base}/dmesg-202310050102.zip') == HelperResult.OK
@@ -630,11 +630,11 @@ async def test_submit_multiple_timestamp(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_submit_build_info(monkeypatch):
-    async def check_now(self) -> bool:
+    async def check_now(self) -> HelperResult:
         assert self.os_build == '20230927.1000'
         assert self.version == '3.6'
         assert self.tags['kernel'] == '6.1.52-valve2-1-neptune-61'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     assert await helper.submit(f'{file_base}/kdumpst-202310050540.zip') == HelperResult.OK

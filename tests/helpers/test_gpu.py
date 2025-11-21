@@ -37,7 +37,7 @@ async def test_no_timestamp(monkeypatch, open_shim):
         nonlocal hit
         hit = True
         assert self.timestamp is None
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -57,7 +57,7 @@ async def test_bad_timestamp(monkeypatch, open_shim):
         nonlocal hit
         hit = True
         assert self.timestamp is None
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -77,7 +77,7 @@ async def test_timestamp(monkeypatch, open_shim):
         nonlocal hit
         hit = True
         assert self.timestamp == 1234
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -98,7 +98,7 @@ async def test_no_appid(monkeypatch, open_shim):
         hit = True
         assert self.appid is None
         assert self.message == 'GPU reset'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -119,7 +119,7 @@ async def test_bad_appid(monkeypatch, open_shim):
         hit = True
         assert self.appid is None
         assert self.message == 'GPU reset'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -140,7 +140,7 @@ async def test_appid(monkeypatch, open_shim):
         hit = True
         assert self.appid == 1234
         assert self.message == 'GPU reset (1234)'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -162,7 +162,7 @@ async def test_exe(monkeypatch, open_shim):
         assert self.tags['executable'] == 'hl2.exe'
         assert 'executable:hl2.exe' in self.fingerprint
         assert self.message == 'GPU reset (hl2.exe)'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -184,7 +184,7 @@ async def test_comm(monkeypatch, open_shim):
         assert self.tags['comm'] == 'hl2'
         assert 'comm:hl2' in self.fingerprint
         assert self.message == 'GPU reset (hl2)'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -205,7 +205,7 @@ async def test_kernel(monkeypatch, open_shim):
         hit = True
         assert self.tags['kernel'] == '4.20.69-valve1'
         assert 'kernel:4.20.69-valve1' in self.fingerprint
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')
@@ -226,7 +226,7 @@ async def test_mesa(monkeypatch, open_shim):
         hit = True
         assert self.tags['mesa'] == '23.1.3.170235.radeonsi_3.5.1-1'
         assert 'mesa:23.1.3.170235.radeonsi_3.5.1-1' in self.fingerprint
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     zip = tempfile.NamedTemporaryFile(suffix='.zip')

@@ -157,7 +157,7 @@ async def test_metadata(helper_directory, monkeypatch):
         hit = True
         assert self.tags['friendly_id'] == 'XXXX-XXXX'
         assert self.message == 'System report XXXX-XXXX'
-        return True
+        return HelperResult.OK
 
     monkeypatch.setattr(sentry.SentryEvent, 'send', check_now)
     monkeypatch.setattr(sls, 'base', helper_directory)

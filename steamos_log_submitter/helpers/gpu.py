@@ -93,4 +93,4 @@ class GPUHelper(Helper):
         event.tags = tags
         event.fingerprint = fingerprint
         event.message = message
-        return HelperResult.check(await event.send())
+        return await event.send()

@@ -257,4 +257,4 @@ class JournalHelper(Helper):
         event.tags = tags
         event.fingerprint = fingerprint
         event.message = '\n'.join(message)
-        return HelperResult.check(await event.send())
+        return await event.send()
