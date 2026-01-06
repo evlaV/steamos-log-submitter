@@ -432,6 +432,9 @@ def get_dmi_info() -> dict[str, str]:
             'RC71L': 'ROG Ally',
             'RC72LA': 'ROG Ally X',
         },
+        'AYADEVICE': {
+            'AYA NEO FOUNDER': 'AYANEO 2021',
+        },
         'AYANEO': {
             'AYA NEO 2021': 'AYANEO 2021',
             'AYANEO 2021': 'AYANEO 2021',
