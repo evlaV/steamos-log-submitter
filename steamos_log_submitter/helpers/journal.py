@@ -18,6 +18,13 @@ class JournalHelper(Helper):
     valid_extensions = frozenset({'.json'})
     system_units = {
         'gpu-trace.service',
+        'holo-boot.service',
+        'holo-cfs-debugfs-tunings.service',
+        'holo-create-homedir.service',
+        'holo-dump-info.service',
+        'holo-install-grub.service',
+        'holo-install-steamcl.service',
+        'holo-offload.target',
         'jupiter-biosupdate.service',
         'jupiter-controller-update.service',
         'jupiter-fan-control.service',
