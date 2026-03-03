@@ -28,7 +28,7 @@ __all__ = [
     'logging',
     'util',
 ]
-__version__ = '0.7.6'
+__version__ = '0.7.7'
 
 _setup = False
 
