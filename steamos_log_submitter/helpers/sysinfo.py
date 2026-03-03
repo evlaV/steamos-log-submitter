@@ -401,7 +401,12 @@ class SystemType(SysinfoType):
         if swap:
             sysinfo['swap'] = swap
 
-        sysinfo.update(sls.util.get_dmi_info())
+        try:
+            sysinfo.update(sls.util.get_dmi_info())
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            cls.logger.error(f'Failed to get DMI information: {e}')
 
         return sysinfo
 

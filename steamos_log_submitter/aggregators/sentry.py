@@ -102,9 +102,14 @@ class SentryEvent(aggregators.AggregatorEvent):
                 'id': unit_id
             }
 
-        dmi_info = sls.util.get_dmi_info()
-        if 'product' in dmi_info:
-            tags['product'] = dmi_info['product']
+        try:
+            dmi_info = sls.util.get_dmi_info()
+            if 'product' in dmi_info:
+                tags['product'] = dmi_info['product']
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            logger.error(f'Failed to get DMI information: {e}')
 
         if tags:
             self._event['tags'] = tags
