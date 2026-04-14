@@ -155,7 +155,7 @@ class SentryEvent(aggregators.AggregatorEvent):
         envelope_endpoint = dsn_parsed._replace(path=f'/api{dsn_parsed.path}/envelope/').geturl()
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=20) as client:
                 store_post = await client.post(store_endpoint, json=self._event, headers={
                     'User-Agent': self.ua_string
                 })
