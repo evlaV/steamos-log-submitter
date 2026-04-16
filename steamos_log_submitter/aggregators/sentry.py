@@ -9,6 +9,7 @@ import httpx
 import io
 import json
 import logging
+import os
 import urllib.parse
 import uuid
 from typing import IO, Optional
@@ -42,6 +43,7 @@ class SentryEvent(aggregators.AggregatorEvent):
         self.message: Optional[str] = None
         self.os_build: Optional[str] = sls.util.get_build_id() if self.environment is not None else None
         self.version: Optional[str] = sls.util.get_version_id() if self.environment is not None else None
+        self.architecture: str = os.uname().machine
 
     def add_attachment(self, *attachments: dict[str, str | bytes]) -> None:
         self.attachments.extend(attachments)
@@ -91,6 +93,8 @@ class SentryEvent(aggregators.AggregatorEvent):
                 fingerprint.append(f'appid:{self.appid}')
             tags['appid'] = self.appid
             extra['app.name'] = sls.util.get_app_name(self.appid)
+
+        tags['architecture'] = self.architecture
 
         if self.os_build:
             tags['os_build'] = self.os_build

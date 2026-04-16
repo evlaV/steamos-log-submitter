@@ -5,12 +5,17 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import gzip
 import httpx
+import os
 import pytest
 import json
 import steamos_log_submitter as sls
 import steamos_log_submitter.aggregators.sentry as sentry
 from . import mock_config, open_shim  # NOQA: F401
 from . import unreachable
+
+
+class Uname:
+    machine: str = 'bmarch'
 
 
 @pytest.mark.asyncio
@@ -42,10 +47,11 @@ async def test_dsn_parsing(monkeypatch):
 @pytest.mark.asyncio
 async def test_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
-        assert json.get('tags') == {'alma-mater': 'MIT'}
+        assert json.get('tags') == {'alma-mater': 'MIT', 'architecture': 'bmarch'}
         return httpx.Response(200)
 
     open_shim.enoent()
+    monkeypatch.setattr(os, 'uname', Uname)
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')
     event.tags = {'alma-mater': 'MIT'}
@@ -55,11 +61,12 @@ async def test_tags(mock_config, monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_id_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
-        assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id()}
+        assert json.get('tags') == {'unit_id': sls.util.telemetry_unit_id(), 'architecture': 'bmarch'}
         assert json.get('user') == {'id': sls.util.telemetry_unit_id()}
         return httpx.Response(200)
 
     open_shim.enoent()
+    monkeypatch.setattr(os, 'uname', Uname)
     monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: '1234')
     monkeypatch.setattr(httpx.AsyncClient, 'post', fake_response)
     event = sentry.SentryEvent('https://fake@dsn/0')
@@ -69,11 +76,12 @@ async def test_id_tags(mock_config, monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_steamos_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
-        assert json.get('tags') == {'os_build': '20220202.202'}
+        assert json.get('tags') == {'os_build': '20220202.202', 'architecture': 'bmarch'}
         assert json.get('release') == '3.4'
         return httpx.Response(200)
 
     open_shim.enoent()
+    monkeypatch.setattr(os, 'uname', Uname)
     monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(sls.util, 'get_build_id', lambda: '20220202.202')
     monkeypatch.setattr(sls.util, 'get_version_id', lambda: '3.4')
@@ -86,11 +94,12 @@ async def test_steamos_tags(mock_config, monkeypatch, open_shim):
 @pytest.mark.asyncio
 async def test_non_steamos_tags(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
-        assert not json.get('tags')
+        assert json.get('tags') == {'architecture': 'bmarch'}
         assert json.get('version') is None
         return httpx.Response(200)
 
     open_shim.enoent()
+    monkeypatch.setattr(os, 'uname', Uname)
     monkeypatch.setattr(sls.util, 'telemetry_unit_id', lambda: None)
     monkeypatch.setattr(sls.util, 'get_build_id', unreachable)
     monkeypatch.setattr(sls.util, 'get_version_id', unreachable)
@@ -140,7 +149,7 @@ async def test_message(monkeypatch):
 async def test_appid(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': 1234}
+        assert json.get('tags', {}).get('appid') == 1234
         return httpx.Response(200)
 
     open_shim.enoent()
@@ -154,7 +163,7 @@ async def test_appid(mock_config, monkeypatch, open_shim):
 async def test_app_list(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': 1234}
+        assert json.get('tags', {}).get('appid') == 1234
         assert json.get('extra') == {'sls.version': sls.__version__, 'app.name': 'Half-Life 2'}
         return httpx.Response(200)
 
@@ -170,7 +179,7 @@ async def test_app_list(mock_config, monkeypatch, open_shim):
 async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': 1234}
+        assert json.get('tags', {}).get('appid') == 1234
         return httpx.Response(200)
 
     open_shim.enoent()
@@ -185,7 +194,7 @@ async def test_appid_fingerprint_dupe(mock_config, monkeypatch, open_shim):
 async def test_appid_tag_dupe(mock_config, monkeypatch, open_shim):
     async def fake_response(self, url, json, **kwargs):
         assert json.get('fingerprint') == ['appid:1234']
-        assert json.get('tags') == {'appid': 1234}
+        assert json.get('tags', {}).get('appid') == 1234
         return httpx.Response(200)
 
     open_shim.enoent()
