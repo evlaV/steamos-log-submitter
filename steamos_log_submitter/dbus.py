@@ -10,7 +10,7 @@ import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from types import CoroutineType, UnionType
-from typing import Optional, Type, Union
+from typing import Optional, Tuple, Type, Union
 
 from steamos_log_submitter.types import DBusCallable, DBusCallableAsync, DBusCallableSync, DBusCallback, DBusEncodable
 
@@ -111,6 +111,121 @@ def dbusify(fn: DBusCallableSync) -> DBusCallableSync:
 
     wrapped.__signature__ = fn_signature(fn)  # type: ignore[attr-defined]
     return wrapped
+
+
+class MatchRule:
+    @staticmethod
+    def _tokenize_string(raw: str, delimiter: str) -> Tuple[str, str]:
+        buffer = []
+        quoted = False
+        escaping = False
+        i = 0
+
+        for i, c in enumerate(raw):
+            if c == delimiter and not quoted:
+                break
+            if c == "'":
+                if escaping:
+                    buffer.append("'")
+                    escaping = False
+                elif quoted:
+                    quoted = False
+                else:
+                    quoted = True
+            elif c == '\\':
+                if escaping:
+                    buffer.append('\\')
+                    escaping = False
+                elif quoted:
+                    buffer.append('\\')
+                else:
+                    escaping = True
+            else:
+                if escaping:
+                    buffer.append('\\')
+                    escaping = False
+                buffer.append(c)
+
+        if escaping:
+            buffer.append('\\')
+        return ''.join(buffer), raw[i:]
+
+    @staticmethod
+    def _parse_string(raw: str) -> dict[str, str]:
+        kv = {}
+        while raw:
+            key, raw = MatchRule._tokenize_string(raw, '=')
+            if not raw:
+                break
+            raw = raw[1:]
+
+            value, raw = MatchRule._tokenize_string(raw, ',')
+            if not raw:
+                break
+            raw = raw[1:]
+
+            kv[key] = value
+        return kv
+
+    def __init__(self, rule: str):
+        self.raw = rule
+        parts = MatchRule._parse_string(rule)
+
+        self.type = parts.get('type')
+        self.sender = parts.get('sender')
+        self.interface = parts.get('interface')
+        self.member = parts.get('member')
+        self.path = parts.get('path')
+        self.path_namespace = parts.get('path_namespace')
+        self.destination = parts.get('destination')
+        self.args: list[str | None] = []
+        self.args_path: list[str | None] = []
+        for i in range(64):
+            self.args.append(parts.get(f'arg{i}'))
+            self.args_path.append(parts.get(f'arg{i}path'))
+        self.arg0namespace = parts.get('arg0namespace')
+        self.eavesdrop = parts.get('eavesdrop')
+        # TODO: validate
+
+    def matches(self, msg: dbus.Message) -> bool:
+        if self.destination is not None and self.destination != msg.destination:
+            return False
+        if self.sender is not None and self.sender != msg.sender:
+            return False
+        if self.path is not None and self.path != msg.path:
+            return False
+        if self.path_namespace is not None and msg.path is not None and self.path_namespace != msg.path and not msg.path.startswith(self.path_namespace + '/'):
+            return False
+        if self.interface is not None and self.interface != msg.interface:
+            return False
+        if self.member is not None and self.member != msg.member:
+            return False
+        # TODO: handle remaining portions
+
+        return True
+
+
+async def add_match_rule(match_rule: MatchRule, fn: Callable[[dbus.Message], None]) -> bool:
+    await connect()
+
+    assert system_bus
+    reply = await system_bus.call(
+        dbus.Message(destination='org.freedesktop.DBus',
+                     path='/org/freedesktop/DBus',
+                     member='AddMatch',
+                     interface='org.freedesktop.DBus',
+                     signature='s',
+                     body=[match_rule.raw]))
+
+    if not reply or reply.message_type != dbus.MessageType.METHOD_RETURN:
+        return False
+
+    def message_handler(msg: dbus.Message) -> None:
+        if match_rule.matches(msg):
+            fn(msg)
+
+    system_bus.add_message_handler(message_handler)
+    return True
 
 
 class DBusInterface:

@@ -242,3 +242,125 @@ async def test_property_signaling(mock_dbus, count_hits):
     mock_props['Value'] = 1
     await asyncio.sleep(0)
     assert count_hits.hits == 2
+
+
+def test_match_rule_tokenize_string():
+    assert sls.dbus.MatchRule._tokenize_string('', '=') == ('', '')
+    assert sls.dbus.MatchRule._tokenize_string('=', '=') == ('', '=')
+    assert sls.dbus.MatchRule._tokenize_string('a=b', '=') == ('a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string("'a'=b", '=') == ('a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"'\a'=b", '=') == (r'\a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"'\'a=b", '=') == (r'\a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"\a=b", '=') == (r'\a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"\\a=b", '=') == (r'\a', '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"\'a=b", '=') == (r"'a", '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"''\'a=b", '=') == (r"'a", '=b')
+    assert sls.dbus.MatchRule._tokenize_string(r"\\\a=b", '=') == (r"\\a", '=b')
+    assert sls.dbus.MatchRule._tokenize_string("'a=b'=b", '=') == ('a=b', '=b')
+
+
+def test_match_rule_parse_string():
+    assert sls.dbus.MatchRule._parse_string('a=b') == {'a': 'b'}
+    assert sls.dbus.MatchRule._parse_string("'a'=b") == {'a': 'b'}
+    assert sls.dbus.MatchRule._parse_string("a='b'") == {'a': 'b'}
+    assert sls.dbus.MatchRule._parse_string("'a=b'='b'") == {'a=b': 'b'}
+    assert sls.dbus.MatchRule._parse_string("a=b,c=d") == {'a': 'b', 'c': 'd'}
+    assert sls.dbus.MatchRule._parse_string("a='b,c=d'") == {'a': 'b,c=d'}
+    assert sls.dbus.MatchRule._parse_string("'a=b,c'=d") == {'a=b,c': 'd'}
+
+
+def test_match_rule_parsing():
+    match_rule = sls.dbus.MatchRule("type=signal")
+    assert match_rule.type == 'signal'
+    assert match_rule.sender is None
+
+    match_rule = sls.dbus.MatchRule("sender='com.valvesoftware.Crowbar'")
+    assert match_rule.sender == 'com.valvesoftware.Crowbar'
+    assert match_rule.type is None
+
+    match_rule = sls.dbus.MatchRule("type=signal,sender='com.valvesoftware.Crowbar'")
+    assert match_rule.type == 'signal'
+    assert match_rule.sender == 'com.valvesoftware.Crowbar'
+
+
+def test_match_rule_matching():
+    match_rule = sls.dbus.MatchRule("sender='com.valvesoftware.Crowbar'")
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           destination='com.valvesoftware.Props',
+                                           path='/',
+                                           member='Fly'))
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar', path='/', member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Props',
+                                               interface='com.valvesoftware.Crowbar',
+                                               path='/',
+                                               member='Fly'))
+
+    match_rule = sls.dbus.MatchRule("sender='com.valvesoftware.Crowbar',interface='com.valvesoftware.Props'")
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           destination='com.valvesoftware.Props',
+                                           path='/',
+                                           member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar', path='/', member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Props',
+                                               interface='com.valvesoftware.Crowbar',
+                                               path='/',
+                                               member='Fly'))
+
+    match_rule = sls.dbus.MatchRule("destination='com.valvesoftware.Props'")
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           destination='com.valvesoftware.Props',
+                                           path='/',
+                                           member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/',
+                                               member='Fly'))
+
+    match_rule = sls.dbus.MatchRule("path_namespace='/com'")
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           path='/com/valvesoftware/Crowbar',
+                                           member='Fly'))
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           path='/com/valvesoftware',
+                                           member='Fly'))
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           path='/com',
+                                           member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/',
+                                               member='Fly'))
+
+    match_rule = sls.dbus.MatchRule("path='/com'")
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/com/valvesoftware/Crowbar',
+                                               member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/com/valvesoftware',
+                                               member='Fly'))
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           path='/com',
+                                           member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/',
+                                               member='Fly'))
+
+    match_rule = sls.dbus.MatchRule("member='Fly'")
+    assert match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                           interface='com.valvesoftware.Props',
+                                           path='/',
+                                           member='Fly'))
+    assert not match_rule.matches(dbus.Message(sender='com.valvesoftware.Crowbar',
+                                               interface='com.valvesoftware.Props',
+                                               path='/',
+                                               member='Hunt'))
