@@ -4,7 +4,7 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from collections.abc import Callable, Mapping, Sequence
-import dbus_next as dbus
+import dbus_fast as dbus
 from typing import Optional, Protocol, TypeAlias, TypeVar, Union
 
 DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | Mapping[str, 'DBusEncodable'] | Mapping[int, 'DBusEncodable'] | tuple['DBusEncodable', ...] | dbus.Variant | bool | float | int | str

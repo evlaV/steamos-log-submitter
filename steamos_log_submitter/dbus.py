@@ -4,7 +4,8 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_next as dbus
+import dbus_fast as dbus
+import dbus_fast.aio
 import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence

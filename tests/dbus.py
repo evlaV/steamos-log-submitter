@@ -4,7 +4,7 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import collections
-import dbus_next as dbus
+import dbus_fast as dbus
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus

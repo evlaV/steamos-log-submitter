@@ -3,7 +3,7 @@
 #
 # Copyright (c) 2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_next as dbus
+import dbus_fast as dbus
 import logging
 import os
 import random

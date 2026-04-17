@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import argparse
 import asyncio
-import dbus_next as dbus
+import dbus_fast as dbus
 import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence

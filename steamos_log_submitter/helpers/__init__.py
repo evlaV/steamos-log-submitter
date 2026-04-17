@@ -4,7 +4,7 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import abc
-import dbus_next as dbus
+import dbus_fast as dbus
 import enum
 import importlib
 import logging
@@ -338,7 +338,7 @@ class HelperError(dbus.errors.DBusError):
         cls.map[cls.__name__] = cls
         cls.map[cls.name] = cls
 
-    def __init__(self, text: Optional[str] = None):
+    def __init__(self, text: str):
         super().__init__(self.name, text)
 
 

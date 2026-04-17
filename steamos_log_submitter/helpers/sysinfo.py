@@ -5,7 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
-import dbus_next as dbus
+import dbus_fast as dbus
 import json
 import logging
 import os

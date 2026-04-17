@@ -6,7 +6,7 @@
 
 # mypy: disable-error-code="arg-type"
 import asyncio
-import dbus_next as dbus
+import dbus_fast as dbus
 import inspect
 import pytest
 import steamos_log_submitter as sls
