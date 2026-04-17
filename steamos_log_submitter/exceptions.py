@@ -14,7 +14,7 @@ class Error(RuntimeError):
 
     @classmethod
     def __init_subclass__(cls) -> None:
-        cls.name = f'{DBUS_NAME}.{cls.__name__}'
+        cls.name = f'{DBUS_NAME}.Error.{cls.__name__}'
         cls.map[cls.__name__] = cls
         cls.map[cls.name] = cls
 

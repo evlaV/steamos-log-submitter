@@ -51,6 +51,9 @@ class Client:
             new_exc = sls.exceptions.Error.map.get(exc.type)
             if new_exc:
                 raise new_exc(json.loads(exc.text)) from exc
+            helper_exc = sls.helpers.HelperError.map.get(exc.type)
+            if helper_exc:
+                raise helper_exc(exc.text) from exc
             raise sls.exceptions.UnknownError({'text': exc.text}) from exc
         raise exc
 
@@ -159,12 +162,9 @@ class Client:
         if dbus_object is None:
             return None
         iface = await dbus_object.interface(f'{DBUS_NAME}.Helper')
-        try:
-            fd = await iface.extract(filename, type)
-            assert isinstance(fd, int)
-            return os.fdopen(fd, 'rb')
-        except dbus.errors.DBusError:
-            return None
+        fd = await iface.extract(filename, type)
+        assert isinstance(fd, int)
+        return os.fdopen(fd, 'rb')
 
     @command
     async def unit_id(self) -> str:

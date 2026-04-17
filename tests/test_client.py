@@ -320,8 +320,17 @@ async def test_extract(helper_directory, monkeypatch):
     setup_logs(helper_directory, {'test/log': 'abc'})
     daemon, client = await dbus_client(monkeypatch)
 
-    assert await client.extract('test', 'log', 'failed') is None
-    assert await client.extract('test', 'log', 'uploaded') is None
+    try:
+        await client.extract('test', 'log', 'failed')
+        assert False
+    except sls.helpers.PermanentError:
+        pass
+
+    try:
+        await client.extract('test', 'log', 'uploaded')
+        assert False
+    except sls.helpers.PermanentError:
+        pass
 
     with await client.extract('test', 'log') as f:
         assert f.read() == b'abc'

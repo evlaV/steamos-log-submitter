@@ -328,22 +328,36 @@ class StagingFile:
         return not exc_type
 
 
-class TransientError(dbus.errors.DBusError):
+class HelperError(dbus.errors.DBusError):
+    map: ClassVar[dict[str, Type['HelperError']]] = {}
+    name: ClassVar[str]
+
+    @classmethod
+    def __init_subclass__(cls) -> None:
+        cls.name = f'{DBUS_NAME}.Error.{cls.__name__}'
+        cls.map[cls.__name__] = cls
+        cls.map[cls.name] = cls
+
+    def __init__(self, text: Optional[str] = None):
+        super().__init__(self.name, text)
+
+
+class TransientError(HelperError):
     def __init__(self, text: Optional[str] = None):
         text = text or 'A transient error occurred'
-        super().__init__(f'{DBUS_NAME}.Error.TransientError', text)
+        super().__init__(text)
 
 
-class PermanentError(dbus.errors.DBusError):
+class PermanentError(HelperError):
     def __init__(self, text: Optional[str] = None):
         text = text or 'A permanent error occurred'
-        super().__init__(f'{DBUS_NAME}.Error.PermanentError', text)
+        super().__init__(text)
 
 
-class ClassError(dbus.errors.DBusError):
+class ClassError(HelperError):
     def __init__(self, text: Optional[str] = None):
         text = text or 'A classwide error occurred'
-        super().__init__(f'{DBUS_NAME}.Error.ClassError', text)
+        super().__init__(text)
 
 
 def raise_dbus_error(result: HelperResult) -> None:

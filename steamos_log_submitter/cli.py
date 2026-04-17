@@ -5,6 +5,7 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import argparse
 import asyncio
+import dbus_next as dbus
 import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
@@ -118,7 +119,11 @@ async def do_extract(client: sls.client.Client, args: argparse.Namespace) -> Non
     else:
         out = sys.stdout.buffer
     assert out
-    f = await client.extract(parts[0], parts[1], type)
+    try:
+        f = await client.extract(parts[0], parts[1], type)
+    except dbus.errors.DBusError as e:
+        print(e, file=sys.stderr)
+        return
     if f is None:
         return
     with f:
