@@ -102,8 +102,9 @@ def patch_module(mock_config, monkeypatch):
         helper: Type[sls.helpers.Helper]
 
         @classmethod
-        def _setup(cls):
+        def _setup(cls) -> bool:
             cls.iface = sls.helpers.HelperInterface(cls)
+            return True
 
         @classmethod
         async def submit(cls, fname: str) -> sls.helpers.HelperResult:
