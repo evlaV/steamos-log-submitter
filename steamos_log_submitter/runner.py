@@ -140,3 +140,16 @@ async def trigger() -> tuple[list[str], dict[str, sls.helpers.HelperResult | Exc
     else:
         logger.debug('Routine collection/submission is disabled')
     return collected, submitted
+
+
+async def startup() -> None:
+    logger.info('Starting up helpers')
+    tasks = []
+    for category in sls.helpers.list_helpers():
+        helper = sls.helpers.create_helper(category)
+        if not helper:
+            continue
+        tasks.append(asyncio.create_task(helper.startup()))
+    if tasks:
+        done, _ = await asyncio.wait(tasks)
+    logger.info('Finished starting up helpers')

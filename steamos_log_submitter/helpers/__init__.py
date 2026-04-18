@@ -173,6 +173,10 @@ class Helper(abc.ABC):
         return True
 
     @classmethod
+    async def startup(cls) -> None:
+        pass
+
+    @classmethod
     async def collect(cls) -> list[str]:
         last_collected: Optional[float] = None
         newest: Optional[float] = None

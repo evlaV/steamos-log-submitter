@@ -152,6 +152,8 @@ class Daemon:
             logger.error('Failed to claim D-Bus bus name', exc_info=e)
         self._setup_dbus()
 
+        await sls.runner.startup()
+
         try:
             suspend_target = sls.dbus.DBusObject('org.freedesktop.systemd1', '/org/freedesktop/systemd1/unit/suspend_2etarget')
             suspend_props = suspend_target.properties('org.freedesktop.systemd1.Unit')
