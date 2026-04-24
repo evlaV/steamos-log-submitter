@@ -486,11 +486,11 @@ def get_dmi_info() -> dict[str, str]:
             '83N0': 'Legion Go 2',
             '83N1': 'Legion Go 2',
         },
-        'Micro-StarInternationalCo.,Ltd.': {
-            'ClawA1M': 'MSI Claw A1M',
-            'Claw7AI+A2VM': 'MSI Claw 7 AI+ A2VM',
-            'Claw8AI+A2VM': 'MSI Claw 8 AI+ A2VM',
-            'ClawA8BZ2EM': 'MSI Claw A8 BZ2EM',
+        'Micro-Star International Co., Ltd.': {
+            'MS-1T41': 'MSI Claw A1M',
+            'MS-1T42': 'MSI Claw 7 AI+ A2VM',
+            'MS-1T52': 'MSI Claw 8 AI+ A2VM',
+            'MS-1T8K': 'MSI Claw A8 BZ2EM',
         },
         'ONE-NETBOOK': {
             'ONEXPLAYER 2 ARP23': 'ONEXPLAYER 2',
@@ -516,7 +516,7 @@ def get_dmi_info() -> dict[str, str]:
         'ayn': product_name,
         'GPD': product_name,
         'LENOVO': product_name,
-        'Micro-StarInternationalCo.,Ltd.': product_name,
+        'Micro-Star International Co., Ltd.': board_name,
         'ONE-NETBOOK': product_name,
         'ZOTAC': board_name,
     }
