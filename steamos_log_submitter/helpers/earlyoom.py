@@ -3,7 +3,6 @@
 #
 # Copyright (c) 2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_fast as dbus
 import json
 import os
 import time
@@ -12,6 +11,7 @@ from . import Helper, HelperResult
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 from steamos_log_submitter.aggregators.sentry import SentryEvent
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.types import JSONEncodable
 
 

@@ -4,15 +4,13 @@
 # Copyright (c) 2022 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_fast as dbus
-import dbus_fast.aio
 import inspect
 import typing
 from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from types import CoroutineType, UnionType
 from typing import Optional, Tuple, Type, Union
 
-from steamos_log_submitter.types import DBusCallable, DBusCallableAsync, DBusCallableSync, DBusCallback, DBusEncodable
+from steamos_log_submitter.types import dbus, DBusCallable, DBusCallableAsync, DBusCallableSync, DBusCallback, DBusEncodable
 
 connected = False
 system_bus = None

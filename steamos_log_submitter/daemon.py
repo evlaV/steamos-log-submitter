@@ -4,7 +4,6 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_fast as dbus
 import gc
 import importlib.machinery
 import inspect
@@ -21,6 +20,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 import steamos_log_submitter.runner
 from steamos_log_submitter.constants import DBUS_NAME, DBUS_ROOT
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.types import DBusEncodable
 
 __all__ = [

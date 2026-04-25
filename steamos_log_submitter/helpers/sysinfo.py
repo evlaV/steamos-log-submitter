@@ -5,7 +5,6 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
 import collections
-import dbus_fast as dbus
 import json
 import logging
 import os
@@ -22,7 +21,7 @@ from typing import Optional, Type
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 from steamos_log_submitter.constants import DBUS_NAME
-from steamos_log_submitter.dbus import DBusObject
+from steamos_log_submitter.dbus import DBusObject, dbus
 from steamos_log_submitter.types import JSON, JSONEncodable
 from . import Helper, HelperResult
 

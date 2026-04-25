@@ -4,7 +4,6 @@
 # Copyright (c) 2022-2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
-import dbus_fast as dbus
 import io
 import json
 import logging
@@ -18,6 +17,7 @@ import steamos_log_submitter as sls
 import steamos_log_submitter.helpers
 import steamos_log_submitter.daemon
 import steamos_log_submitter.runner
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.types import DBusEncodable
 
 from . import awaitable, setup_categories, setup_logs, unreachable, CustomConfig

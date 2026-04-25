@@ -6,13 +6,13 @@
 
 # mypy: disable-error-code="arg-type"
 import asyncio
-import dbus_fast as dbus
 import inspect
 import pytest
 import steamos_log_submitter as sls
 import steamos_log_submitter.dbus
 from collections.abc import Mapping, Sequence
 from typing import Union
+from steamos_log_submitter.dbus import dbus
 from . import count_hits  # NOQA: F401
 from .dbus import mock_dbus, MockDBusInterface, MockDBusObject, MockDBusProperties  # NOQA: F401
 

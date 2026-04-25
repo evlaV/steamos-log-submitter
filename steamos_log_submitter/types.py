@@ -4,8 +4,14 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 from collections.abc import Callable, Mapping, Sequence
-import dbus_fast as dbus
 from typing import Optional, Protocol, TypeAlias, TypeVar, Union
+
+# mypy: disable-error-code="no-redef"
+try:
+    import dbus_fast as dbus
+    import dbus_fast.aio  # NOQA: F401
+except ModuleNotFoundError:
+    import dbus_next as dbus
 
 DBusEncodable: TypeAlias = Sequence['DBusEncodable'] | Mapping[Union[str, int], 'DBusEncodable'] | Mapping[str, 'DBusEncodable'] | Mapping[int, 'DBusEncodable'] | tuple['DBusEncodable', ...] | dbus.Variant | bool | float | int | str
 DBusCallable: TypeAlias = Union['DBusCallableAsync', 'DBusCallableSync']

@@ -3,12 +3,12 @@
 #
 # Copyright (c) 2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
-import dbus_fast as dbus
 import pytest
 import os
 import tempfile
 import steamos_log_submitter as sls
 import steamos_log_submitter.aggregators.sentry as sentry
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.helpers import HelperResult
 from steamos_log_submitter.helpers.sysreport import SysreportHelper as helper
 from .. import awaitable, always_raise, custom_dsn, setup_categories

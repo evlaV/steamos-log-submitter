@@ -4,7 +4,6 @@
 # Copyright (c) 2023 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import abc
-import dbus_fast as dbus
 import enum
 import importlib
 import logging
@@ -23,6 +22,7 @@ import steamos_log_submitter.dbus
 import steamos_log_submitter.lockfile
 from steamos_log_submitter.constants import DBUS_NAME
 from steamos_log_submitter.daemon import DaemonInterface
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.types import JSONEncodable
 
 logger = logging.getLogger(__name__)

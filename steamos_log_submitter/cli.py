@@ -5,7 +5,6 @@
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import argparse
 import asyncio
-import dbus_fast as dbus
 import logging
 import sys
 from collections.abc import Awaitable, Callable, Coroutine, Sequence
@@ -15,6 +14,7 @@ from typing import BinaryIO, ClassVar, Concatenate, Optional, ParamSpec, Type
 import steamos_log_submitter as sls
 import steamos_log_submitter.client
 from steamos_log_submitter.constants import DBUS_NAME
+from steamos_log_submitter.dbus import dbus
 from steamos_log_submitter.types import DBusEncodable
 
 P = ParamSpec('P')

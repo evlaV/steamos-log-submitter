@@ -33,5 +33,17 @@ mypy:
     - pacman -Sy --noconfirm --needed python-pip python-pyalsa
     - python -m venv --system-site-packages venv
     - . venv/bin/activate
-    - pip install mypy .[mypy]
+    - pip install mypy .[mypy] dbus-fast
     - mypy -p steamos_log_submitter -p tests
+
+run_pytest_dbus_fast:
+  stage: test
+  tags:
+    - x86_64-linux-kvm-docker-internalnetwork
+  script:
+    - pacman -Sy --noconfirm --needed dbus-python python-pip python-pyalsa
+    - python -m venv --system-site-packages venv
+    - . venv/bin/activate
+    - pip install .[pytest] dbus-fast
+    - pip uninstall -y dbus-next
+    - dbus-run-session pytest
