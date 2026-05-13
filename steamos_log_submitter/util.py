@@ -423,6 +423,9 @@ def get_app_name(appid: int) -> Optional[str]:
 
 def get_dmi_info() -> dict[str, str]:
     products: dict[str, dict[str, str]] = {
+        'Anbernic': {
+            'Win600': 'Anbernic Win600',
+        },
         'AOKZOE': {
             'AOKZOE A1 AR07': 'AOKZOE A1',
             'AOKZOE A1 Pro': 'AOKZOE A1 Pro',
@@ -431,6 +434,9 @@ def get_dmi_info() -> dict[str, str]:
         'ASUSTeK COMPUTER INC.': {
             'RC71L': 'ROG Ally',
             'RC72LA': 'ROG Ally X',
+            'RC73XA': 'ROG Xbox Ally X',
+            'RC73YA': 'ROG Xbox Ally',
+            'GZ302EA': 'ROG Flow Z13 (2025)',
         },
         'AYADEVICE': {
             'AYA NEO FOUNDER': 'AYANEO 2021',
@@ -441,6 +447,7 @@ def get_dmi_info() -> dict[str, str]:
             'AYANEO 2021 Pro': 'AYANEO 2021 Pro',
             'AYANEO 2021 Pro Retro Power': 'AYANEO 2021 Pro',
             'AYANEO 2': 'AYANEO 2',
+            'AYANEO 3': 'AYANEO 3',
             'GEEK': 'AYANEO GEEK',
             'AYANEO 2S': 'AYANEO 2S',
             'GEEK 1S': 'AYANEO GEEK 1S',
@@ -448,11 +455,13 @@ def get_dmi_info() -> dict[str, str]:
             'AIR': 'AYANEO AIR',
             'AIR Pro': 'AYANEO AIR Pro',
             'AIR 1S': 'AYANEO AIR 1S',
+            'AIR 1S Limited': 'AYANEO AIR 1S Limited',
             'AB05-AMD': 'AYANEO AIR Plus AMD',
             'AB05-Intel': 'AYANEO AIR Plus Intel',
             'AB05-Mendocino': 'AYANEO AIR Plus Mendocino',
             'FLIP DS': 'AYANEO FLIP',
             'FLIP KB': 'AYANEO FLIP',
+            'FLIP 1S DS': 'AYANEO FLIP 1S',
             'AYANEO KUN': 'AYANEO KUN',
             'NEXT': 'AYANEO NEXT',
             'AYANEO NEXT': 'AYANEO NEXT',
@@ -474,6 +483,7 @@ def get_dmi_info() -> dict[str, str]:
         'GPD': {
             'G1618-03': 'GPD WIN 3',
             'G1618-04': 'GPD WIN 4',
+            'G1618-05': 'GPD WIN 5',
             'G1619-04': 'GPD WIN Max 2',
             'G1617-01': 'GPD WIN Mini',
         },
@@ -492,23 +502,42 @@ def get_dmi_info() -> dict[str, str]:
             'MS-1T52': 'MSI Claw 8 AI+ A2VM',
             'MS-1T8K': 'MSI Claw A8 BZ2EM',
         },
+        'MystenLabs, Inc.': {
+            'SuiPlay 0X1': 'SuiPlay 0X1',
+        },
         'ONE-NETBOOK': {
+            'ONE XPLAYER': 'ONEXPLAYER',
+            'ONEXPLAYER': 'ONEXPLAYER',
+            'ONEXPLAYER mini A07': 'ONEXPLAYER mini A07',
+            'ONEXPLAYER Mini Pro': 'ONEXPLAYER Mini Pro',
             'ONEXPLAYER 2 ARP23': 'ONEXPLAYER 2',
             'ONEXPLAYER 2 PRO ARP23': 'ONEXPLAYER 2 Pro',
             'ONEXPLAYER 2 PRO ARP23 EVA-01': 'ONEXPLAYER 2 Pro',
             'ONEXPLAYER F1': 'ONEXPLAYER OneXFly F1',
+            'ONEXPLAYER F1 EVA-01': 'ONEXPLAYER OneXFly F1 EVA-01',
+            'ONEXPLAYER F1 OLED': 'ONEXPLAYER OneXFly F1 OLED',
             'ONEXPLAYER F1Pro': 'ONEXPLAYER OneXFly F1 Pro',
-            'ONEXPLAYER Mini Pro': 'ONEXPLAYER Mini Pro',
+            'ONEXPLAYER X1 A': 'ONEXPLAYER X1 AMD',
+            'ONEXPLAYER X1 i': 'ONEXPLAYER X1 Intel',
+            'ONEXPLAYER X1 mini': 'ONEXPLAYER X1 mini',
+            'ONEXPLAYER G1 A': 'ONEXPLAYER G1 AMD',
+            'ONEXPLAYER G1 i': 'ONEXPLAYER G1 Intel',
+        },
+        'OrangePi': {
+            'NEO-01': 'OrangePi NEO',
         },
         'ZOTAC': {
             'G0A1W': 'ZONE',
+            'G1A1W': 'ZONE',
         },
     }
+    products['ONE-NETBOOK TECHNOLOGY CO., LTD.'] = products['ONE-NETBOOK']
     info: dict[str, str] = {}
     sys_vendor = sls.util.read_file('/sys/class/dmi/id/sys_vendor')
     board_name = sls.util.read_file('/sys/class/dmi/id/board_name')
     product_name = sls.util.read_file('/sys/class/dmi/id/product_name')
     lookup_table = {
+        'Anbernic': product_name,
         'AOKZOE': product_name,
         'ASUSTeK COMPUTER INC.': board_name,
         'AYA NEO': product_name,
@@ -517,7 +546,10 @@ def get_dmi_info() -> dict[str, str]:
         'GPD': product_name,
         'LENOVO': product_name,
         'Micro-Star International Co., Ltd.': board_name,
+        'MystenLabs, Inc.': product_name,
         'ONE-NETBOOK': product_name,
+        'ONE-NETBOOK TECHNOLOGY CO., LTD.': product_name,
+        'OrangePi': product_name,
         'ZOTAC': board_name,
     }
     assert sys_vendor is None or isinstance(sys_vendor, str)
