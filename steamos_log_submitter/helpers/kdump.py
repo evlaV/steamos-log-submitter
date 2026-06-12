@@ -40,6 +40,7 @@ class KdumpHelper(Helper):
             'BUG: unable to handle page fault for address',
             'PREEMPT SMP NOPTI',
             'general protection fault',
+            'BUG: kernel NULL pointer dereference, address',
         )
 
         trace_types = ('TASK', 'IRQ')
