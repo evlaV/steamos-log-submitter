@@ -173,7 +173,7 @@ class KdumpHelper(Helper):
     @classmethod
     async def submit(cls, fname: str) -> HelperResult:
         name, _ = os.path.splitext(os.path.basename(fname))
-        stack = None
+        stack = []
         event = SentryEvent(cls.config['dsn'])
         try:
             with zipfile.ZipFile(fname) as f:
@@ -195,7 +195,11 @@ class KdumpHelper(Helper):
                                 event.version = sls.util.get_version_id(build)
                         if zname.startswith('dmesg'):
                             with io.TextIOWrapper(zf) as dmesg:
-                                event.message, stack, event.extra = cls.get_summaries(dmesg)
+                                summary, new_stack, metadata = cls.get_summaries(dmesg)
+                                if not event.message:
+                                    event.message = summary
+                                    event.extra = metadata
+                                stack.extend(new_stack)
             with open(fname, 'rb') as f:
                 attachment = f.read()
         except zipfile.BadZipFile:
@@ -213,5 +217,19 @@ class KdumpHelper(Helper):
                 'filename': 'kdump.zip',
                 'data': attachment
             })
-        event.exceptions = [{'stacktrace': frames, 'type': 'PANIC'} for frames in stack]
+
+        pruned_stack = []
+        last_stack = None
+        for frames in stack:
+            if frames == last_stack:
+                continue
+            if not last_stack or frames.get('frames') != last_stack.get('frames'):
+                pruned_stack.append(frames)
+            elif frames.get('registers') and 'registers' not in last_stack:
+                pruned_stack[-1] = frames
+            else:
+                continue
+            last_stack = frames
+
+        event.exceptions = [{'stacktrace': frames, 'type': 'PANIC'} for frames in pruned_stack]
         return await event.send()

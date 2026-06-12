@@ -4,6 +4,15 @@
 		{ "function": "do_syscall_64", "instruction_addr": "0x5d", "addr_mode": "rel" },
 		{ "function": "__do_sys_finit_module", "instruction_addr": "0xb4", "addr_mode": "rel" },
 		{ "function": "do_init_module", "instruction_addr": "0x4c", "addr_mode": "rel" },
+		{ "function": "do_one_initcall", "instruction_addr": "0x45", "addr_mode": "rel" }
+	]
+},
+{
+	"frames": [
+		{ "function": "entry_SYSCALL_64_after_hwframe", "instruction_addr": "0x72", "addr_mode": "rel" },
+		{ "function": "do_syscall_64", "instruction_addr": "0x5d", "addr_mode": "rel" },
+		{ "function": "__do_sys_finit_module", "instruction_addr": "0xb4", "addr_mode": "rel" },
+		{ "function": "do_init_module", "instruction_addr": "0x4c", "addr_mode": "rel" },
 		{ "function": "do_one_initcall", "instruction_addr": "0x45", "addr_mode": "rel" },
 		{ "function": "lp_init_module", "instruction_addr": "0x28", "addr_mode": "rel", "package": "lp" }
 	],
