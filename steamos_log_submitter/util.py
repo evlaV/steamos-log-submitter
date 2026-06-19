@@ -4,6 +4,8 @@
 # Copyright (c) 2022-2024 Valve Software
 # Maintainer: Vicki Pfau <vi@endrift.com>
 import asyncio
+import elftools.elf
+import elftools.common.exceptions
 import grp
 import hashlib
 import httpx
@@ -325,7 +327,7 @@ def get_exe_build_id(path: str) -> Optional[str]:
             for section in elf.iter_sections():
                 if section.name != '.note.gnu.build-id':
                     continue
-                if type(section).__name__ != 'NoteSection':
+                if not isinstance(section, elftools.elf.sections.NoteSection):
                     logger.warning(f'Correctly named section has wrong type {type(section).__name__}')
                     continue
                 for note in section.iter_notes():
@@ -334,6 +336,8 @@ def get_exe_build_id(path: str) -> Optional[str]:
                 break
     except OSError as e:
         logger.warning('Failed to get buildid', exc_info=e)
+    except elftools.common.exceptions.ELFError as e:
+        logger.warning('Failed to parse ELF', exc_info=e)
     return None
 
 
